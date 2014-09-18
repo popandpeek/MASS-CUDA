@@ -17,10 +17,23 @@
 
 namespace mass {
 
+struct AgentsSlice{
+  Agent *begin; // the first Agent in this slice
+  int qty; // the number of agents in this slice
+}
+
+struct PlacesSlice{
+  Place *begin; // the start of this slice of Places, and start of left buffer
+  Place *leftGhost; // the start of the area belonging to the lower rank Places slice
+  Place *rightGhost; // the start of the area belonging to the higher rank Places slice
+  Place *rightBuffer; // the start of the area that needs to be sent to higher rank Places slice
+  int ghostWidth;
+}
+
 class Model {
   std::map< int, Agents* > agentsMap;
   std::map< int, Places* > placesMap;
-  std::map< int, Slice > slices;
+  std::map< int, Slice > slicesMap;
 
 public:
   Model();
