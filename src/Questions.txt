@@ -1,0 +1,3 @@
+Questions:
+1. What is the String[] in Mass::init intended to accomplish?
+2. 
