@@ -24,7 +24,7 @@ namespace mass {
  */
 class Slice {
   int rank;
-  bool isLoaded;
+  bool isloaded;
   std::map<int, AgentsSlice> agents;
   std::map<int, PlacesSlice> places;
 
@@ -33,11 +33,16 @@ public:
   ~Slice();
   
   bool addAgentsSlice(AgentSlice slice);
+  AgentsSlice getAgents( int handle );
+  int getNumAgents();
+  
   bool addPlacesSlice(PlacesSlice slice);
+  PlacesSlice getPlaces( int handle );
+  int getNumPlaces();
 
   /** load and unload functions. */
   void load(cudaStream_t stream);
-  bool retreive(cudaStream_t stream, bool freeOnRetreive);
+  bool retreive(cudaStream_t stream, bool freeOnRetreive=true);
   bool isLoaded();
 
   int getRank();
