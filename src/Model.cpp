@@ -5,13 +5,13 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#include "Model.h"
 #include "math.h" // ciel
 
+#include "MassException.h"
+#include "Model.h"
+
+
 namespace mass {
-// std::map< int, Agents* > agentsMap;
-// std::map< int, Places* > placesMap;
-// std::map< int, Slice > slicesMap;
 
 void addAgentsToSlices(Agents *agents){
   Agent* elements = agents->agents; // friend access
@@ -41,26 +41,33 @@ void addAgentsToSlices(Agents *agents){
   slice.addAgentSlice(a);
 }
 
-// converts a given index into row major index provided the places dimensions
+// dims must be in order { numRows, numCols, zCols, ...}
+// idx must be in order {rowNum, colNum, zNum, ...}
 int toRowMajorIdx(int n, int *dims, int *idx){
   int row_major_index = 0;
+  int stride = 1; // tracks how far to increase index
+  // stride tracks the "jump" between elements of current dimension
   for(int i = 0; i < n; ++i){
-    int indexValue = idx[i];
-    int stride = 1; // the number of elements to jump
-    // multiply all remaining dimensions
-    for(int j = i+1; j < n; ++j){
-      stride *= dims[j];
-    }
-    row_major_index += indexValue * stride;
+    stride *= dims[i];
   }
+  
+  for(int i = 0; i < n; ++i) {
+    // we never want to include current dimension in stride
+    // in a 1D array, the stride of numRows is always 1
+    stride /= dims[i];
+    row_major_index += idx[i] * stride;
+  }
+  return row_major_index;
 }
 
-int getGhostWidth(Places *places){
-  int boundary_width = places->bboundary_width; // friend access
-  int stride = 0;
-  // TODO figure out how to calculate this
-  
-  return stride;
+// dims must be in order { numRows, numCols, ...}
+int *toVectorIndex(int n, int *dims, int rmi){
+  int *index = new int[n];
+  for(int i = n-1; i >=0; --i){
+    index[i] = rmi % dims[i];
+    rmi /= dims[i];
+  }
+  return index;
 }
 
 void addPlacesToSlices(Places *places){
@@ -73,20 +80,20 @@ void addPlacesToSlices(Places *places){
   }
   
   int numSlices = this->getNumSlices();
-  int sliceSize = (int) ceil( ((double) size) / numSlices);
-  int remainder = size - sliceSize * (numSlices-1);
-  
   if(1 == numSlices){ // special case for a single slice
     Slice slice = slicesMap.find(0)->second;
     PlacesSlice p;
-    p.begin = elements;
+    p.begin = elements; // begin is also left buffer
     p.leftGhost = NULL;
     p.rightGhost = NULL;
     p.rightBuffer = NULL;
+    p.qty = size;
     p.ghostWidth = 0;
     slice.addPlacesSlice(p);
   } else {
-    int ghostWidth = getGhostWidth(places);
+    int sliceSize = (int) ceil( ((double) size) / numSlices);
+    int remainder = size - sliceSize * (numSlices-1);
+    int ghostWidth = size / dimensions[0] * places->boundary_width;
   
     int rank=0; // first n-1 ranks get a full slice
     for( ; rank < size - 1; ++rank){
@@ -98,20 +105,22 @@ void addPlacesToSlices(Places *places){
       } else {
         p.leftGhost = p.begin - ghostWidth; 
       }
-      p.rightGhost = p.begin + sliceSize + ghostWidth; 
-      p.rightBuffer = ghostWidth; 
+      p.rightGhost = p.begin + sliceSize + 1; // ghost area begins at next element
+      p.rightBuffer = p.rightGhost - ghostWidth;
+      p.qty = sliceSize;      
       p.ghostWidth = ghostWidth;
       slice.addPlacesSlice(p);
     }
     
-    // last rank gets remainder
+    // last rank gets remainder elements
     ++rank;
     Slice slice = slicesMap.find(rank)->second;
     PlacesSlice p;
     p.begin = elements + rank * sliceSize;
-    p.leftGhost = ghostWidth; 
+    p.leftGhost = p.begin - ghostWidth; 
     p.rightGhost = NULL; 
     p.rightBuffer = NULL;
+    p.qty = remainder; 
     p.ghostWidth = ghostWidth;
     slice.addPlaceSlice(p);
   }
@@ -119,9 +128,7 @@ void addPlacesToSlices(Places *places){
 
 Model::Model(){
   // for the time being, there is only ever one slice
-  int rank = 0;
-  Slice slice(0);
-  slicesMap.insert( std::pair<int,Slice>(rank, slice) );
+  setNumSlices(1);
 }
 
 Model::~Model(){
@@ -134,11 +141,9 @@ bool Model::addAgents(Agents *agents){
   bool isNew = true;
   int handle = agents->getHandle();
   
-  std::map<int,Agents*>::iterator it = agentsMap.begin();
-  while(it != agentsMap.end() && isNew){
-    if(it->first == handle){ // this collection is already in model
-      isNew = false;
-    }
+  std::map<int,Agents*>::iterator it = agentsMap.find(handle);
+  if(it != agentsMap.end()){
+    isNew = false;
   }
   
   if(isNew){
@@ -152,11 +157,9 @@ bool Model::addPlaces(Places *places){
   bool isNew = true;
   int handle = places->getHandle();
   
-  std::map<int,Places*>::iterator it = placesMap.begin();
-  while(it != placesMap.end() && isNew){
-    if(it->first == handle){ // this collection is already in model
-      isNew = false;
-    }
+  std::map<int,Places*>::iterator it = placesMap.find(handle);
+  if(it != placesMap.end()){
+    isNew = false;
   }
   
   if(isNew){
@@ -168,6 +171,7 @@ bool Model::addPlaces(Places *places){
 
 Agents *Model::getAgents( int handle ){
   Agent *agents = NULL;
+  // TODO extract current agents data from GPU
   std::map<int,Agents*>::iterator it = agentsMap.find( handle );
   if(it != agentsMap.end()){
     agents = it->second;
@@ -177,6 +181,7 @@ Agents *Model::getAgents( int handle ){
 
 Places *Model::getPlaces( int handle ){
   Place *places = NULL;
+  // TODO extract current places data from GPU
   std::map<int,Places*>::iterator it = placesMap.find( handle );
   if(it != placesMap.end()){
     places = it->second;
@@ -188,14 +193,38 @@ int Model::getNumSlices(){
   return slicesMap.size();
 }
 
-void Model::setNumSlices(int n){} // not yet implemented
+void Model::setNumSlices(int n){ // not yet implemented
+  
+  if(i < 1){
+    throw MassException("Number of slices must be at least 1");
+  }
+  
+  // temporary code: remove once re-slicing logic is in this function
+  if(getNumSlices() > 0){
+    return;
+  }
+  
+  for(int i = 0; i < n; ++i){
+    std::map<int,Slice>::iterator it = slicesMap.find(i);
+    if(it == slicesMap.end()){
+      Slice slice(i);
+      slicesMap.insert( std::pair<int,Slice>(i, slice) );
+    }
+  }
+}
+
+Slice Model::getSlice( int rank ){
+  Slice slice;
+  std::map<int,Slice>::iterator it = slicesMap.find(rank);
+  if(it != slicesMap.end()){
+    slice = it->second;
+  } else {
+    throw MassException("There is no slice with that rank");
+  }
+  
+  return slice;
+}
+
 void Model::endTurn(){} // not yet implemented
-
-/************************************************************
- *  ITERATOR FUNCTIONS
-************************************************************/
-bool Model::hasNextSlice(){return false;} // not yet implemented 
-Slice *Model::nextSlice(){return NULL;} // not yet implemented
-
 
 } // end namespace

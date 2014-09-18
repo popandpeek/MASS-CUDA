@@ -27,7 +27,8 @@ struct PlacesSlice{
   Place *leftGhost; // the start of the area belonging to the lower rank Places slice
   Place *rightGhost; // the start of the area belonging to the higher rank Places slice
   Place *rightBuffer; // the start of the area that needs to be sent to higher rank Places slice
-  int ghostWidth;
+  int qty; // the number of place elements in this slice
+  int ghostWidth; // the number of elements to send to another rank when exchanging borders
 }
 
 class Model {
@@ -42,15 +43,10 @@ public:
   bool addPlaces(Places *places);
   Agents *getAgents( int handle );
   Places *getPlaces( int handle );
+  Slice getSlice( int rank );
   int getNumSlices();
-  void setNumSlices(int n); // not yet implemented
-  void endTurn(); // not yet implemented
-
-  /************************************************************
-   *  ITERATOR FUNCTIONS
-  ************************************************************/
-  bool hasNextSlice(); // not yet implemented 
-  Slice *nextSlice(); // not yet implemented
+  void setNumSlices(int n);
+  void endTurn(); // not yet implemented. Eventually will trigger "clean up" between turns
 
 }; // end Model
 } // end namespace
