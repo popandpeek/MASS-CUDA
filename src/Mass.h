@@ -22,8 +22,6 @@ namespace mass {
 
 class Mass {
 public:
-	
-	Mass( );
 
 	/**
 	 *  Initializes the MASS environment. Must be called prior to all other MASS methods.
@@ -57,13 +55,21 @@ public:
    *  @return NULL if not found.
    */
   static Agents *getAgents( int handle );
+  
+  /**
+   *  Returns an instance of mass to the caller.
+   */
+  static Mass &getInstance(){
+    static Mass instance; // Guaranteed to be destroyed. Instantiated on first use.
+    return instance;
+  }
 
 private:
-	// int ngpu;                   // number of GPUs in use
-	// int* devices;               // array of GPU device ids
-	// cudaStream_t* streams;      // cuda execution streams, two per device
-	// cudaEvent_t* events; // cuda events to synchronize execution streams, one per device
-	// map< int, Places * > placemap; // maps handles to Places
+	// this is a singleton
+	Mass( ){};
+  Mass(Mass const&); // Don't Implement. No copies are allowed.
+  void operator=(Mass const&); // Don't implement, prevent assignment.
+  
   Model model; /**< The data model for this simulation. */
   Dispatcher dispatcher;/**< The object that handles communication with the GPU(s). */
 };

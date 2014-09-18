@@ -17,10 +17,9 @@
 
 namespace mass {
 
-
 class Model {
-  std::map< int, Agent* > agentsMap;
-  std::map< int, Place* > placesMap;
+  std::map< int, Agents* > agentsMap;
+  std::map< int, Places* > placesMap;
   std::map< int, Slice > slices;
 
 public:
@@ -28,6 +27,8 @@ public:
   ~Model();
   bool addAgents(Agents *agents);
   bool addPlaces(Places *places);
+  Agents *getAgents( int handle );
+  Places *getPlaces( int handle );
   int getNumSlices();
   void setNumSlices(int n); // not yet implemented
   void endTurn(); // not yet implemented

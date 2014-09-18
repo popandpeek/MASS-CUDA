@@ -30,7 +30,7 @@ public:
    *  then locates the GPUs, sets up communication links, and prepares to begin
    *  dispatching data to and from the GPU.
    *  
-   *  @param ngpu the number of GPUs to use in this simulation.
+   *  @param ngpu the number of GPUs to use in this simulation. 0 if all GPU resources are to be used.
    *  @param models the data model for this simulation
    */
   init(int ngpu, Model *model);
