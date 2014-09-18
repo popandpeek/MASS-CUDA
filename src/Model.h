@@ -17,10 +17,24 @@
 
 namespace mass {
 
+struct AgentsSlice{
+  Agent *begin; // the first Agent in this slice
+  int qty; // the number of agents in this slice
+}
+
+struct PlacesSlice{
+  Place *begin; // the start of this slice of Places, and start of left buffer
+  Place *leftGhost; // the start of the area belonging to the lower rank Places slice
+  Place *rightGhost; // the start of the area belonging to the higher rank Places slice
+  Place *rightBuffer; // the start of the area that needs to be sent to higher rank Places slice
+  int qty; // the number of place elements in this slice
+  int ghostWidth; // the number of elements to send to another rank when exchanging borders
+}
+
 class Model {
   std::map< int, Agents* > agentsMap;
   std::map< int, Places* > placesMap;
-  std::map< int, Slice > slices;
+  std::map< int, Slice > slicesMap;
 
 public:
   Model();
@@ -29,15 +43,10 @@ public:
   bool addPlaces(Places *places);
   Agents *getAgents( int handle );
   Places *getPlaces( int handle );
+  Slice getSlice( int rank );
   int getNumSlices();
-  void setNumSlices(int n); // not yet implemented
-  void endTurn(); // not yet implemented
-
-  /************************************************************
-   *  ITERATOR FUNCTIONS
-  ************************************************************/
-  bool hasNextSlice(); // not yet implemented 
-  Slice *nextSlice(); // not yet implemented
+  void setNumSlices(int n);
+  void endTurn(); // not yet implemented. Eventually will trigger "clean up" between turns
 
 }; // end Model
 } // end namespace

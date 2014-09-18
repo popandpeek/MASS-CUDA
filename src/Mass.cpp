@@ -1,7 +1,6 @@
 /**
- *  @file Mass.h
- *  @author Nate Hart, Rob Jordan
- *  Some content adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
+ *  @file Mass.cpp
+ *  @author Nate Hart
  *
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
@@ -18,16 +17,6 @@ Mass::Mass( ){
 }
 
 void Mass::init( String[] args, int ngpu ){
-// move this section to the Dispatcher
-  // // adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
-  // int deviceCount;
-  // cudaGetDeviceCount(&deviceCount);
-  // for (int device = 0; device < deviceCount; ++device) {
-      // cudaDeviceProp deviceProp;
-      // cudaGetDeviceProperties(&deviceProp, device);
-      // printf("Device %d has compute capability %d.%d.\n",
-             // device, deviceProp.major, deviceProp.minor);
-  // }
   dispatcher.init(ngpu, &model);
 }
 

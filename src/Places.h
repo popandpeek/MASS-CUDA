@@ -132,8 +132,9 @@ private:
 
 	int handle;         // User-defined identifier for this Places
   int numDims;        // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)
-	int[] dimensions;   // dimensions of the grid in which these places are located
-	T *elements;        // host elements
+	int *dimensions;   // dimensions of the grid in which these places are located. It must be numDims long
+	T *elements;        // host elements stored in row-major order
+  int boundary_width; // the width of borders between sections
 };
 
 } /* namespace mass */
