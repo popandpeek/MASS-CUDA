@@ -19,16 +19,17 @@ namespace mass {
 
 struct AgentsSlice{
   Agent *begin; // the first Agent in this slice
+  Agent *d_begin; // first agent on device
   int qty; // the number of agents in this slice
+  int handle;
 }
 
 struct PlacesSlice{
   Place *begin; // the start of this slice of Places, and start of left buffer
-  Place *leftGhost; // the start of the area belonging to the lower rank Places slice
-  Place *rightGhost; // the start of the area belonging to the higher rank Places slice
-  Place *rightBuffer; // the start of the area that needs to be sent to higher rank Places slice
+  Place *d_begin; // the start of this slice of Places, and start of left buffer
   int qty; // the number of place elements in this slice
   int ghostWidth; // the number of elements to send to another rank when exchanging borders
+  int handle;
 }
 
 class Model {

@@ -25,7 +25,9 @@ void addAgentsToSlices(Agents *agents){
     Slice slice = slicesMap.find(rank)->second;
     AgentSlice a;
     a.begin = elements + rank * sliceSize;
-    a.qty = sliceSize;
+    a.d_begin = NULL;
+    a.qty = remainder;
+    a.handle = agents->getHandle();
     slice.addAgentSlice(a);
   }
   
@@ -37,7 +39,9 @@ void addAgentsToSlices(Agents *agents){
   Slice slice = slicesMap.find(rank)->second;
   AgentSlice a;
   a.begin = elements + rank * sliceSize;
+  a.d_begin = NULL;
   a.qty = remainder;
+  a.handle = agents->getHandle();
   slice.addAgentSlice(a);
 }
 
@@ -83,12 +87,11 @@ void addPlacesToSlices(Places *places){
   if(1 == numSlices){ // special case for a single slice
     Slice slice = slicesMap.find(0)->second;
     PlacesSlice p;
-    p.begin = elements; // begin is also left buffer
-    p.leftGhost = NULL;
-    p.rightGhost = NULL;
-    p.rightBuffer = NULL;
+    p.begin = elements;
+    p.d_begin = NULL;
     p.qty = size;
     p.ghostWidth = 0;
+    p.handle = places->getHandle();
     slice.addPlacesSlice(p);
   } else {
     int sliceSize = (int) ceil( ((double) size) / numSlices);
@@ -100,15 +103,10 @@ void addPlacesToSlices(Places *places){
       Slice slice = slicesMap.find(rank)->second;
       PlacesSlice p;
       p.begin = elements + rank * sliceSize;
-      if(0 == rank){
-        p.leftGhost = NULL;
-      } else {
-        p.leftGhost = p.begin - ghostWidth; 
-      }
-      p.rightGhost = p.begin + sliceSize + 1; // ghost area begins at next element
-      p.rightBuffer = p.rightGhost - ghostWidth;
+      p.d_begin = NULL;
       p.qty = sliceSize;      
       p.ghostWidth = ghostWidth;
+      p.handle = places->getHandle();
       slice.addPlacesSlice(p);
     }
     
@@ -117,11 +115,10 @@ void addPlacesToSlices(Places *places){
     Slice slice = slicesMap.find(rank)->second;
     PlacesSlice p;
     p.begin = elements + rank * sliceSize;
-    p.leftGhost = p.begin - ghostWidth; 
-    p.rightGhost = NULL; 
-    p.rightBuffer = NULL;
+    p.d_begin = NULL;
     p.qty = remainder; 
     p.ghostWidth = ghostWidth;
+    p.handle = places->getHandle();
     slice.addPlaceSlice(p);
   }
 }
