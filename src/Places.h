@@ -11,138 +11,64 @@
 #include <stdarg.h> // varargs
 #include <string>
 #include <vector>
-#include "Model.h"
+//#include "Model.h"
+#include "Dispatcher.h"
 #include "Place.h"
 
 namespace mass {
 
-template<typename T>
 class Places {
 
 	friend class Model;
+	friend class Dispatcher;
 public:
 
 	/**
-	// int handle;         // User-defined identifier for this Places
-  // int numDims;        // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)
-	// int *dimensions;   // dimensions of the grid in which these places are located. It must be numDim
-	// T *elements;        // host elements stored in row-major order
-  // int numElements;    // the number of place elements in this Places
-  // int boundary_width; // the width of borders between sections
-  
-  /**
-   *  Creates the places elements with user provided data.
-   *  
-   */
-  void createElements(void *argument, int argSize){
-    // TODO investigate use of OpenMP to speed up initialization
-    // TODO use argument and argSize
-    
-    // TODO create the array, accounting for arguments in constructor
-    std::vector<t> tmpVector(numElements, T(arguments, argSize));//???
-  }
-  
-  /**
-   *  Creates a Places object.
-   *  
-   *  @param handle the unique identifier of this places collections
-   *  @param className currently unused
-   *  @param argument a continuous space of arguments used to initialize the places
-   *  @param argSize the size in bytes of the argument array
-   *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
-   *  @param size the size of each dimension. This MUST be dimensions elements long.
-   */
-  Places( int handle, std::string className, void *argument, int argSize, int dimensions, int size[] ){
-    this->handle = handle;
-    this->numDims = dimensions;
-    this->dimensions = size;
-    this->boundary_width = 1;
-    this->numElements = 1;
-    for(int i = 0; i < numDims; ++i){
-      numElements *= this->dimensions[i];
-    }
-    createElements(argument, argSize);
-  }
-
-  Places( int handle, std::string className, void *argument, int argSize, int dimensions, ... ){
-    this->handle = handle;
-    this->numDims = dimensions;
-    this->dimensions = new int[dimensions];
-    this->boundary_width = 1;
-    this->numElements = 1;
-    
-    va_list sizes;
-    va_start(sizes, dimensions);
-    for(int i = 0; i < dimensions; i++) {
-        int sz = va_arg(sizes, int);
-        dims[i] = sz;
-        numElements *= sz;
-    }
-    va_end(sizes);
-    createElements(argument, argSize);
-  }
-  
-  Places( int handle, std::string className, int boundary_width, void *argument, int argSize, int dimensions, int size[] ){
-    this->handle = handle;
-    this->numDims = dimensions;
-    this->dimensions = size;
-    this->boundary_width = boundary_width;
-    this->numElements = 1;
-    for(int i = 0; i < numDims; ++i){
-      numElements *= this->dimensions[i];
-    }
-    createElements(argument, argSize);
-  }
-
-  Places( int handle, std::string className, int boundary_width, void *argument, int argSize, int dimensions, ... ){
-    this->handle = handle;
-    this->numDims = dimensions;
-    this->dimensions = new int[dimensions];
-    this->boundary_width = boundary_width;
-    
-    va_list sizes;
-    va_start(sizes, dimensions);
-    for(int i = 0; i < dimensions; i++) {
-        int sz = va_arg(sizes, int);
-        dims[i] = sz;
-        numElements *= sz;
-    }
-    va_end(sizes);
-    createElements(argument, argSize);
-  }
-	
-  /**
 	 *  Destructor
 	 */
-	~Places();
+	~Places() {
+		if (NULL != elements) {
+			delete[] elements;
+		}
+	}
 
 	/**
 	 *  Returns the number of dimensions in this places object. (I.e. 2D, 3D, etc...)
 	 */
-	int getDimensions();
+	int getDimensions() {
+		return numDims;
+	}
 
 	/**
 	 *  Returns the actual dimensions of the Places matrix. The returned array will be getDimension() elements long.
 	 */
-	int *size();
+	int *size() {
+		return dimensions;
+	}
 
 	/**
 	 *  Returns an array of the Place elements contained in this Places object. This is an expensive
 	 *  operation since it requires memory transfer.
 	 */
-	T* getElements();
+	Place* getElements() {
+		return elements;
+	}
 
 	/**
 	 *  Returns the handle associated with this Places object that was set at construction.
 	 */
-	int getHandle();
+	int getHandle() {
+		return handle;
+	}
 
 	/**
 	 *  Executes the given functionId on each Place element within this Places.
 	 *
 	 *  @param functionId the function id passed to each Place element
 	 */
-	void callAll(int functionId);
+	void callAll(int functionId) {
+		//TODO send call all command to dispatcher
+	}
 
 	/**
 	 *  Executes the given functionId on each Place element within this Places with
@@ -152,7 +78,9 @@ public:
 	 *  @param argument the argument to be passed to each Place element
 	 *  @param argSize the size in bytes of the argument
 	 */
-	void callAll(int functionId, void *argument, int argSize);
+	void callAll(int functionId, void *argument, int argSize) {
+		//TODO send call all command to dispatcher
+	}
 
 	/**
 	 *  Calls the function specified on all place elements by passing argument[i]
@@ -166,7 +94,10 @@ public:
 	 *  @param argSize the size in bytes of each argument element
 	 *  @param retSize the size in bytes of the return array element
 	 */
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize) {
+		//TODO send call all command to dispatcher
+		return NULL;
+	}
 
 	//// TODO implement the call some functions
 	// void callSome( int functionId, int dim, int index[] );
@@ -189,21 +120,49 @@ public:
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
 	void exchangeAll(int handle, int functionId,
-			std::vector<int*> *destinations);
+			std::vector<int*> *destinations) {
+		//TODO send exchange all command to dispatcher
+	}
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
 	 */
-	void exchangeBoundary();
+	void exchangeBoundary() {
+		//TODO send cexchange boundary command to dispatcher
+	}
 
 private:
+
+	/**
+	 *  Creates a Places object. Only accessible from the dispatcher.
+	 *
+	 *  @param handle the unique identifier of this places collections
+	 *  @param boundary_width the width of the border, in elements, to exchange between segments.
+	 *  @param argument a continuous space of arguments used to initialize the places
+	 *  @param argSize the size in bytes of the argument array
+	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
+	 *  @param size the size of each dimension. This MUST be dimensions elements long.
+	 */
+	Places(int handle, int boundary_width, void *argument, int argSize,
+			int dimensions, int size[]) {
+		this->handle = handle;
+		this->elements = elements;
+		this->numDims = dimensions;
+		this->dimensions = size;
+		this->boundary_width = boundary_width;
+		this->numElements = 1;
+		for (int i = 0; i < numDims; ++i) {
+			numElements *= this->dimensions[i];
+		}
+		elements = NULL;
+	}
 
 	int handle;         // User-defined identifier for this Places
 	int numDims; // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
-	T *elements;        // host elements stored in row-major order
-  int numElements;    // the number of place elements in this Places
-  int boundary_width; // the width of borders between sections
+	Place *elements;        // host elements stored in row-major order
+	int numElements;    // the number of place elements in this Places
+	int boundary_width; // the width of borders between sections
 };
 
 } /* namespace mass */

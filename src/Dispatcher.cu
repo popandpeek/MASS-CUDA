@@ -8,9 +8,11 @@
 
 #define COMPUTE_CAPABILITY_MAJOR 3
 
+#include "Agents.h"
 #include "Command.h"
 #include "Dispatcher.h"
 #include "Model.h"
+#include "Places.h"
 #include "Slice.h"
 
 namespace mass {
@@ -44,8 +46,7 @@ Dispatcher::~Dispatcher() {
 	// delete devices array
 }
 
-
-std::vector<void*> Dispatcher::executeCommand(Command *command){
+std::vector<void*> Dispatcher::executeCommand(Command *command) {
 	std::vector<void*> retVals;
 
 	return retVals;

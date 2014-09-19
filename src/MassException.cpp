@@ -9,11 +9,11 @@
 
 namespace mass {
 
-MassException::MassException( std::string msg ) {
+MassException::MassException(std::string msg) {
 	message = msg;
 }
 
-MassException::~MassException( ) throw () {
+MassException::~MassException() throw () {
 }
 
 } /* namespace mass */

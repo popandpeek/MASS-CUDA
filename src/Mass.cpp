@@ -11,12 +11,12 @@
 #include "Model.h"
 
 namespace mass {
-// Model model; /**< The data model for this simulation. */
-// Dispatcher dispatcher;/**< The object that handles communication with the GPU(s). */
+
+// static initialization
+Model *Mass::model = new Model();
+Dispatcher *Mass::dispatcher = new Dispatcher();
 
 void Mass::init(std::string args[], int ngpu) {
-	Mass::model = new Model();
-	Mass::dispatcher = new Dispatcher();
 	Mass::dispatcher->init(ngpu, Mass::model);
 }
 
@@ -32,11 +32,11 @@ void Mass::finish() {
 	delete Mass::dispatcher;
 }
 
-Places<Place> *Mass::getPlaces(int handle) {
+Places *Mass::getPlaces(int handle) {
 	return Mass::model->getPlaces(handle);
 }
 
-Agents<Agent> *Mass::getAgents(int handle) {
+Agents *Mass::getAgents(int handle) {
 	return Mass::model->getAgents(handle);
 }
 

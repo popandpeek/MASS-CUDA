@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stddef.h>
 #include <map>
+#include "Agents.h"
 #include "Places.h"
 
 // forward declarations
@@ -21,7 +22,6 @@ class Model;
 #define BLOCK_SIZE 512  // max threads per block
 namespace mass {
 
-
 class Mass {
 public:
 
@@ -30,14 +30,14 @@ public:
 	 *  @param args what do these do?
 	 *  @param ngpu the number of GPUs to use
 	 */
-	static void init( std::string args[], int ngpu );
+	static void init(std::string args[], int ngpu);
 
 	/**
 	 *  Initializes the MASS environment using all available GPU resources. 
 	 *  Must be called prior to all other MASS methods.
 	 *  @param args what do these do?
 	 */
-	static void init( std::string args[] );
+	static void init(std::string args[]);
 
 	/**
 	 *  Shuts down the MASS environment, releasing all resources.
@@ -49,15 +49,54 @@ public:
 	 *  @param handle an int that corresponds to a places object.
 	 *  @return NULL if not found.
 	 */
-	static Places<Place> *getPlaces(int handle);
+	static Places *getPlaces(int handle);
 
 	/**
 	 *  Gets the agents object for this handle.
 	 *  @param handle an int that corresponds to an agents object.
 	 *  @return NULL if not found.
 	 */
-	static Agents<Agent> *getAgents(int handle);
+	static Agents *getAgents(int handle);
 
+	/**
+	 * Creates a Places object with the specified parameters.
+	 * @param handle the unique number that will identify this Places object.
+	 * @param argument an argument that will be passed to all Places upon creation
+	 * @param argSize the size in bytes of argument
+	 * @param dimensions the number of dimensions in the places matrix
+	 * (i.e. 1, 2, 3, etc...)
+	 * @param size the size of each dimension ordered {numRows, numCols,
+	 * numDeep, ...}. This must be dimensions elements long.
+	 * @return a pointer the the created places object
+	 */
+	template<typename T>
+	static Places *createPlaces(int handle, void *argument, int argSize,
+			int dimensions, int size[]) {
+		return dispatcher->createPlaces<T>(handle,
+				argument,
+				argSize,
+				dimensions,
+				size);
+	}
+
+	/**
+	 * Creates an Agents object with the specified parameters.
+	 * @param handle the unique number that will identify this Agents object.
+	 * @param argument an argument that will be passed to all Agents upon creation
+	 * @param argSize the size in bytes of argument
+	 * @param places the Places object upon which this agents collection will operate.
+	 * @param initPopulation the starting number of agents to instantiate
+	 * @return
+	 */
+	template<typename T>
+	static Agents *createAgents(int handle, void *argument, int argSize,
+			Places *places, int initPopulation) {
+		return dispatcher->createAgents<T>(handle,
+				argument,
+				argSize,
+				places,
+				initPopulation);
+	}
 
 private:
 

@@ -71,9 +71,10 @@ void Slice::load(cudaStream_t stream) {
 	while (place_it != places.end()) {
 		PlacesSlice slice = place_it->second;
 		size_t count = slice.qty * sizeof(slice.begin[0]);
-		CATCH( cudaMalloc( (void**) &slice.d_begin, count));
-		CATCH( cudaMemcpyAsync(
-						slice.d_begin, slice.begin, count, cudaMemcpyHostToDevice, stream));
+		CATCH(cudaMalloc((void** ) &slice.d_begin, count));
+		CATCH(
+				cudaMemcpyAsync(slice.d_begin, slice.begin, count,
+						cudaMemcpyHostToDevice, stream));
 	}
 	isloaded = true;
 }
@@ -95,8 +96,9 @@ void Slice::retreive(cudaStream_t stream, bool freeOnRetreive) {
 	while (place_it != places.end()) {
 		PlacesSlice slice = place_it->second;
 		size_t count = slice.qty * sizeof(slice.begin[0]);
-		CATCH( cudaMemcpyAsync(
-						slice.begin, slice.d_begin, count, cudaMemcpyDeviceToHost, stream));
+		CATCH(
+				cudaMemcpyAsync(slice.begin, slice.d_begin, count,
+						cudaMemcpyDeviceToHost, stream));
 		if (freeOnRetreive) {
 			CATCH(cudaFree(slice.d_begin));
 		}

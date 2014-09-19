@@ -5,45 +5,69 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef AGENTS_H_
-#define AGENTS_H_
+#pragma once
 
 #include <string>
 #include <vector>
 #include "Agent.h"
+#include "Dispatcher.h"
 #include "Model.h"
 #include "Places.h"
 
 namespace mass {
 
-template<typename T>
 class Agents {
 	friend class Model;
+	friend class Dispatcher;
 
 public:
 
-	Agents<T>(int handle, std::string className, void *argument, int argSize,
-			Places<Place> *places, int initPopulation);
+//	Agents(int handle, std::string className, void *argument, int argSize,
+//			Places<Place> *places, int initPopulation){
+//		this->places = places;
+//		this->agents = NULL;
+//		this->handle = handle;
+//		this->numAgents = initPopulation;
+//		this->newChildren = initPopulation;
+//		this->sequenceNum = 0;
+//	}
 
-	~Agents<T>();
+	~Agents(){
+		if(NULL != agents){
+			delete[] agents;
+			agents = NULL;
+		}
+	}
 
-	int getHandle();
+	int getHandle(){
+		return handle;
+	}
 
-	int nAgents();
+	int nAgents(){
+		return numAgents;
+	}
 
-	void callAll(int functionId);
+	void callAll(int functionId){
+		//TODO send call all command to dispatcher
+	}
 
-	void callAll(int functionId, void *argument, int argSize);
+	void callAll(int functionId, void *argument, int argSize){
+		//TODO send call all command to dispatcher
+	}
 
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize){
+		//TODO send call all command to dispatcher
+	}
 
-	void manageAll();
+	void manageAll(){
+		//TODO send manage all command to dispatcher
+	}
 
 private:
 
-	Places<Place> *places; /**< The places used in this simulation. */
+	Places *places; /**< The places used in this simulation. */
 
-	T* agents; /**< The agents elements.*/
+	Agent* agents; /**< The agents elements.*/
 
 	int handle; /**< Identifies the type of agent this is.*/
 
@@ -57,4 +81,4 @@ private:
 
 }// mass namespace
 
-#endif // AGENTS_H_
+//#endif // AGENTS_H_

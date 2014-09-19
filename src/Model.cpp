@@ -5,13 +5,15 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
+#include "Agents.h"
 #include "math.h" // ciel
 #include "MassException.h"
 #include "Model.h"
+#include "Places.h"
 
 namespace mass {
 
-void Model::addAgentsToSlices(Agents<Agent> *agents) {
+void Model::addAgentsToSlices(Agents *agents) {
 	Agent* elements = agents->agents; // friend access
 	int size = (double) agents->nAgents();
 	int numSlices = this->getNumSlices();
@@ -72,7 +74,7 @@ int *Model::toVectorIndex(int n, int *dims, int rmi) {
 	return index;
 }
 
-void Model::addPlacesToSlices(Places<Place> *places) {
+void Model::addPlacesToSlices(Places *places) {
 	Place *elements = places->elements; // friend access
 	int n = places->numDims;
 	int *dimensions = places->dimensions;
@@ -132,52 +134,52 @@ Model::~Model() {
 	slicesMap.empty();
 }
 
-bool Model::addAgents(Agents<Agent> *agents) {
+bool Model::addAgents(Agents *agents) {
 	bool isNew = true;
 	int handle = agents->getHandle();
 
-	std::map<int, Agents<Agent>*>::iterator it = agentsMap.find(handle);
+	std::map<int, Agents*>::iterator it = agentsMap.find(handle);
 	if (it != agentsMap.end()) {
 		isNew = false;
 	}
 
 	if (isNew) {
-		agentsMap.insert(std::pair<int, Agents<Agent>*>(handle, agents));
+		agentsMap.insert(std::pair<int, Agents*>(handle, agents));
 		addAgentsToSlices(agents);  // update the data model
 	}
 	return isNew;
 }
 
-bool Model::addPlaces(Places<Place> *places) {
+bool Model::addPlaces(Places *places) {
 	bool isNew = true;
 	int handle = places->getHandle();
 
-	std::map<int, Places<Place>*>::iterator it = placesMap.find(handle);
+	std::map<int, Places*>::iterator it = placesMap.find(handle);
 	if (it != placesMap.end()) {
 		isNew = false;
 	}
 
 	if (isNew) {
-		placesMap.insert(std::pair<int, Places<Place>*>(handle, places));
+		placesMap.insert(std::pair<int, Places*>(handle, places));
 		addPlacesToSlices(places); // update the data model
 	}
 	return isNew;
 }
 
-Agents<Agent> *Model::getAgents(int handle) {
-	Agents<Agent> *agents = NULL;
+Agents *Model::getAgents(int handle) {
+	Agents *agents = NULL;
 	// TODO extract current agents data from GPU
-	std::map<int, Agents<Agent>*>::iterator it = agentsMap.find(handle);
+	std::map<int, Agents*>::iterator it = agentsMap.find(handle);
 	if (it != agentsMap.end()) {
 		agents = it->second;
 	}
 	return agents;
 }
 
-Places<Place> *Model::getPlaces(int handle) {
-	Places<Place> *places = NULL;
+Places *Model::getPlaces(int handle) {
+	Places *places = NULL;
 	// TODO extract current places data from GPU
-	std::map<int, Places<Place>*>::iterator it = placesMap.find(handle);
+	std::map<int, Places*>::iterator it = placesMap.find(handle);
 	if (it != placesMap.end()) {
 		places = it->second;
 	}
