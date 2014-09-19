@@ -8,6 +8,7 @@
 #ifndef PLACES_H_
 #define PLACES_H_
 
+#include <stdarg.h> // varargs
 #include <string>
 #include <vector>
 #include "Model.h"
@@ -21,29 +22,96 @@ class Places {
 	friend class Model;
 public:
 
-	// /* Constructs a Places object with the given handle and size.
-	// *
-	// * handle    : user-defined handle that identifies this Places object.
-	// * dimensions: three-dimensional size of the Places array
-	// */
-	// Places( int handle, dim3 dimensions );
-
 	/**
-	 *  
-	 */
-	Places(int handle, std::string className, void *argument, int argSize,
-			int dimensions, int size[]);
+	// int handle;         // User-defined identifier for this Places
+  // int numDims;        // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)
+	// int *dimensions;   // dimensions of the grid in which these places are located. It must be numDim
+	// T *elements;        // host elements stored in row-major order
+  // int numElements;    // the number of place elements in this Places
+  // int boundary_width; // the width of borders between sections
+  
+  /**
+   *  Creates the places elements with user provided data.
+   *  
+   */
+  void createElements(void *argument, int argSize){
+    // TODO investigate use of OpenMP to speed up initialization
+    // TODO use argument and argSize
+    
+    // TODO create the array, accounting for arguments in constructor
+    std::vector<t> tmpVector(numElements, T(arguments, argSize));//???
+  }
+  
+  /**
+   *  Creates a Places object.
+   *  
+   *  @param handle the unique identifier of this places collections
+   *  @param className currently unused
+   *  @param argument a continuous space of arguments used to initialize the places
+   *  @param argSize the size in bytes of the argument array
+   *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
+   *  @param size the size of each dimension. This MUST be dimensions elements long.
+   */
+  Places( int handle, std::string className, void *argument, int argSize, int dimensions, int size[] ){
+    this->handle = handle;
+    this->numDims = dimensions;
+    this->dimensions = size;
+    this->boundary_width = 1;
+    this->numElements = 1;
+    for(int i = 0; i < numDims; ++i){
+      numElements *= this->dimensions[i];
+    }
+    createElements(argument, argSize);
+  }
 
-	Places(int handle, std::string className, void *argument, int argSize,
-			int dimensions, ...);
+  Places( int handle, std::string className, void *argument, int argSize, int dimensions, ... ){
+    this->handle = handle;
+    this->numDims = dimensions;
+    this->dimensions = new int[dimensions];
+    this->boundary_width = 1;
+    this->numElements = 1;
+    
+    va_list sizes;
+    va_start(sizes, dimensions);
+    for(int i = 0; i < dimensions; i++) {
+        int sz = va_arg(sizes, int);
+        dims[i] = sz;
+        numElements *= sz;
+    }
+    va_end(sizes);
+    createElements(argument, argSize);
+  }
+  
+  Places( int handle, std::string className, int boundary_width, void *argument, int argSize, int dimensions, int size[] ){
+    this->handle = handle;
+    this->numDims = dimensions;
+    this->dimensions = size;
+    this->boundary_width = boundary_width;
+    this->numElements = 1;
+    for(int i = 0; i < numDims; ++i){
+      numElements *= this->dimensions[i];
+    }
+    createElements(argument, argSize);
+  }
 
-	Places(int handle, std::string className, int boundary_width,
-			void *argument, int argSize, int dimension, int size[]);
-
-	Places(int handle, std::string className, int boundary_width,
-			void *argument, int argSize, int dimension, ...);
-
-	/**
+  Places( int handle, std::string className, int boundary_width, void *argument, int argSize, int dimensions, ... ){
+    this->handle = handle;
+    this->numDims = dimensions;
+    this->dimensions = new int[dimensions];
+    this->boundary_width = boundary_width;
+    
+    va_list sizes;
+    va_start(sizes, dimensions);
+    for(int i = 0; i < dimensions; i++) {
+        int sz = va_arg(sizes, int);
+        dims[i] = sz;
+        numElements *= sz;
+    }
+    va_end(sizes);
+    createElements(argument, argSize);
+  }
+	
+  /**
 	 *  Destructor
 	 */
 	~Places();
@@ -134,7 +202,8 @@ private:
 	int numDims; // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	T *elements;        // host elements stored in row-major order
-	int boundary_width; // the width of borders between sections
+  int numElements;    // the number of place elements in this Places
+  int boundary_width; // the width of borders between sections
 };
 
 } /* namespace mass */
