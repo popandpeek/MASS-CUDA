@@ -7,52 +7,52 @@
  */
 #ifndef DISPATCHER_H_
 #define DISPATCHER_H_
-
+#include<cuda_runtime.h>
 #include "Command.h"
 #include "Model.h"
 #include "Slice.h"
 
 namespace mass {
 
-class Dispatcher{
+class Dispatcher {
 
 public:
 
-  /**
-   *  Is the Dispatcher constructor. 
-   *  The Dispatcher must be initialized prior to use.
-   */
-  Dispatcher();
+	/**
+	 *  Is the Dispatcher constructor. 
+	 *  The Dispatcher must be initialized prior to use.
+	 */
+	Dispatcher();
 
-  /**
-   *  Is the Dispatcher initializer. 
-   *  the number of GPUs is passed to the initializer. The Dispatcher
-   *  then locates the GPUs, sets up communication links, and prepares to begin
-   *  dispatching data to and from the GPU.
-   *  
-   *  @param ngpu the number of GPUs to use in this simulation. 0 if all GPU resources are to be used.
-   *  @param models the data model for this simulation
-   */
-  init(int ngpu, Model *model);
+	/**
+	 *  Is the Dispatcher initializer. 
+	 *  the number of GPUs is passed to the initializer. The Dispatcher
+	 *  then locates the GPUs, sets up communication links, and prepares to begin
+	 *  dispatching data to and from the GPU.
+	 *  
+	 *  @param ngpu the number of GPUs to use in this simulation. 0 if all GPU resources are to be used.
+	 *  @param models the data model for this simulation
+	 */
+	void init(int ngpu, Model *model);
 
+	~Dispatcher();
 
-  ~Dispatcher();
-  
-  /**
-   *  Implementation of the command design pattern. Takes a command object and
-   *  returns whatever value comes back from the command. 
-   *
-   *  @param command a command object to execute.
-   */
-  std::vector<void*> executeCommand( Command *command );
+	/**
+	 *  Implementation of the command design pattern. Takes a command object and
+	 *  returns whatever value comes back from the command. 
+	 *
+	 *  @param command a command object to execute.
+	 */
+	std::vector<void*> executeCommand(Command *command);
 
 private:
 	int ngpu;                   // number of GPUs in use
 	int* devices;               // array of GPU device ids
 	cudaStream_t* streams;      // cuda execution streams, two per device
 	cudaEvent_t* events; // cuda events to synchronize execution streams, one per device
-  Model *model; // the data model for this simulation
-}; // end class
+	Model *model; // the data model for this simulation
+};
+// end class
 }// namespace mass
 
 #endif

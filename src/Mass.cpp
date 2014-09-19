@@ -6,34 +6,38 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 
-#include "mass.h"
+#include "Dispatcher.h"
+#include "Mass.h"
+#include "Model.h"
 
 namespace mass {
-  // Model model; /**< The data model for this simulation. */
-  // Dispatcher dispatcher;/**< The object that handles communication with the GPU(s). */
-  
-Mass::Mass( ){
-  // do nothing
+// Model model; /**< The data model for this simulation. */
+// Dispatcher dispatcher;/**< The object that handles communication with the GPU(s). */
+
+void Mass::init(std::string args[], int ngpu) {
+	Mass::model = new Model();
+	Mass::dispatcher = new Dispatcher();
+	Mass::dispatcher->init(ngpu, Mass::model);
 }
 
-void Mass::init( String[] args, int ngpu ){
-  dispatcher.init(ngpu, &model);
+void Mass::init(std::string args[]) {
+	Mass::model = new Model();
+	Mass::dispatcher = new Dispatcher();
+	// 0 is the flag to use all available GPU resources
+	Mass::dispatcher->init(0, Mass::model);
 }
 
-void Mass::init( String[] args ){
-  dispatcher.init(0, &model);
+void Mass::finish() {
+	delete Mass::model;
+	delete Mass::dispatcher;
 }
 
-void Mass::finish( ){
-  // nothing to do here. model and dispatcher destructors will take care of everything.
+Places<Place> *Mass::getPlaces(int handle) {
+	return Mass::model->getPlaces(handle);
 }
 
-Places *Mass::getPlaces( int handle ){
-  return model.getPlaces( handle );
-}
-
-Agents *Mass::getAgents( int handle ){
-  return model.getAgents( handle );
+Agents<Agent> *Mass::getAgents(int handle) {
+	return Mass::model->getAgents(handle);
 }
 
 } /* namespace mass */

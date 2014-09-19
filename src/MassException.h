@@ -22,8 +22,8 @@ public:
 	 *  Constructor requires a std::string that will be returned to the caller
 	 *  with the exception.
 	 */
-	MassException( std::string msg );
-	virtual ~MassException( ) throw ();
+	MassException(std::string msg);
+	virtual ~MassException() throw ();
 	std::string message;
 };
 
