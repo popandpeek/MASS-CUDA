@@ -23,7 +23,7 @@ namespace mass {
  *  It also defines the interface necessary for end users to implement.
  */
 class Place {
-//	friend class Places;
+	friend class Agent;
 
 public:
 	/**
@@ -38,7 +38,7 @@ public:
 	 * @param functionId user-defined function id
 	 * @param args user-defined arguments
 	 */
-	__device__ virtual void callMethod(int functionId, void* args);
+	__device__ virtual void callMethod(int functionId, void* args) = 0;
 
 	/**
 	 *  Gets a pointer to this place's out message.
@@ -63,6 +63,7 @@ protected:
 	int index;            // the row-major index of this place
 	Place *neighbors[MAXNEIGHBORS];  // my neighbors
 	Agent *agents[MAXAGENTS];
+	unsigned agentPop; // the population of agents on this place
 	// void* outMessage;        // out message needs to be declared in the derived class statically
 	int outMessage_size;  // the number of bytes in an out message
 	void *inMessages[MAXNEIGHBORS]; // holds a pointer to each neighbor's outmessage.

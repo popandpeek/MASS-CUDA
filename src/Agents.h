@@ -22,48 +22,24 @@ class Agents {
 
 public:
 
-//	Agents(int handle, std::string className, void *argument, int argSize,
-//			Places<Place> *places, int initPopulation){
-//		this->places = places;
-//		this->agents = NULL;
-//		this->handle = handle;
-//		this->numAgents = initPopulation;
-//		this->newChildren = initPopulation;
-//		this->sequenceNum = 0;
-//	}
+	~Agents();
 
-	~Agents(){
-		if(NULL != agents){
-			delete[] agents;
-			agents = NULL;
-		}
-	}
+	int getHandle();
 
-	int getHandle(){
-		return handle;
-	}
+	int nAgents();
 
-	int nAgents(){
-		return numAgents;
-	}
+	void callAll(int functionId);
 
-	void callAll(int functionId){
-		//TODO send call all command to dispatcher
-	}
+	void callAll(int functionId, void *argument, int argSize);
 
-	void callAll(int functionId, void *argument, int argSize){
-		//TODO send call all command to dispatcher
-	}
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize){
-		//TODO send call all command to dispatcher
-	}
-
-	void manageAll(){
-		//TODO send manage all command to dispatcher
-	}
+	void manageAll();
 
 private:
+	// Agent creation is handled through Mass::createAgents(...) call
+	Agents(int handle, void *argument, int argument_size, Places *places,
+			int initPopulation);
 
 	Places *places; /**< The places used in this simulation. */
 

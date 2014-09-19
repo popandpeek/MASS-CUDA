@@ -41,7 +41,7 @@ public:
 
 	/** load and unload functions. */
 	void load(cudaStream_t stream);
-	void retreive(cudaStream_t stream, bool freeOnRetreive = true);
+	void retreive(cudaStream_t stream, bool freeOnRetreive);
 	bool isLoaded();
 
 	int getRank();

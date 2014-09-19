@@ -26,49 +26,35 @@ public:
 	/**
 	 *  Destructor
 	 */
-	~Places() {
-		if (NULL != elements) {
-			delete[] elements;
-		}
-	}
+	~Places();
 
 	/**
 	 *  Returns the number of dimensions in this places object. (I.e. 2D, 3D, etc...)
 	 */
-	int getDimensions() {
-		return numDims;
-	}
+	int getDimensions();
 
 	/**
 	 *  Returns the actual dimensions of the Places matrix. The returned array will be getDimension() elements long.
 	 */
-	int *size() {
-		return dimensions;
-	}
+	int *size();
 
 	/**
 	 *  Returns an array of the Place elements contained in this Places object. This is an expensive
 	 *  operation since it requires memory transfer.
 	 */
-	Place* getElements() {
-		return elements;
-	}
+	Place* getElements();
 
 	/**
 	 *  Returns the handle associated with this Places object that was set at construction.
 	 */
-	int getHandle() {
-		return handle;
-	}
+	int getHandle();
 
 	/**
 	 *  Executes the given functionId on each Place element within this Places.
 	 *
 	 *  @param functionId the function id passed to each Place element
 	 */
-	void callAll(int functionId) {
-		//TODO send call all command to dispatcher
-	}
+	void callAll(int functionId);
 
 	/**
 	 *  Executes the given functionId on each Place element within this Places with
@@ -78,9 +64,7 @@ public:
 	 *  @param argument the argument to be passed to each Place element
 	 *  @param argSize the size in bytes of the argument
 	 */
-	void callAll(int functionId, void *argument, int argSize) {
-		//TODO send call all command to dispatcher
-	}
+	void callAll(int functionId, void *argument, int argSize);
 
 	/**
 	 *  Calls the function specified on all place elements by passing argument[i]
@@ -94,10 +78,7 @@ public:
 	 *  @param argSize the size in bytes of each argument element
 	 *  @param retSize the size in bytes of the return array element
 	 */
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize) {
-		//TODO send call all command to dispatcher
-		return NULL;
-	}
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
 	//// TODO implement the call some functions
 	// void callSome( int functionId, int dim, int index[] );
@@ -120,16 +101,12 @@ public:
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
 	void exchangeAll(int handle, int functionId,
-			std::vector<int*> *destinations) {
-		//TODO send exchange all command to dispatcher
-	}
+			std::vector<int*> *destinations);
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
 	 */
-	void exchangeBoundary() {
-		//TODO send cexchange boundary command to dispatcher
-	}
+	void exchangeBoundary();
 
 private:
 
@@ -144,18 +121,7 @@ private:
 	 *  @param size the size of each dimension. This MUST be dimensions elements long.
 	 */
 	Places(int handle, int boundary_width, void *argument, int argSize,
-			int dimensions, int size[]) {
-		this->handle = handle;
-		this->elements = elements;
-		this->numDims = dimensions;
-		this->dimensions = size;
-		this->boundary_width = boundary_width;
-		this->numElements = 1;
-		for (int i = 0; i < numDims; ++i) {
-			numElements *= this->dimensions[i];
-		}
-		elements = NULL;
-	}
+			int dimensions, int size[]);
 
 	int handle;         // User-defined identifier for this Places
 	int numDims; // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)

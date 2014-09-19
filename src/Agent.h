@@ -19,7 +19,6 @@ class Place;
  *  be overridden as necessary,
  */
 class Agent {
-//	friend class Agents;
 	friend class Place;
 
 public:
@@ -126,6 +125,11 @@ protected:
 	 *  Points to the current place where this agent resides.
 	 */
 	Place *place;
+
+	/**
+	 * Stores the index where this Agent is stored in a single Place's agent pointer array.
+	 */
+	unsigned placePos;
 
 	/**
 	 *  Maintains the handle of the places class with which this agent is

@@ -72,11 +72,8 @@ public:
 	template<typename T>
 	static Places *createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[]) {
-		return dispatcher->createPlaces<T>(handle,
-				argument,
-				argSize,
-				dimensions,
-				size);
+		return dispatcher->createPlaces<T>(handle, argument, argSize,
+				dimensions, size);
 	}
 
 	/**
@@ -91,10 +88,7 @@ public:
 	template<typename T>
 	static Agents *createAgents(int handle, void *argument, int argSize,
 			Places *places, int initPopulation) {
-		return dispatcher->createAgents<T>(handle,
-				argument,
-				argSize,
-				places,
+		return dispatcher->createAgents<T>(handle, argument, argSize, places,
 				initPopulation);
 	}
 
