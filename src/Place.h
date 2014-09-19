@@ -26,8 +26,9 @@ friend class Places;
 	
 public:
 	
+  __host__ __device__ Place( );
 	/**
-	 *  Is the default constructor. A contiguous space of arguments is passed 
+	 *  A contiguous space of arguments is passed 
 	 *  to the constructor.
 	 */
 	__host__ __device__ Place( void *args );

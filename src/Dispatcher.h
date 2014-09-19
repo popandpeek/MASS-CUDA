@@ -45,6 +45,20 @@ public:
    *  @param command a command object to execute.
    */
   std::vector<void*> executeCommand( Command *command );
+  
+  /**
+   *  Creates a Places object.
+   *  
+   *  @param handle the unique identifier of this places collections
+   *  @param argument a continuous space of arguments used to initialize the places
+   *  @param argSize the size in bytes of the argument array
+   *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
+   *  @param size the size of each dimension. This MUST be dimensions elements long.
+   */
+  template<typename T>
+  Places( int handle, void *argument, int argSize, int dimensions, int size[] ){
+    
+  }
 
 private:
 	int ngpu;                   // number of GPUs in use
