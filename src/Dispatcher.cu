@@ -46,10 +46,45 @@ Dispatcher::~Dispatcher() {
 	// delete devices array
 }
 
-std::vector<void*> Dispatcher::executeCommand(Command *command) {
-	std::vector<void*> retVals;
+void Dispatcher::refreshPlaces(int handle) {
+	// TODO get the unload the slices for this handle from the GPU without deleting
+}
 
-	return retVals;
+void Dispatcher::callAllPlaces(int handle, int functionId, void *argument,
+		int argSize) {
+	// TODO issue call
+}
+
+void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
+		int argSize, int retSize) {
+	// TODO issue call
+}
+
+void Dispatcher::exchangeAllPlaces(int handle, int functionId,
+		std::vector<int*> *destinations) {
+	// TODO issue call
+}
+
+void Dispatcher::exchangeBoundaryPlaces(int handle) {
+	//TODO issue call
+}
+
+void Dispatcher::refreshAgents(int handle) {
+	// TODO get the unload the slices for this handle from the GPU without deleting
+}
+
+void Dispatcher::callAllAgents(int handle, int functionId, void *argument, int argSize) {
+	//TODO issue call
+}
+
+void *Dispatcher::callAllAgents(int handle, int functionId, void *arguments[], int argSize,
+		int retSize) {
+	//TODO issue call
+	return NULL;
+}
+
+void Dispatcher::manageAllAgents(int handle) {
+	//TODO issue call
 }
 
 //	int ngpu;                   // number of GPUs in use

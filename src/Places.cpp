@@ -5,7 +5,10 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
+#include "Mass.h"
 #include "Places.h"
+#include "Model.h"
+#include "Dispatcher.h"
 
 namespace mass {
 
@@ -24,6 +27,7 @@ int *Places::size() {
 }
 
 Place* Places::getElements() {
+	dispatcher->refreshPlaces(handle);
 	return elements;
 }
 
@@ -32,26 +36,24 @@ int Places::getHandle() {
 }
 
 void Places::callAll(int functionId) {
-	//TODO send call all command to dispatcher
+	callAll(functionId, NULL, 0);
 }
 
 void Places::callAll(int functionId, void *argument, int argSize) {
-	//TODO send call all command to dispatcher
+	dispatcher->callAllPlaces(handle, functionId, argument, argSize);
 }
 
 void *Places::callAll(int functionId, void *arguments[], int argSize,
 		int retSize) {
-	//TODO send call all command to dispatcher
-	return NULL;
+	return dispatcher->callAllPlaces(handle, functionId, arguments, argSize, retSize);
 }
 
-void Places::exchangeAll(int handle, int functionId,
-		std::vector<int*> *destinations) {
-	//TODO send exchange all command to dispatcher
+void Places::exchangeAll(int functionId, std::vector<int*> *destinations) {
+	dispatcher->exchangeAllPlaces(handle, functionId, destinations);
 }
 
 void Places::exchangeBoundary() {
-	//TODO send cexchange boundary command to dispatcher
+	dispatcher->exchangeBoundaryPlaces(handle);
 }
 
 Places::Places(int handle, int boundary_width, void *argument, int argSize,

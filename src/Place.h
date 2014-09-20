@@ -5,9 +5,8 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-//#ifndef PLACE_H_
-//#define PLACE_H_
 #pragma once
+
 // change either of these numbers to optomize for a particular simulation's needs
 #define MAXAGENTS 4
 #define MAXNEIGHBORS 8
@@ -71,5 +70,3 @@ protected:
 
 };
 } /* namespace mass */
-
-//#endif // PLACE_H_

@@ -13,9 +13,10 @@
 #include <map>
 #include "Agents.h"
 #include "Places.h"
+#include "Dispatcher.h"
 
 // forward declarations
-class Dispatcher;
+//class Dispatcher;
 class Model;
 
 #define WARP_SIZE 32    // threads per warp
@@ -23,6 +24,7 @@ class Model;
 namespace mass {
 
 class Mass {
+
 public:
 
 	/**
@@ -72,8 +74,10 @@ public:
 	template<typename T>
 	static Places *createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[]) {
-		return dispatcher->createPlaces<T>(handle, argument, argSize,
+		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument, argSize,
 				dimensions, size);
+		model->addPlaces(places);
+		return places;
 	}
 
 	/**
@@ -88,8 +92,10 @@ public:
 	template<typename T>
 	static Agents *createAgents(int handle, void *argument, int argSize,
 			Places *places, int initPopulation) {
-		return dispatcher->createAgents<T>(handle, argument, argSize, places,
+		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument, argSize, places,
 				initPopulation);
+		model->addAgents(agents);
+		return agents;
 	}
 
 private:

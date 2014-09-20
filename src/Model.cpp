@@ -15,7 +15,7 @@ namespace mass {
 
 void Model::addAgentsToSlices(Agents *agents) {
 	Agent* elements = agents->agents; // friend access
-	int size = (double) agents->nAgents();
+	int size = agents->nAgents();
 	int numSlices = this->getNumSlices();
 	int sliceSize = (int) ceil(((double) size) / numSlices);
 	int remainder = size - sliceSize * (numSlices - 1);

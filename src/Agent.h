@@ -5,9 +5,8 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-//#ifndef AGENT_H_
-//#define AGENT_H_
 #pragma once
+
 #include<cuda_runtime.h>
 #include <string>
 
@@ -205,5 +204,3 @@ protected:
 // class Agent
 
 }// namespace mass
-
-//#endif // AGENT_H_

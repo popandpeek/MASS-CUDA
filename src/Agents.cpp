@@ -6,6 +6,7 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 #include "Agents.h"
+#include "Dispatcher.h"
 
 namespace mass {
 
@@ -24,20 +25,20 @@ int Agents::nAgents() {
 }
 
 void Agents::callAll(int functionId) {
-	//TODO send call all command to dispatcher
+	callAll(functionId, NULL, 0);
 }
 
 void Agents::callAll(int functionId, void *argument, int argSize) {
-	//TODO send call all command to dispatcher
+	dispatcher->callAllAgents(handle, functionId, argument, argSize);
 }
 
 void *Agents::callAll(int functionId, void *arguments[], int argSize,
 		int retSize) {
-	//TODO send call all command to dispatcher
+	return dispatcher->callAllAgents(handle, functionId, arguments, argSize, retSize);
 }
 
 void Agents::manageAll() {
-	//TODO send manage all command to dispatcher
+	dispatcher->manageAllAgents(handle);
 }
 
 Agents::Agents(int handle, void *argument, int argument_size, Places *places,

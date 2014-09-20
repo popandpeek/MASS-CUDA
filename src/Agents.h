@@ -10,11 +10,11 @@
 #include <string>
 #include <vector>
 #include "Agent.h"
-#include "Dispatcher.h"
 #include "Model.h"
 #include "Places.h"
 
 namespace mass {
+class Dispatcher;
 
 class Agents {
 	friend class Model;
@@ -52,6 +52,8 @@ private:
 	int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
 
 	int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
+
+	Dispatcher *dispatcher;
 };
 // end class
 

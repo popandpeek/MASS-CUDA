@@ -33,10 +33,12 @@ void Mass::finish() {
 }
 
 Places *Mass::getPlaces(int handle) {
+	// TODO make dispatcher unload a copy of GPU data
 	return Mass::model->getPlaces(handle);
 }
 
 Agents *Mass::getAgents(int handle) {
+	// TODO make dispatcher unload a copy of GPU data
 	return Mass::model->getAgents(handle);
 }
 

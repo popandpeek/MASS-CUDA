@@ -11,11 +11,11 @@
 #include <stdarg.h> // varargs
 #include <string>
 #include <vector>
-//#include "Model.h"
-#include "Dispatcher.h"
 #include "Place.h"
 
 namespace mass {
+
+class Dispatcher;
 
 class Places {
 
@@ -100,8 +100,7 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-	void exchangeAll(int handle, int functionId,
-			std::vector<int*> *destinations);
+	void exchangeAll(int functionId, std::vector<int*> *destinations);
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
@@ -129,6 +128,7 @@ private:
 	Place *elements;        // host elements stored in row-major order
 	int numElements;    // the number of place elements in this Places
 	int boundary_width; // the width of borders between sections
+	Dispatcher *dispatcher; // the GPU dispatcher
 };
 
 } /* namespace mass */
