@@ -5,8 +5,7 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef AGENTS_H_
-#define AGENTS_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -14,45 +13,50 @@
 #include "Model.h"
 #include "Places.h"
 
-namespace mass{
+namespace mass {
+class Dispatcher;
 
-template <typename T>
 class Agents {
-  friend class Model;
+	friend class Model;
+	friend class Dispatcher;
 
 public:
 
-  Agents( int handle, std::string className, void *argument, int argSize, Places *places, int initPopulation );
+	~Agents();
 
-  ~Agent();
+	int getHandle();
 
-  int getHandle( );
+	int nAgents();
 
-  int nAgents( );
-  
-  void callAll( int functionId );
+	void callAll(int functionId);
 
-  void callAll( int functionId, void *argument, int argSize);
-  
-  void *callAll( int functionId, void *arguments[], int argSize, int retSize )
+	void callAll(int functionId, void *argument, int argSize);
 
-  void manageAll( );
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
+
+	void manageAll();
 
 private:
+	// Agent creation is handled through Mass::createAgents(...) call
+	Agents(int handle, void *argument, int argument_size, Places *places,
+			int initPopulation);
 
-  Places *places; /**< The places used in this simulation. */
+	Places *places; /**< The places used in this simulation. */
 
-  T* agents; /**< The agents elements.*/
+	Agent* agents; /**< The agents elements.*/
 
-  int handle; /**< Identifies the type of agent this is.*/
+	int handle; /**< Identifies the type of agent this is.*/
 
-  int numAgents; /**< Running count of living agents in system.*/
-  
-  int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
+	int numAgents; /**< Running count of living agents in system.*/
 
-  int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
-} // end class
+	int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
 
-} // mass namespace
+	int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
 
-#endif // AGENTS_H_
+	Dispatcher *dispatcher;
+};
+// end class
+
+}// mass namespace
+
+//#endif // AGENTS_H_

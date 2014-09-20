@@ -19,12 +19,12 @@ public:
 	/**
 	 * Default constructor.
 	 */
-	__host__ __device__ MObject( );
+	__host__ __device__ MObject();
 
 	/**
 	 * Default destructor.
 	 */
-	virtual ~MObject( );
+	virtual ~MObject();
 
 	/**
 	 * Compares two MObjects to see if they are equal. In the basic
@@ -34,7 +34,7 @@ public:
 	 * @param rhs the other MObject to which this object shall be compared
 	 * @return <code>true</code> if objects are equal
 	 */
-	__host__ __device__ virtual bool operator==( const MObject &rhs );
+	__host__ __device__ virtual bool operator==(const MObject &rhs);
 
 	/**
 	 * Compares two MObjects to see if they are not equal. In the basic
@@ -46,8 +46,8 @@ public:
 	 * @param rhs the other MObject to which this object shall be compared
 	 * @return <code>true</code> if objects are not equal
 	 */
-	__host__ __device__ bool operator!=( const MObject &rhs );
-	
+	__host__ __device__ bool operator!=(const MObject &rhs);
+
 };
 
 } /* namespace mass */

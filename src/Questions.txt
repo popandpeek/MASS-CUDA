@@ -1,3 +1,4 @@
 Questions:
 1. What is the String[] in Mass::init intended to accomplish?
-2. 
+2. What is the border between a 3D array? 4D? see Model.cpp
+3. Would Mass.h be the best place for an Open MP import?
