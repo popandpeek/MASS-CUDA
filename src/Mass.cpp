@@ -8,7 +8,6 @@
 
 #include "Dispatcher.h"
 #include "Mass.h"
-#include "Model.h"
 
 namespace mass {
 
@@ -29,11 +28,11 @@ void Mass::finish() {
 	delete Mass::dispatcher;
 }
 
-Places *Mass::getPlaces(int handle) {
+Places_Base *Mass::getPlaces(int handle) {
 	return agentsMap.find(handle)->second;
 }
 
-Agents *Mass::getAgents(int handle) {
+Agents_Base *Mass::getAgents(int handle) {
 	return placesMap.find(handle)->second;
 }
 

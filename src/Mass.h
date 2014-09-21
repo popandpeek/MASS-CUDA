@@ -11,8 +11,8 @@
 #include <iostream>
 #include <stddef.h>
 #include <map>
-#include "Agents.h"
-#include "Places.h"
+#include "Agents_Base.h"
+#include "Places_Base.h"
 #include "Dispatcher.h"
 
 #define WARP_SIZE 32    // threads per warp
@@ -47,14 +47,14 @@ public:
 	 *  @param handle an int that corresponds to a places object.
 	 *  @return NULL if not found.
 	 */
-	static Places *getPlaces(int handle);
+	static Places_Base *getPlaces(int handle);
 
 	/**
 	 *  Gets the agents object for this handle.
 	 *  @param handle an int that corresponds to an agents object.
 	 *  @return NULL if not found.
 	 */
-	static Agents *getAgents(int handle);
+	static Agents_Base *getAgents(int handle);
 
 	/**
 	 * Creates a Places object with the specified parameters.
@@ -70,8 +70,10 @@ public:
 	template<typename T>
 	static Places *createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[]) {
-		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument, argSize,
-				dimensions, size);
+		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument, argSize, dimensions, size);
+    if(NULL != agents){
+      placesMap[handle] = places;
+    }
 		return places;
 	}
 
@@ -86,15 +88,17 @@ public:
 	 */
 	template<typename T>
 	static Agents *createAgents(int handle, void *argument, int argSize,
-			Places *places, int initPopulation) {
-		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument, argSize, places,
-				initPopulation);
+			Places_Base *places, int initPopulation) {
+		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument, argSize, places, initPopulation);
+    if(NULL != agents){
+      agentsMap[handle] = agents;
+    }
 		return agents;
 	}
 
 private:
-  std::map<int, Places*> placesMap;
-  std::map<int, Agents*> agentsMap;
+  std::map<int, Places_Base*> placesMap;
+  std::map<int, Agents_Base*> agentsMap;
 	static Dispatcher *dispatcher;/**< The object that handles communication with the GPU(s). */
 };
 
