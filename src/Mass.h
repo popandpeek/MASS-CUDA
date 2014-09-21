@@ -15,10 +15,6 @@
 #include "Places.h"
 #include "Dispatcher.h"
 
-// forward declarations
-//class Dispatcher;
-class Model;
-
 #define WARP_SIZE 32    // threads per warp
 #define BLOCK_SIZE 512  // max threads per block
 namespace mass {
@@ -76,7 +72,6 @@ public:
 			int dimensions, int size[]) {
 		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument, argSize,
 				dimensions, size);
-		model->addPlaces(places);
 		return places;
 	}
 
@@ -94,13 +89,12 @@ public:
 			Places *places, int initPopulation) {
 		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument, argSize, places,
 				initPopulation);
-		model->addAgents(agents);
 		return agents;
 	}
 
 private:
-
-	static Model *model; /**< The data model for this simulation. */
+  std::map<int, Places*> placesMap;
+  std::map<int, Agents*> agentsMap;
 	static Dispatcher *dispatcher;/**< The object that handles communication with the GPU(s). */
 };
 
