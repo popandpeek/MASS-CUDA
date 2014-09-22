@@ -70,10 +70,11 @@ public:
 	template<typename T>
 	static Places *createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[]) {
-		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument, argSize, dimensions, size);
-    if(NULL != agents){
-      placesMap[handle] = places;
-    }
+		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument,
+				argSize, dimensions, size);
+		if (NULL != agents) {
+			placesMap[handle] = places;
+		}
 		return places;
 	}
 
@@ -89,16 +90,17 @@ public:
 	template<typename T>
 	static Agents *createAgents(int handle, void *argument, int argSize,
 			Places_Base *places, int initPopulation) {
-		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument, argSize, places, initPopulation);
-    if(NULL != agents){
-      agentsMap[handle] = agents;
-    }
+		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument,
+				argSize, places, initPopulation);
+		if (NULL != agents) {
+			agentsMap[handle] = agents;
+		}
 		return agents;
 	}
 
 private:
-  std::map<int, Places_Base*> placesMap;
-  std::map<int, Agents_Base*> agentsMap;
+	std::map<int, Places_Base*> placesMap;
+	std::map<int, Agents_Base*> agentsMap;
 	static Dispatcher *dispatcher;/**< The object that handles communication with the GPU(s). */
 };
 

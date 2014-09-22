@@ -73,12 +73,13 @@ void Dispatcher::refreshAgents(int handle) {
 	// TODO get the unload the slices for this handle from the GPU without deleting
 }
 
-void Dispatcher::callAllAgents(int handle, int functionId, void *argument, int argSize) {
+void Dispatcher::callAllAgents(int handle, int functionId, void *argument,
+		int argSize) {
 	//TODO issue call
 }
 
-void *Dispatcher::callAllAgents(int handle, int functionId, void *arguments[], int argSize,
-		int retSize) {
+void *Dispatcher::callAllAgents(int handle, int functionId, void *arguments[],
+		int argSize, int retSize) {
 	//TODO issue call
 	return NULL;
 }

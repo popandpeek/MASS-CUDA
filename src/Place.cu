@@ -26,7 +26,7 @@ __host__ __device__ void Place::addAgent(Agent *agent) {
 	// this works because of unique migration pattern that prevents collisions.
 	unsigned idx = agentPop++;
 	if (idx >= MAXAGENTS) {
-		--agentPop;// TODO silent failure is a shitty way to deal with this
+		--agentPop; // TODO silent failure is a shitty way to deal with this
 	} else {
 		agent->placePos = idx;
 		agents[idx] = agent;

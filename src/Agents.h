@@ -8,48 +8,52 @@
 #pragma once
 
 #include "Agents_Base.h"
+#include "AgentsPartition.h"
+#include "Dispatcher.h"
 
 namespace mass {
-class Dispatcher;
 
 template<typename T>
-class Agents {
-	friend class Dispatcher;
+class Agents : public Agents_Base {
 
 public:
 
 	virtual ~Agents() {
-	if (NULL != agents) {
-		delete[] this->agents;
+		agents.clear();
+		partitions.empty();
 	}
-  partitions.empty();
-}
 
 	virtual void callAll(int functionId) {
-    callAll(functionId, NULL, 0);
-  }
+		callAll(functionId, NULL, 0);
+	}
 
 	virtual void callAll(int functionId, void *argument, int argSize) {
-    dispatcher->callAllAgents<T>(handle, functionId, argument, argSize);
-  }
+		dispatcher->callAllAgents < T > (handle, functionId, argument, argSize);
+	}
 
-	virtual void *callAll(int functionId, void *arguments[], int argSize, int retSize) {
-    return dispatcher->callAllAgents<T>(handle, functionId, arguments, argSize, retSize);
-  }
+	virtual void *callAll(int functionId, void *arguments[], int argSize,
+			int retSize) {
+		return dispatcher->callAllAgents < T
+				> (handle, functionId, arguments, argSize, retSize);
+	}
 
 	virtual void manageAll() {
-    dispatcher->manageAllAgents<T>(handle);
-  }
+		dispatcher->manageAllAgents < T > (handle);
+	}
+
+	virtual int getNumPartitions(){
+		return agents.size();
+	}
 
 protected:
 	// Agent creation is handled through Mass::createAgents(...) call
 	Agents(int handle, void *argument, int argument_size, Places_Base *places,
-			int initPopulation) :Agents_Base(handle, argument, argument_size, places, initPopulation){
-    agents = NULL;
-  }
+			int initPopulation) :
+			Agents_Base(handle, argument, argument_size, places, initPopulation) {
+	}
 
-	T* agents; /**< The agents elements.*/
-  std::map<int, AgentsPartition*> partitions;
+	std::vector<T*> agents; /**< The agents elements.*/
+	std::map<int, AgentsPartition<T>*> partitions;
 };
 // end class
 

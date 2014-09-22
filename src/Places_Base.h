@@ -67,7 +67,8 @@ public:
 	 *  @param argSize the size in bytes of each argument element
 	 *  @param retSize the size in bytes of the return array element
 	 */
-	virtual void *callAll(int functionId, void *arguments[], int argSize, int retSize)= 0;
+	virtual void *callAll(int functionId, void *arguments[], int argSize,
+			int retSize)= 0;
 
 	//// TODO implement the call some functions
 	// void callSome( int functionId, int dim, int index[] );
@@ -89,21 +90,22 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-	virtual void exchangeAll(int functionId, std::vector<int*> *destinations)= 0;
+	virtual void exchangeAll(int functionId,
+			std::vector<int*> *destinations)= 0;
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
 	 */
 	virtual void exchangeBoundary()= 0;
-  
-  // /**
-   // *  Adds partitions to this Places_Base object.
-   // */
-  // virtual void addPartitions(PlacesPartition **part);
-  
-  // virtual PlacesPartition *getPartition(int rank);
-  
-  virtual int getNumPartitions() = 0;
+
+	// /**
+	// *  Adds partitions to this Places_Base object.
+	// */
+	// virtual void addPartitions(PlacesPartition **part);
+
+	// virtual PlacesPartition *getPartition(int rank);
+
+	virtual int getNumPartitions() = 0;
 
 protected:
 
@@ -119,14 +121,13 @@ protected:
 	 */
 	Places_Base(int handle, int boundary_width, void *argument, int argSize,
 			int dimensions, int size[]);
-      
 
 	int handle;         // User-defined identifier for this Places_Base
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	int boundary_width; // the width of borders between sections
-  void *argument;
-  int argSize;
+	void *argument;
+	int argSize;
 	Dispatcher *dispatcher; // the GPU dispatcher
 };
 

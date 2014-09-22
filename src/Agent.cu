@@ -41,7 +41,7 @@ __host__ __device__ int Agent::map(int initPopulation, int *size, int index) {
 	// get the number of places
 	int nDim = sizeof(size) / sizeof(size[0]);
 	int numPlaces = 1;
-	for(int i = 0; i <nDim; ++i){
+	for (int i = 0; i < nDim; ++i) {
 		numPlaces *= size[i];
 	}
 
@@ -109,7 +109,7 @@ __device__ bool Agent::migrate(int index) {
  *  @param argSize the number of arguments in the arguments array
  */
 __device__ void Agent::spawn(int numAgents, void* arguments, int argSize) {
-	if(numAgents > 0){
+	if (numAgents > 0) {
 		this->newChildren = numAgents;
 		this->arguments = arguments;
 		this->argSize = argSize;

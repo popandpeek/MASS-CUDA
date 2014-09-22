@@ -10,47 +10,245 @@
 #include <string>
 #include <vector>
 #include "Agent.h"
+#include "Agents_Base.h"
+#include "Dispatcher.h"
+#include "Mass.h"
 #include "Model.h"
 #include "Places_Base.h"
 
 namespace mass {
-class Dispatcher;
 
+template<typename T>
 class AgentsPartition {
-	friend class Dispatcher;
 
 public:
 
-	virtual ~AgentsPartition();
+	AgentsPartition(int handle, void *argument, int argument_size, Places_Base *agents,
+			int numElements) :
+	hPtr(NULL), dPtr(NULL), handle(handle), rank(rank), numElements(
+			numElements), isloaded(false) {
+		Tbytes = sizeof(T);
+		setIdealDims();
+	}
 
-	virtual int getHandle();
+	/**
+	 *  Destructor
+	 */
+	~AgentsPartition() {
+	}
 
-	virtual int nAgents();
+	/**
+	 *  Returns the number of elements in this partition.
+	 */
+	int size() {
+		int numRanks = Mass::getAgents(handle)->getNumPartitions();
+		if (1 == numRanks) {
+			return numElements;
+		}
 
-	virtual void callAll(int functionId) = 0;
+		int retVal = numElements;
+		if (0 == rank || numRanks - 1 == rank) {
+			// there is only one ghost width on an edge rank
+			retVal -= ghostWidth;
+		} else {
+			retVal -= 2 * ghostWidth;
+		}
 
-	virtual void callAll(int functionId, void *argument, int argSize) = 0;
+		return retVal;
+	}
 
-	virtual void *callAll(int functionId, void *arguments[], int argSize, int retSize) = 0;
+	/**
+	 *  Returns the number of elements and ghost elements.
+	 */
+	int sizePlusGhosts() {
+		return numElements;
+	}
 
-	virtual void manageAll() = 0;
+	/**
+	 *  Gets the rank of this partition.
+	 */
+	int getRank() {
+		return rank;
+	}
 
-protected:
-	// Agent creation is handled through Mass::createAgents(...) call
-	AgentsPartition(int handle, void *argument, int argument_size, Places_Base *places,
-			int initPopulation);
+	/**
+	 *  Returns an array of the elements contained in this Partition.
+	 */
+	T *hostPtr() {
+		T *retVal = hPtr;
+		if (rank > 0) {
+			retVal += ghostWidth;
+		}
+		return retVal;
+	}
 
-	Places_Base *places; /**< The places used in this simulation. */
-	int handle; /**< Identifies the type of agent this is.*/
-  void *argument;
-  int argSize;
-	int numAgents; /**< Running count of living agents in system.*/
-	int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
-	int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
-	Dispatcher *dispatcher;
+	/**
+	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
+	 */
+	T *hostPtrPlusGhosts() {
+		return hPtr;
+	}
+
+	/**
+	 *  Returns the pointer to the GPU data. NULL if not on GPU.
+	 */
+	T *devicePtr() {
+		return dPtr;
+	}
+
+	void setDevicePtr(T *agents) {
+		dPtr = agents;
+	}
+
+	/**
+	 *  Returns the handle associated with this AgentsPartition object that was set at construction.
+	 */
+	int getHandle() {
+		return handle;
+	}
+
+	/**
+	 *  Sets the start and number of agents in this partition.
+	 */
+	void setSection(T *start) {
+		hPtr = start;
+	}
+
+	void setQty(int qty) {
+		numElements = qty;
+		setIdealDims();
+	}
+
+	bool isLoaded() {
+		return isloaded;
+	}
+
+	void makeLoadable() {
+		if (!loadable) {
+			if (dPtr != NULL) {
+				cudaFree(dPtr);
+			}
+
+			cudaMalloc((void**) &dPtr, Tbytes * sizePlusGhosts());
+			loadable = true;
+		}
+	}
+
+	T *load(cudaStream_t stream) {
+		makeLoadable();
+
+		cudaMemcpyAsync(dPtr, hPtr, Tbytes * sizePlusGhosts(),
+				cudaMemcpyHostToDevice, stream);
+		isloaded = true;
+		return devicePtr();
+	}
+
+	bool retrieve(cudaStream_t stream, bool freeOnRetrieve) {
+		bool retreived = isloaded;
+
+		if (isloaded) {
+			cudaMemcpyAsync(hPtr, dPtr, Tbytes * sizePlusGhosts(),
+					cudaMemcpyDeviceToHost, stream);
+		}
+
+		if (freeOnRetrieve) {
+			cudaFree(dPtr);
+			loadable = false;
+			dPtr = NULL;
+			isloaded = false;
+		}
+
+		return retreived;
+	}
+
+	int getGhostWidth() {
+		return ghostWidth;
+	}
+
+	void setGhostWidth(int width, int n, int *dimensions) {
+		// agent collections are always 1D
+		ghostWidth = width;
+	}
+
+	// TODO Do these ghost updates do what I want?
+	// look at having them move the data to a destination pointer
+	void updateLeftGhost(T *ghost, cudaStream_t stream) {
+		if (rank > 0) {
+			if (isloaded) {
+				cudaMemcpyAsync(dPtr, ghost, Tbytes * ghostWidth,
+						cudaMemcpyHostToDevice, stream);
+			} else {
+				memcpy(hPtr, ghost, Tbytes * ghostWidth);
+			}
+		}
+	}
+
+	void updateRightGhost(T *ghost, cudaStream_t stream) {
+		int numRanks = Mass::getPlaces(handle)->getNumPartitions();
+		if (rank < numRanks - 1) {
+			if (isloaded) {
+				cudaMemcpyAsync(dPtr + numElements, ghost, Tbytes * ghostWidth,
+						cudaMemcpyHostToDevice, stream);
+			} else {
+				memcpy(hPtr + ghostWidth + numElements, ghost,
+						Tbytes * ghostWidth);
+			}
+		}
+	}
+
+	// TODO add a pointer param so buffers and ghosts can be copied directly where they need to go
+	T *getLeftBuffer() {
+		if (isloaded) {
+			cudaMemcpy(hPtr, dPtr + ghostWidth, Tbytes * ghostWidth,
+					cudaMemcpyDeviceToHost);
+		}
+
+		return hPtr + ghostWidth;
+	}
+
+	T *getRightBuffer() {
+		if (isloaded) {
+			cudaMemcpy(hPtr, dPtr + numElements, Tbytes * ghostWidth,
+					cudaMemcpyDeviceToHost);
+		}
+		return hPtr + numElements;
+	}
+
+	dim3 blockDim() {
+		return dims[0];
+	}
+
+	dim3 threadDim() {
+		return dims[1];
+	}
+
+	void setIdealDims() {
+		int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
+		dim3 blockDim(numBlocks, 1, 1);
+
+		int nThr = (numElements - 1) / numBlocks + 1;
+		dim3 threadDim(nThr, 1, 1);
+
+		dims[0] = blockDim;
+		dims[1] = threadDim;
+	}
+
+	int getPlaceBytes() {
+		return Tbytes;
+	}
+
+private:
+	T *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
+	T *dPtr; // pointer to GPU data
+	int handle;         // User-defined identifier for this AgentsPartition
+	int rank; // the rank of this partition
+	int numElements;    // the number of agent elements in this AgentsPartition
+	int Tbytes; // sizeof(agent)
+	bool isloaded;
+	bool loadable;
+	int ghostWidth;
+	dim3 dims[2]; // 0 is blockdim, 1 is threaddim
 };
 // end class
 
 }// mass namespace
-
-//#endif // AGENTS_H_

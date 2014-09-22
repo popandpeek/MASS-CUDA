@@ -26,14 +26,14 @@ int Places_Base::getHandle() {
 	return handle;
 }
 
-Places_Base::Places_Base(int handle, int boundary_width, void *argument, int argSize,
-		int dimensions, int size[]) {
+Places_Base::Places_Base(int handle, int boundary_width, void *argument,
+		int argSize, int dimensions, int size[]) {
 	this->handle = handle;
 	this->numDims = dimensions;
 	this->dimensions = size;
 	this->boundary_width = boundary_width;
-  this->argument = argument;
-  this->argSize = argSize;
+	this->argument = argument;
+	this->argSize = argSize;
 }
 
 } /* namespace mass */

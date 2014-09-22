@@ -11,9 +11,6 @@
 namespace mass {
 
 Agents_Base::~Agents_Base() {
-	if (NULL != agents) {
-		delete[] this->agents;
-	}
 }
 
 int Agents_Base::getHandle() {
@@ -24,8 +21,8 @@ int Agents_Base::nAgents() {
 	return numAgents;
 }
 
-Agents_Base::Agents_Base(int handle, void *argument, int argument_size, Places_Base *places,
-		int initPopulation) {
+Agents_Base::Agents_Base(int handle, void *argument, int argument_size,
+		Places_Base *places, int initPopulation) {
 	this->places = places;
 	this->handle = handle;
 	this->numAgents = initPopulation;
@@ -33,4 +30,4 @@ Agents_Base::Agents_Base(int handle, void *argument, int argument_size, Places_B
 	this->sequenceNum = 0;
 }
 
-}// mass namespace
+} // mass namespace
