@@ -7,53 +7,49 @@
  */
 #pragma once
 
-#include <string>
-#include <vector>
-#include "Agent.h"
-#include "Model.h"
-#include "Places.h"
+#include "Agents_Base.h"
 
 namespace mass {
 class Dispatcher;
 
+template<typename T>
 class Agents {
-	friend class Model;
 	friend class Dispatcher;
 
 public:
 
-	~Agents();
+	virtual ~Agents() {
+	if (NULL != agents) {
+		delete[] this->agents;
+	}
+  partitions.empty();
+}
 
-	int getHandle();
+	virtual void callAll(int functionId) {
+    callAll(functionId, NULL, 0);
+  }
 
-	int nAgents();
+	virtual void callAll(int functionId, void *argument, int argSize) {
+    dispatcher->callAllAgents<T>(handle, functionId, argument, argSize);
+  }
 
-	void callAll(int functionId);
+	virtual void *callAll(int functionId, void *arguments[], int argSize, int retSize) {
+    return dispatcher->callAllAgents<T>(handle, functionId, arguments, argSize, retSize);
+  }
 
-	void callAll(int functionId, void *argument, int argSize);
+	virtual void manageAll() {
+    dispatcher->manageAllAgents<T>(handle);
+  }
 
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
-
-	void manageAll();
-
-private:
+protected:
 	// Agent creation is handled through Mass::createAgents(...) call
-	Agents(int handle, void *argument, int argument_size, Places *places,
-			int initPopulation);
+	Agents(int handle, void *argument, int argument_size, Places_Base *places,
+			int initPopulation) :Agents_Base(handle, argument, argument_size, places, initPopulation){
+    agents = NULL;
+  }
 
-	Places *places; /**< The places used in this simulation. */
-
-	Agent* agents; /**< The agents elements.*/
-
-	int handle; /**< Identifies the type of agent this is.*/
-
-	int numAgents; /**< Running count of living agents in system.*/
-
-	int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
-
-	int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
-
-	Dispatcher *dispatcher;
+	T* agents; /**< The agents elements.*/
+  std::map<int, AgentsPartition*> partitions;
 };
 // end class
 
