@@ -110,7 +110,7 @@ public:
 	 *
 	 *	@param placePtr a pointer to the place where this agent resides.
 	 */
-	__device__ void setPlace(Place *placePtr);
+	__host__ __device__ void setPlace(Place *placePtr);
 
 	/**
 	 *  Is 1 while this agent is active. Once it is set 0, this agent is

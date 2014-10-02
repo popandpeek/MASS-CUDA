@@ -6,61 +6,103 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 #include "Agents.h"
-#include "Dispatcher.h"
+#include "Mass.h"
+#include "Places.h"
 
 namespace mass {
 
-Agents::~Agents() {
-	if (NULL != agents) {
-		delete[] this->agents;
-	}
-}
+    Agents::~Agents ( ) {
+        if ( NULL != agentPtrs ) {
+            delete[ ] agentPtrs;
+        }
+        partitions.empty ( );
+    }
 
-int Agents::getHandle() {
-	return handle;
-}
+    int Agents::getHandle ( ) {
+        return handle;
+    }
 
-int Agents::nAgents() {
-	return numAgents;
-}
+    int Agents::getPlacesHandle ( ) {
+        return places->getHandle ( );
+    }
 
-void Agents::callAll(int functionId) {
-	callAll(functionId, NULL, 0);
-}
+    int Agents::nAgents ( ) {
+        return numAgents;
+    }
 
-void Agents::callAll(int functionId, void *argument, int argSize) {
-	dispatcher->callAllAgents(handle, functionId, argument, argSize);
-}
+    void Agents::callAll ( int functionId ) {
+        callAll ( functionId, NULL, 0 );
+    }
 
-void *Agents::callAll(int functionId, void *arguments[], int argSize,
-		int retSize) {
-	return dispatcher->callAllAgents(handle, functionId, arguments, argSize, retSize);
-}
+    void Agents::callAll ( int functionId, void *argument, int argSize ) {
+        dispatcher->callAllAgents ( this, functionId, argument, argSize );
+    }
 
-void Agents::manageAll() {
-	dispatcher->manageAllAgents(handle);
-}
+    void *Agents::callAll ( int functionId, void *arguments[ ], int argSize,
+                            int retSize ) {
+        return dispatcher->callAllAgents ( this, functionId, arguments, argSize, retSize );
+    }
 
-Agents::Agents(int handle, void *argument, int argument_size, Places *places,
-		int initPopulation) {
-	this->places = places;
-	this->agents = NULL;
-	this->handle = handle;
-	this->numAgents = initPopulation;
-	this->newChildren = 0;
-	this->sequenceNum = 0;
-}
+    void Agents::manageAll ( ) {
+        dispatcher->manageAllAgents ( this );
+    }
 
-//Places *places; /**< The places used in this simulation. */
-//
-//	Agent* agents; /**< The agents elements.*/
-//
-//	int handle; /**< Identifies the type of agent this is.*/
-//
-//	int numAgents; /**< Running count of living agents in system.*/
-//
-//	int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
-//
-//	int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
+    int Agents::getNumPartitions ( ) {
+        return partitions.size ( );
+    }
 
+    Agents::Agents ( int handle, void *argument, int argument_size, Places *places,
+                     int initPopulation ) {
+
+        this->places = places;
+        this->handle = handle;
+        this->argument = argument;
+        this->argSize = argument_size;
+        this->numAgents = initPopulation;
+        this->newChildren = 0;
+        this->sequenceNum = 0;
+        this->dispatcher = Mass::dispatcher;
+        this->Tsize = 0;
+        this->agentPtrs = NULL;
+    }
+
+    void Agents::addPartitions ( std::vector<AgentsPartition*> parts ) {
+        int totalQty = 0;
+        for ( int i = 0; i < parts.size ( ); ++i ) {
+            totalQty += parts[ i ]->size ( );
+        }
+
+        // remove any old pointers
+        if ( NULL != agentPtrs ) {
+            delete[ ] agentPtrs;
+        }
+
+        agentPtrs = new Agent*[ totalQty ];
+
+        int nextPtr = 0;
+        // set pointers to new agents
+        for ( int i = 0; i < parts.size ( ); ++i ) {
+            AgentsPartition* part = parts[ i ];
+            int qty = part->size ( );
+            // allow pointer arithmatic in bytes
+            char* nextAgent = ( char* ) part->hostPtr ( );
+            for ( int j = 0; j < qty; ++j ) {
+                agentPtrs[ nextPtr++ ] = ( Agent* ) nextAgent;
+                nextAgent += Tsize; // moves pointer to next agent's memory address
+            }
+        }
+    }
+
+    AgentsPartition *Agents::getPartition ( int rank ) {
+        return partitions[ rank ];
+    }
+
+
+    void Agents::setTsize ( int size ) {
+        Tsize = size;
+    }
+
+    int Agents::getTsize ( ) {
+        return Tsize;
+    }
 }// mass namespace

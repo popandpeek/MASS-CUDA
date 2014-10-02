@@ -1,72 +1,65 @@
 /**
- *  @file Places.h
+ *  @file Places_Base.h
  *  @author Nate Hart
  *
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef PLACES_H_
-#define PLACES_H_
+#ifndef PLACES_BASE_H_
+#define PLACES_BASE_H_
 
 #include <string>
 #include <vector>
-#include "Dispatcher.h"
-#include "MassException.h"
 #include "PlacesPartition.h"
-
-// forward declarations
-//class PlacesPartition;
 
 namespace mass {
 
-class Places {
+class Places_Base {
 
-    friend class Dispatcher;
-    friend class PlacesPartition;
 public:
 
 	/**
 	 *  Destructor
 	 */
-    ~Places ( );
-
-    /**
-    *  Returns the number of dimensions in this places object. (I.e. 2D, 3D, etc...)
-    */
-    int getDimensions ( );
-
-    /**
-    *  Returns the actual dimensions of the Places_Base matrix. The returned array will be getDimension() elements long.
-    */
-    int *size ( );
-
-    /**
-    *  Returns the handle associated with this Places_Base object that was set at construction.
-    */
-    int getHandle ( );
+	virtual ~Places_Base();
 
 	/**
-	 *  Executes the given functionId on each Place element within this Places.
+	 *  Returns the number of dimensions in this places object. (I.e. 2D, 3D, etc...)
+	 */
+	virtual int getDimensions();
+
+	/**
+	 *  Returns the actual dimensions of the Places_Base matrix. The returned array will be getDimension() elements long.
+	 */
+	virtual int *size();
+
+	/**
+	 *  Returns the handle associated with this Places_Base object that was set at construction.
+	 */
+	virtual int getHandle();
+
+	/**
+	 *  Executes the given functionId on each Place element within this Places_Base.
 	 *
 	 *  @param functionId the function id passed to each Place element
 	 */
-    void callAll ( int functionId );
+	virtual void callAll(int functionId)= 0;
 
 	/**
-	 *  Executes the given functionId on each Place element within this Places with
+	 *  Executes the given functionId on each Place element within this Places_Base with
 	 *  the provided argument.
 	 *
 	 *  @param functionId the function id passed to each Place element
 	 *  @param argument the argument to be passed to each Place element
 	 *  @param argSize the size in bytes of the argument
 	 */
-    void callAll ( int functionId, void *argument, int argSize );
+	virtual void callAll(int functionId, void *argument, int argSize)= 0;
 
 	/**
 	 *  Calls the function specified on all place elements by passing argument[i]
 	 *  to place[i]'s function, and receives a value from it into (void *)[i] whose
-	 *  element size is retSize bytes. In case of multi-dimensional Places array,
-	 *  'i' is considered as the index when the Places array is flattened into row-major
+	 *  element size is retSize bytes. In case of multi-dimensional Places_Base array,
+	 *  'i' is considered as the index when the Places_Base array is flattened into row-major
 	 *  order in a single dimension.
 	 *
 	 *  @param functionId the function id passed to each Place element
@@ -74,8 +67,8 @@ public:
 	 *  @param argSize the size in bytes of each argument element
 	 *  @param retSize the size in bytes of the return array element
 	 */
-    void *callAll ( int functionId, void *arguments[ ], int argSize,
-                    int retSize );
+	virtual void *callAll(int functionId, void *arguments[], int argSize,
+			int retSize)= 0;
 
 	//// TODO implement the call some functions
 	// void callSome( int functionId, int dim, int index[] );
@@ -97,23 +90,27 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-    void exchangeAll ( int functionId, std::vector<int*> *destinations );
+	virtual void exchangeAll(int functionId,
+			std::vector<int*> *destinations)= 0;
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
 	 */
-    void exchangeBoundary ( );
+	virtual void exchangeBoundary()= 0;
 
-	/**
-	 *  Returns the Place elements contained in this Places object. This is an expensive
-	 *  operation since it requires memory transfer. It is up to the caller to delete this array.
-	 */
-    Place** getElements ( );
+	// /**
+	// *  Adds partitions to this Places_Base object.
+	// */
+	// virtual void addPartitions(PlacesPartition **part);
+
+	// virtual PlacesPartition *getPartition(int rank);
+
+	virtual int getNumPartitions() = 0;
 
 protected:
 
 	/**
-	 *  Creates a Places object. Only accessible from the dispatcher.
+	 *  Creates a Places_Base object. Only accessible from the dispatcher.
 	 *
 	 *  @param handle the unique identifier of this places collections
 	 *  @param boundary_width the width of the border, in elements, to exchange between segments.
@@ -122,40 +119,17 @@ protected:
 	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
 	 *  @param size the size of each dimension. This MUST be dimensions elements long.
 	 */
-    Places ( int handle, int boundary_width, void *argument, int argSize,
-             int dimensions, int size[ ] );
+	Places_Base(int handle, int boundary_width, void *argument, int argSize,
+			int dimensions, int size[]);
 
-
-    void setTsize ( int size );
-
-    int getTsize ( );
-
-    int getNumPartitions ( );
-
-    /**
-    *  Adds partitions to this Places object.
-    */
-    void addPartitions ( std::vector<PlacesPartition*> parts );
-
-    /**
-    *  Gets a partition from this Places object.
-    */
-    PlacesPartition *getPartition ( int rank );
-
-
-    int handle;         // User-defined identifier for this Places_Base
-    int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
-    int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
-    int boundary_width; // the width of borders between sections
-    void *argument;
-    int argSize;
-    Dispatcher *dispatcher; // the GPU dispatcher
-    unsigned numElements;
-    Place **elemPtrs;
-    unsigned Tsize;
-	void *elements;
-	std::map<int, PlacesPartition*> partitions;
+	int handle;         // User-defined identifier for this Places_Base
+	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
+	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
+	int boundary_width; // the width of borders between sections
+	void *argument;
+	int argSize;
+	Dispatcher *dispatcher; // the GPU dispatcher
 };
 
 } /* namespace mass */
-#endif // PLACES_H_
+#endif // PLACES_BASE_H_

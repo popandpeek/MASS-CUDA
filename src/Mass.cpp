@@ -8,38 +8,41 @@
 
 #include "Dispatcher.h"
 #include "Mass.h"
-#include "Model.h"
 
 namespace mass {
 
 // static initialization
-Model *Mass::model = new Model();
 Dispatcher *Mass::dispatcher = new Dispatcher();
 
 void Mass::init(std::string args[], int ngpu) {
-	Mass::dispatcher->init(ngpu, Mass::model);
+	Mass::dispatcher->init(ngpu);
 }
 
 void Mass::init(std::string args[]) {
-	Mass::model = new Model();
 	Mass::dispatcher = new Dispatcher();
 	// 0 is the flag to use all available GPU resources
-	Mass::dispatcher->init(0, Mass::model);
+	Mass::dispatcher->init(0);
 }
 
 void Mass::finish() {
-	delete Mass::model;
 	delete Mass::dispatcher;
 }
 
-Places *Mass::getPlaces(int handle) {
-	// TODO make dispatcher unload a copy of GPU data
-	return Mass::model->getPlaces(handle);
+Places *Mass::getPlaces ( int handle ) {
+    return placesMap.find ( handle )->second;
 }
 
+int Mass::numPlacesInstances ( ) {
+    return placesMap.size ( );
+}
+
+
 Agents *Mass::getAgents(int handle) {
-	// TODO make dispatcher unload a copy of GPU data
-	return Mass::model->getAgents(handle);
+    return Mass::agentsMap.find ( handle )->second;
+}
+
+int Mass::numAgentsInstances ( ) {
+    return agentsMap.size ( );
 }
 
 } /* namespace mass */
