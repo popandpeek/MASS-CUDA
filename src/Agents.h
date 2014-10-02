@@ -7,56 +7,69 @@
  */
 #pragma once
 
-#include "Agents_Base.h"
+#include <map>
+#include <string>
+#include <vector>
+
+#include "Agent.h"
 #include "AgentsPartition.h"
 #include "Dispatcher.h"
 
+// forward declarations
+class Places;
+
 namespace mass {
 
-template<typename T>
-class Agents : public Agents_Base {
+class Agents {
+    friend class AgentsPartition;
+    friend class Dispatcher;
 
 public:
 
-	virtual ~Agents() {
-		agents.clear();
-		partitions.empty();
-	}
+    virtual ~Agents ( );
 
-	virtual void callAll(int functionId) {
-		callAll(functionId, NULL, 0);
-	}
+    int getHandle ( );
 
-	virtual void callAll(int functionId, void *argument, int argSize) {
-		dispatcher->callAllAgents < T > (handle, functionId, argument, argSize);
-	}
+    int getPlacesHandle ( );
 
-	virtual void *callAll(int functionId, void *arguments[], int argSize,
-			int retSize) {
-		return dispatcher->callAllAgents < T
-				> (handle, functionId, arguments, argSize, retSize);
-	}
+    int nAgents ( );
 
-	virtual void manageAll() {
-		dispatcher->manageAllAgents < T > (handle);
-	}
+    void callAll ( int functionId );
 
-	virtual int getNumPartitions(){
-		return agents.size();
-	}
+    void callAll ( int functionId, void *argument, int argSize );
+
+    void *callAll ( int functionId, void *arguments[ ], int argSize, int retSize );
+
+    void manageAll ( );
+
+    int getNumPartitions ( );
+
 
 protected:
 	// Agent creation is handled through Mass::createAgents(...) call
-	Agents(int handle, void *argument, int argument_size, Places_Base *places,
-			int initPopulation) :
-			Agents_Base(handle, argument, argument_size, places, initPopulation) {
-	}
+    Agents ( int handle, void *argument, int argument_size, Places *places,
+             int initPopulation );
 
-	std::vector<T*> agents; /**< The agents elements.*/
-	std::map<int, AgentsPartition<T>*> partitions;
-};
-// end class
+    
+    void addPartitions ( std::vector<AgentsPartition*> parts );
+
+    AgentsPartition *getPartition ( int rank );
+    
+    void setTsize ( int size );
+
+    int getTsize ( );
+
+    Places *places; /**< The places used in this simulation. */
+    int handle; /**< Identifies the type of agent this is.*/
+    void *argument;
+    int argSize;
+    int numAgents; /**< Running count of living agents in system.*/
+    int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
+    int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
+    Dispatcher *dispatcher;
+    int Tsize;
+    Agent **agentPtrs;
+	std::map<int, AgentsPartition*> partitions;
+};// end class
 
 }// mass namespace
-
-//#endif // AGENTS_H_

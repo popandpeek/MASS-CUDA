@@ -13,7 +13,6 @@
 
 #include<cuda_runtime.h>
 #include "Agent.h"
-//#include "Places.h"
 
 namespace mass {
 

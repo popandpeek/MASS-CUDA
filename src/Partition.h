@@ -21,7 +21,7 @@ public:
 	/**
 	 *  Returns the number of elements in this partition.
 	 */
-	int size() = 0;
+	virtual int size() = 0;
 
 	/**
 	 *  Returns the number of place elements and ghost elements.
@@ -41,8 +41,8 @@ public:
 	 *  Returns an array of the Place elements contained in this Partition object. This is an expensive
 	 *  operation since it requires memory transfer.
 	 */
-	T *hostPtr() {
-		T *retVal = hPtr;
+	void *hostPtr() {
+		void *retVal = hPtr;
 		if (rank > 0) {
 			retVal += ghostWidth;
 		}
@@ -52,18 +52,18 @@ public:
 	/**
 	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
 	 */
-	T *hostPtrPlusGhosts() {
+	void *hostPtrPlusGhosts() {
 		return hPtr;
 	}
 
 	/**
 	 *  Returns the pointer to the GPU data. NULL if not on GPU.
 	 */
-	T *devicePtr() {
+	void *devicePtr() {
 		return dPtr;
 	}
 
-	void setDevicePtr(T *places)) {
+	void setDevicePtr(void *places)) {
 		dPtr = places;
 	}
 
@@ -77,7 +77,7 @@ public:
 	/**
 	 *  Sets the start and number of places in this partition.
 	 */
-	void setSection(T *start) {
+	void setSection(void *start) {
 		hPtr = start;
 	}
 
@@ -101,7 +101,7 @@ public:
 		}
 	}
 
-	T *load(cudaStream_t stream) {
+	void *load(cudaStream_t stream) {
 		makeLoadable();
 
 		cudaMemcpyAsync(dPtr, hPtr, Tbytes * sizePlusGhosts(),
@@ -140,7 +140,7 @@ public:
 		}
 	}
 
-	void updateLeftGhost(T *ghost, cudaStream_t stream) {
+	void updateLeftGhost(void *ghost, cudaStream_t stream) {
 		if (rank > 0) {
 			if (isloaded) {
 				cudaMemcpyAsync(dPtr, ghost, Tbytes * ghostWidth,
@@ -151,7 +151,7 @@ public:
 		}
 	}
 
-	void updateRightGhost(T *ghost, cudaStream_t stream) {
+	void updateRightGhost(void *ghost, cudaStream_t stream) {
 		if (rank < Partition::numRanks - 1) {
 			if (isloaded) {
 				cudaMemcpyAsync(dPtr + numElements, ghost, Tbytes * ghostWidth,
@@ -163,7 +163,7 @@ public:
 		}
 	}
 
-	T *getLeftBuffer() {
+	void *getLeftBuffer() {
 		if (isloaded) {
 			cudaMemcpy(hPtr, dPtr + ghostWidth, Tbytes * ghostWidth,
 					cudaMemcpyDeviceToHost);
@@ -172,7 +172,7 @@ public:
 		return hPtr + ghostWidth;
 	}
 
-	T *getRightBuffer()() {
+	void *getRightBuffer()() {
 		if(isloaded) {
 			cudaMemcpy( hPtr, dPtr + numElements, Tbytes * ghostWidth, cudaMemcpyDeviceToHost );
 		}
@@ -203,8 +203,8 @@ public:
 	}
 
 private:
-	T *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
-	T *dPtr; // pointer to GPU data
+	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
+	void *dPtr; // pointer to GPU data
 	static int numRanks; // the overall number of ranks in this model
 	int handle;         // User-defined identifier for this Partition
 	int rank; // the rank of this partition

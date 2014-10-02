@@ -28,12 +28,21 @@ void Mass::finish() {
 	delete Mass::dispatcher;
 }
 
-Places_Base *Mass::getPlaces(int handle) {
-	return agentsMap.find(handle)->second;
+Places *Mass::getPlaces ( int handle ) {
+    return placesMap.find ( handle )->second;
 }
 
-Agents_Base *Mass::getAgents(int handle) {
-	return placesMap.find(handle)->second;
+int Mass::numPlacesInstances ( ) {
+    return placesMap.size ( );
+}
+
+
+Agents *Mass::getAgents(int handle) {
+    return Mass::agentsMap.find ( handle )->second;
+}
+
+int Mass::numAgentsInstances ( ) {
+    return agentsMap.size ( );
 }
 
 } /* namespace mass */

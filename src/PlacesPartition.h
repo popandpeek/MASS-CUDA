@@ -15,238 +15,106 @@
 #include <vector>
 #include "Mass.h"
 #include "Place.h"
+#include "Places.h"
 
 namespace mass {
 
 class Dispatcher;
 
-template<typename T>
 class PlacesPartition {
+    friend class Places;
 
 public:
 
-	PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
-			int n, int *dimensions) :
-			hPtr(NULL), dPtr(NULL), handle(handle), rank(rank), numElements(
-					numElements), isloaded(false) {
-		Tbytes = sizeof(T);
-		setGhostWidth(ghostWidth, n, dimensions);
-		setIdealDims();
-	}
-
+    PlacesPartition ( int handle, int rank, int numElements, int ghostWidth,
+                      int n, int *dimensions );
 	/**
 	 *  Destructor
 	 */
-	~PlacesPartition() {
-	}
+    ~PlacesPartition ( );
 
 	/**
 	 *  Returns the number of place elements in this partition.
 	 */
-	int size() {
-		int numRanks = Mass::getPlaces(handle)->getNumPartitions();
-		if (1 == numRanks) {
-			return numElements;
-		}
-
-		int retVal = numElements;
-		if (0 == rank || numRanks - 1 == rank) {
-			// there is only one ghost width on an edge rank
-			retVal -= ghostWidth;
-		} else {
-			retVal -= 2 * ghostWidth;
-		}
-
-		return retVal;
-	}
+    int size ( );
 
 	/**
 	 *  Returns the number of place elements and ghost elements.
 	 */
-	int sizePlusGhosts() {
-		return numElements;
-	}
+    int sizePlusGhosts ( );
 
 	/**
 	 *  Gets the rank of this partition.
 	 */
-	int getRank() {
-		return rank;
-	}
+    int getRank ( );
 
 	/**
 	 *  Returns an array of the Place elements contained in this PlacesPartition object. This is an expensive
 	 *  operation since it requires memory transfer.
 	 */
-	T *hostPtr() {
-		T *retVal = hPtr;
-		if (rank > 0) {
-			retVal += ghostWidth;
-		}
-		return retVal;
-	}
+    void *hostPtr ( );
 
 	/**
 	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
 	 */
-	T *hostPtrPlusGhosts() {
-		return hPtr;
-	}
+    void *hostPtrPlusGhosts ( );
 
 	/**
 	 *  Returns the pointer to the GPU data. NULL if not on GPU.
 	 */
-	T *devicePtr() {
-		return dPtr;
-	}
+    void *devicePtr ( );
 
-	void setDevicePtr(T *places) {
-		dPtr = places;
-	}
+    void setDevicePtr ( void *places );
 
 	/**
 	 *  Returns the handle associated with this PlacesPartition object that was set at construction.
 	 */
-	int getHandle() {
-		return handle;
-	}
+    int getHandle ( );
 
 	/**
 	 *  Sets the start and number of places in this partition.
 	 */
-	void setSection(T *start) {
-		hPtr = start;
-	}
+    void setSection ( void *start );
 
-	void setQty(int qty) {
-		numElements = qty;
-		setIdealDims();
-	}
+    void setQty ( int qty );
 
-	bool isLoaded() {
-		return isloaded;
-	}
+    bool isLoaded ( );
 
-	void makeLoadable() {
-		if (!loadable) {
-			if (dPtr != NULL) {
-				cudaFree(dPtr);
-			}
+    void setLoaded ( bool loaded );
 
-			cudaMalloc((void**) &dPtr, Tbytes * sizePlusGhosts());
-			loadable = true;
-		}
-	}
+    void makeLoadable ( );
 
-	T *load(cudaStream_t stream) {
-		makeLoadable();
+    void load ( cudaStream_t stream );
 
-		cudaMemcpyAsync(dPtr, hPtr, Tbytes * sizePlusGhosts(),
-				cudaMemcpyHostToDevice, stream);
-		isloaded = true;
-	}
+    bool retrieve ( cudaStream_t stream, bool freeOnRetrieve );
 
-	bool retrieve(cudaStream_t stream, bool freeOnRetrieve) {
-		bool retreived = isloaded;
+    int getGhostWidth ( );
 
-		if (isloaded) {
-			cudaMemcpyAsync(hPtr, dPtr, Tbytes * sizePlusGhosts(),
-					cudaMemcpyDeviceToHost, stream);
-		}
+    void setGhostWidth ( int width, int n, int *dimensions );
 
-		if (freeOnRetrieve) {
-			cudaFree(dPtr);
-			loadable = false;
-			dPtr = NULL;
-			isloaded = false;
-		}
+	void updateLeftGhost(void *ghost, cudaStream_t stream);
 
-		return retreived;
-	}
+    void updateRightGhost ( void *ghost, cudaStream_t stream );
 
-	int getGhostWidth() {
-		return ghostWidth;
-	}
+    void *getLeftBuffer ( );
 
-	void setGhostWidth(int width, int n, int *dimensions) {
-		ghostWidth = width;
+    void *getRightBuffer ( );
 
-		// start at 1 because we never want to factor in x step
-		for (int i = 1; i < n; ++i) {
-			ghostWidth += dimensions[i];
-		}
-	}
+    dim3 blockDim ( );
 
-	void updateLeftGhost(T *ghost, cudaStream_t stream) {
-		if (rank > 0) {
-			if (isloaded) {
-				cudaMemcpyAsync(dPtr, ghost, Tbytes * ghostWidth,
-						cudaMemcpyHostToDevice, stream);
-			} else {
-				memcpy(hPtr, ghost, Tbytes * ghostWidth);
-			}
-		}
-	}
+    dim3 threadDim ( );
 
-	void updateRightGhost(T *ghost, cudaStream_t stream) {
-		int numRanks = Mass::getPlaces(handle)->getNumPartitions();
-		if (rank < numRanks - 1) {
-			if (isloaded) {
-				cudaMemcpyAsync(dPtr + numElements, ghost, Tbytes * ghostWidth,
-						cudaMemcpyHostToDevice, stream);
-			} else {
-				memcpy(hPtr + ghostWidth + numElements, ghost,
-						Tbytes * ghostWidth);
-			}
-		}
-	}
+    void setIdealDims ( );
 
-	T *getLeftBuffer() {
-		if (isloaded) {
-			cudaMemcpy(hPtr, dPtr + ghostWidth, Tbytes * ghostWidth,
-					cudaMemcpyDeviceToHost);
-		}
-
-		return hPtr + ghostWidth;
-	}
-
-	T *getRightBuffer() {
-		if(isloaded) {
-			cudaMemcpy( hPtr, dPtr + numElements, Tbytes * ghostWidth, cudaMemcpyDeviceToHost );
-		}
-		return hPtr + numElements;
-	}
-
-	dim3 blockDim() {
-		return dims[0];
-	}
-
-	dim3 threadDim() {
-		return dims[1];
-	}
-
-	void setIdealDims() {
-		int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
-		dim3 blockDim(numBlocks, 1, 1);
-
-		int nThr = (numElements - 1) / numBlocks + 1;
-		dim3 threadDim(nThr, 1, 1);
-
-		dims[0] = blockDim;
-		dims[1] = threadDim;
-	}
-
-	int getPlaceBytes() {
-		return Tbytes;
-	}
+    int getPlaceBytes ( );
 
 private:
-	T *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
-	T *dPtr; // pointer to GPU data
+	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
+	void *dPtr; // pointer to GPU data
 	int handle;         // User-defined identifier for this PlacesPartition
 	int rank; // the rank of this partition
 	int numElements;    // the number of place elements in this PlacesPartition
-	int Tbytes; // sizeof(agent)
+	int Tsize; // sizeof(agent)
 	bool isloaded;
 	bool loadable;
 	int ghostWidth;
