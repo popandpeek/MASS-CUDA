@@ -5,21 +5,23 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef DISPATCHER_H_
-#define DISPATCHER_H_
+#pragma once
+
 #include <cuda_runtime.h>
 #include <vector>
 #include <queue>
+
 #include "Agent.h"
 #include "Agents.h"
 #include "Place.h"
 #include "Places.h"
+
 namespace mass {
 
 // forward declarations
-class Agents;
+class AgentsPartition;
 class Command;
-class Places;
+
 
 struct DeviceData {
     int deviceNum;
@@ -47,7 +49,7 @@ public:
 	 *  @param ngpu the number of GPUs to use in this simulation. 0 if all GPU resources are to be used.
 	 *  @param models the data model for this simulation
 	 */
-	void init(int ngpu, Model *model);
+	void init(int ngpu);
 
 	~Dispatcher();
 
@@ -142,9 +144,9 @@ public:
 	 * @return the created Agents collection
 	 */
 	template<typename T>
-	Agents *createAgents(int handle, void *argument, int argSize,
-			Places *places, int initPopulation) {
-		// TODO implement
+	T *createAgents(int handle, void *argument, int argSize, Places *places, int initPopulation) {
+		T* dPtr = new T[initPopulation * 2];
+		delete[] dPtr;
 		return NULL;
 	}
 
@@ -154,7 +156,7 @@ public:
 	 * collection.
 	 * @param handle the handle of the agents object to refresh.
 	 */
-    void refreshAgents ( Agents *agents );
+    void refreshAgents ( int handle );
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
@@ -164,7 +166,7 @@ public:
 	 * @param argument the argument for the function
 	 * @param argSize the size in bytes of the argument
 	 */
-    void callAllAgents ( Agents *agents, int functionId, void *argument, int argSize );
+    void callAllAgents ( int handle, int functionId, void *argument, int argSize );
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
@@ -178,14 +180,14 @@ public:
 	 * @param retSize the size in bytes of the return value
 	 * @return a void* with an element of retSize for every agent in the group.
 	 */
-    void *callAllAgents ( Agents *agents, int functionId, void *arguments[ ],
+    void *callAllAgents ( int handle, int functionId, void *arguments[ ],
 			int argSize, int retSize);
 
 	/**
 	 * Calls manage on all agents of the specified group.
 	 * @param handle the handle of the agents to manage.
 	 */
-    void manageAllAgents ( Agents *agents );
+    void manageAllAgents ( int handle );
 
 private:
 
@@ -202,5 +204,3 @@ private:
 };
 // end class
 }// namespace mass
-
-#endif

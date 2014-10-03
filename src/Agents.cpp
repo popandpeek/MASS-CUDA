@@ -6,8 +6,8 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 #include "Agents.h"
+#include "AgentsPartition.h"
 #include "Mass.h"
-#include "Places.h"
 
 namespace mass {
 
@@ -35,16 +35,16 @@ namespace mass {
     }
 
     void Agents::callAll ( int functionId, void *argument, int argSize ) {
-        dispatcher->callAllAgents ( this, functionId, argument, argSize );
+        dispatcher->callAllAgents ( this->getHandle(), functionId, argument, argSize );
     }
 
     void *Agents::callAll ( int functionId, void *arguments[ ], int argSize,
                             int retSize ) {
-        return dispatcher->callAllAgents ( this, functionId, arguments, argSize, retSize );
+        return dispatcher->callAllAgents ( this->getHandle(), functionId, arguments, argSize, retSize );
     }
 
     void Agents::manageAll ( ) {
-        dispatcher->manageAllAgents ( this );
+        dispatcher->manageAllAgents ( this->getHandle() );
     }
 
     int Agents::getNumPartitions ( ) {

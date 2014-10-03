@@ -8,11 +8,14 @@
 
 #include "Dispatcher.h"
 #include "Mass.h"
+#include "Places.h"
 
 namespace mass {
 
 // static initialization
 Dispatcher *Mass::dispatcher = new Dispatcher();
+std::map<int, Places*> placesMap;
+std::map<int, Agents*> agentsMap;
 
 void Mass::init(std::string args[], int ngpu) {
 	Mass::dispatcher->init(ngpu);
@@ -38,7 +41,7 @@ int Mass::numPlacesInstances ( ) {
 
 
 Agents *Mass::getAgents(int handle) {
-    return Mass::agentsMap.find ( handle )->second;
+    return agentsMap.find ( handle )->second;
 }
 
 int Mass::numAgentsInstances ( ) {

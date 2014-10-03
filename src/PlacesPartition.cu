@@ -120,7 +120,7 @@ namespace mass {
         }
 
         void PlacesPartition::setLoaded ( bool loaded ) {
-            isLoaded = loaded;
+            isloaded = loaded;
         }
 
         void PlacesPartition::makeLoadable ( ) {

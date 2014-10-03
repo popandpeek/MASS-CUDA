@@ -11,6 +11,7 @@
 #include <vector>
 #include "Agents.h"
 
+//class Agents;
 
 namespace mass {
 
@@ -18,8 +19,8 @@ class AgentsPartition {
 
 public:
 
-    AgentsPartition ( int handle, void *argument, int argument_size, Agents *agents,
-                      int numElements );
+	AgentsPartition ( int handle, void *argument, int argument_size, Agents *agents,
+	            int numElements );
 
 	/**
 	 *  Destructor
@@ -72,7 +73,7 @@ public:
 
     bool isLoaded ( );
 
-    bool setLoaded ( bool loaded );
+    void setLoaded ( bool loaded );
 
     void makeLoadable ( );
 
@@ -104,6 +105,8 @@ public:
     int getPlaceBytes ( );
 
 private:
+    void *movePtr(void *ptr, int nElements);
+
 	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
 	void *dPtr; // pointer to GPU data
 	int handle;         // User-defined identifier for this AgentsPartition

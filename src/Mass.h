@@ -5,20 +5,21 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef MASS_H_
-#define MASS_H_
+#pragma once
 
 #include <iostream>
 #include <stddef.h>
 #include <map>
 #include "Agents.h"
-#include "Places.h"
 #include "Dispatcher.h"
 
 #define WARP_SIZE 32    // threads per warp
 #define BLOCK_SIZE 512  // max threads per block
 
+
 namespace mass {
+
+class Places;
 
 class Mass {
     friend class Agents;
@@ -86,7 +87,7 @@ public:
 			int dimensions, int size[]) {
 		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument,
 				argSize, dimensions, size);
-		if (NULL != agents) {
+		if (NULL != places) {
 			placesMap[handle] = places;
 		}
 		return places;
@@ -119,4 +120,3 @@ private:
 };
 
 } /* namespace mass */
-#endif // MASS_H_

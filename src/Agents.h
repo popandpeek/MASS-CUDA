@@ -12,11 +12,13 @@
 #include <vector>
 
 #include "Agent.h"
-#include "AgentsPartition.h"
+#include "Places.h"
 #include "Dispatcher.h"
 
 // forward declarations
-class Places;
+//class Dispatcher;
+//class Places;
+class AgentsPartition;
 
 namespace mass {
 

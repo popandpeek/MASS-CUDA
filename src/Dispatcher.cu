@@ -9,10 +9,12 @@
 #define COMPUTE_CAPABILITY_MAJOR 3
 
 #include "Agents.h"
+#include "AgentsPartition.h"
 #include "Command.h"
 #include "cudaUtil.h"
 #include "Dispatcher.h"
 #include "Places.h"
+#include "PlacesPartition.h"
 
 using namespace std;
 
@@ -52,9 +54,10 @@ void Dispatcher::init(int ngpu) {
 }
 
 Dispatcher::~Dispatcher() {
-    map<int, DeviceData>::iterator it = deviceInfo.begin ( );
-    while(it != deviceInfo.end()) {
-        DeviceData d = it->second;
+
+    while(deviceInfo.size()>0) {
+        DeviceData d = deviceInfo.front();
+        deviceInfo.pop();
         cudaSetDevice ( d.deviceNum );
         // destroy streams
         cudaStreamDestroy ( d.inputStream );
@@ -62,8 +65,6 @@ Dispatcher::~Dispatcher() {
         // destroy events
         cudaEventDestroy ( d.deviceEvent );
     }
-	// clear devices
-    deviceInfo.clear ( );
 }
 
 void Dispatcher::refreshPlaces(Places *places) {
@@ -177,22 +178,21 @@ void Dispatcher::exchangeBoundaryPlaces(Places *places) {
 	//TODO issue call
 }
 
-void Dispatcher::refreshAgents(Agents *agents) {
+void Dispatcher::refreshAgents(int handle) {
 	// TODO get the unload the slices for this handle from the GPU without deleting
 }
 
-void Dispatcher::callAllAgents ( Agents *agents, int functionId, void *argument,
-		int argSize) {
+void Dispatcher::callAllAgents ( int handle, int functionId, void *argument, int argSize) {
 	//TODO issue call
 }
 
-void *Dispatcher::callAllAgents ( Agents *agents, int functionId, void *arguments[ ],
+void *Dispatcher::callAllAgents ( int handle, int functionId, void *arguments[ ],
 		int argSize, int retSize) {
 	//TODO issue call
 	return NULL;
 }
 
-void Dispatcher::manageAllAgents ( Agents *agents ) {
+void Dispatcher::manageAllAgents ( int handle ) {
 	//TODO issue call
 }
 
@@ -203,9 +203,9 @@ void Dispatcher::loadPlacesPartition ( PlacesPartition *part, DeviceData d ) {
     // load partition onto device
     void* dPtr = part->devicePtr ( );
 
+    int numBytes = part->getPlaceBytes ( ) * part->sizePlusGhosts ( );
     // there may be rare edge cases where memory is already allocated
-    if ( !part->isLoaded || NULL == dPtr ) {
-        int numBytes = part->getPlaceBytes ( ) * part->sizePlusGhosts ( );
+    if ( !part->isLoaded() || NULL == dPtr) {
         cudaMalloc ( ( void** ) &dPtr, numBytes );
 
         // update model state
@@ -245,10 +245,10 @@ void Dispatcher::loadAgentsPartition ( AgentsPartition *part, DeviceData d ) {
 
     // load partition onto device
     void* dPtr = part->devicePtr();
+    int numBytes = part->getPlaceBytes ( ) * part->sizePlusGhosts ( );
 
     // there may be rare edge cases where memory is already allocated
-    if ( !part->isLoaded || NULL == dPtr ) {
-        int numBytes = part->getPlaceBytes ( ) * part->sizePlusGhosts ( );
+    if ( !part->isLoaded() || NULL == dPtr ) {
         cudaMalloc ( ( void** ) &dPtr, numBytes );
 
         // update model state

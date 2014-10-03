@@ -5,20 +5,30 @@
 *  @section LICENSE
 *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
 */
-#pragma once
 
 #include <string>
 #include <vector>
 #include "AgentsPartition.h"
+#include "Mass.h"
 
 
 namespace mass {
 
+	void *AgentsPartition::movePtr(void *ptr, int nElements){
+		char* tmp = (char*) ptr;
+		tmp += nElements * Tbytes;
+		return tmp;
+	}
 
-    AgentsPartition::AgentsPartition ( int handle, void *argument, int argument_size, Agents *agents,
-                                       int numElements ) :
-                                       hPtr ( NULL ), dPtr ( NULL ), handle ( handle ), rank ( rank ), numElements (
-                                       numElements ), isloaded ( false ) {
+
+	AgentsPartition::AgentsPartition ( int handle, void *argument, int argument_size, Agents *agents,
+            int numElements ){
+		hPtr = NULL;
+		dPtr = NULL;
+		this->handle = handle;
+		this->rank = rank;
+		this->numElements = numElements;
+		this->isloaded = false;
         Tbytes = Mass::getAgents ( handle )->getTsize ( );;
         setIdealDims ( );
     }
@@ -68,7 +78,7 @@ namespace mass {
     void *AgentsPartition::hostPtr ( ) {
         void *retVal = hPtr;
         if ( rank > 0 ) {
-            retVal += ghostWidth;
+            retVal = movePtr(retVal,ghostWidth);
         }
         return retVal;
     }
@@ -114,7 +124,7 @@ namespace mass {
         return isloaded;
     }
 
-    bool AgentsPartition::setLoaded ( bool loaded ) {
+    void AgentsPartition::setLoaded ( bool loaded ) {
         isloaded = true;
     }
 
@@ -179,13 +189,13 @@ namespace mass {
     }
 
     void AgentsPartition::updateRightGhost ( void *ghost, cudaStream_t stream ) {
-        int numRanks = Mass::getPlaces ( handle )->getNumPartitions ( );
+        int numRanks = Mass::getAgents ( handle )->getNumPartitions ( );
         if ( rank < numRanks - 1 ) {
             if ( isloaded ) {
-                cudaMemcpyAsync ( dPtr + numElements, ghost, Tbytes * ghostWidth,
+                cudaMemcpyAsync ( movePtr(dPtr, numElements) , ghost, Tbytes * ghostWidth,
                                   cudaMemcpyHostToDevice, stream );
             } else {
-                memcpy ( hPtr + ghostWidth + numElements, ghost,
+                memcpy ( movePtr(hPtr, ghostWidth + numElements), ghost,
                          Tbytes * ghostWidth );
             }
         }
@@ -194,19 +204,19 @@ namespace mass {
     // TODO add a pointer param so buffers and ghosts can be copied directly where they need to go
     void *AgentsPartition::getLeftBuffer ( ) {
         if ( isloaded ) {
-            cudaMemcpy ( hPtr, dPtr + ghostWidth, Tbytes * ghostWidth,
+            cudaMemcpy ( hPtr, movePtr(dPtr,ghostWidth), Tbytes * ghostWidth,
                          cudaMemcpyDeviceToHost );
         }
 
-        return hPtr + ghostWidth;
+        return movePtr(hPtr, ghostWidth);
     }
 
     void *AgentsPartition::getRightBuffer ( ) {
         if ( isloaded ) {
-            cudaMemcpy ( hPtr, dPtr + numElements, Tbytes * ghostWidth,
+            cudaMemcpy ( hPtr, movePtr(dPtr, numElements), Tbytes * ghostWidth,
                          cudaMemcpyDeviceToHost );
         }
-        return hPtr + numElements;
+        return movePtr(hPtr, numElements);
     }
 
     dim3 AgentsPartition::blockDim ( ) {
@@ -218,7 +228,7 @@ namespace mass {
     }
 
     void AgentsPartition::setIdealDims ( ) {
-        int numBlocks = ( numElements - 1 ) / THREADS_PER_BLOCK + 1;
+        int numBlocks = ( numElements - 1 ) / BLOCK_SIZE + 1;
         dim3 blockDim ( numBlocks, 1, 1 );
 
         int nThr = ( numElements - 1 ) / numBlocks + 1;
@@ -228,7 +238,7 @@ namespace mass {
         dims[ 1 ] = threadDim;
     }
 
-    int getPlaceBytes ( ) {
+    int AgentsPartition::getPlaceBytes ( ) {
         return Tbytes;
     }
 
@@ -243,7 +253,5 @@ namespace mass {
     //bool loadable;
     //int ghostWidth;
     //dim3 dims[ 2 ]; // 0 is blockdim, 1 is threaddim
-};
-// end class
 
 }// mass namespace

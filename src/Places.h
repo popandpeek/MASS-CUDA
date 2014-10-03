@@ -10,14 +10,14 @@
 
 #include <string>
 #include <vector>
-#include "Dispatcher.h"
 #include "MassException.h"
-#include "PlacesPartition.h"
+//#include "PlacesPartition.h"
 
-// forward declarations
-//class PlacesPartition;
 
 namespace mass {
+// forward declarations
+class Dispatcher;
+class PlacesPartition;
 
 class Places {
 
