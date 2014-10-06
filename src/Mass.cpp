@@ -10,18 +10,20 @@
 #include "Mass.h"
 #include "Places.h"
 
+using namespace std;
+
 namespace mass {
 
 // static initialization
 Dispatcher *Mass::dispatcher = new Dispatcher();
-std::map<int, Places*> placesMap;
-std::map<int, Agents*> agentsMap;
+map<int, Places*> Mass::placesMap;
+map<int, Agents*> Mass::agentsMap;
 
-void Mass::init(std::string args[], int ngpu) {
+void Mass::init(string args[], int ngpu) {
 	Mass::dispatcher->init(ngpu);
 }
 
-void Mass::init(std::string args[]) {
+void Mass::init(string args[]) {
 	Mass::dispatcher = new Dispatcher();
 	// 0 is the flag to use all available GPU resources
 	Mass::dispatcher->init(0);
@@ -32,20 +34,20 @@ void Mass::finish() {
 }
 
 Places *Mass::getPlaces ( int handle ) {
-    return placesMap.find ( handle )->second;
+    return Mass::placesMap.find ( handle )->second;
 }
 
 int Mass::numPlacesInstances ( ) {
-    return placesMap.size ( );
+    return Mass::placesMap.size ( );
 }
 
 
 Agents *Mass::getAgents(int handle) {
-    return agentsMap.find ( handle )->second;
+    return Mass::agentsMap.find ( handle )->second;
 }
 
 int Mass::numAgentsInstances ( ) {
-    return agentsMap.size ( );
+    return Mass::agentsMap.size ( );
 }
 
 } /* namespace mass */
