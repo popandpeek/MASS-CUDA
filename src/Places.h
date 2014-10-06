@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <stdarg.h>
 #include "MassException.h"
 //#include "PlacesPartition.h"
 
@@ -109,6 +110,34 @@ public:
 	 *  operation since it requires memory transfer. It is up to the caller to delete this array.
 	 */
     Place** getElements ( );
+
+    /**
+     * Returns the row major index of the given coordinates. For instance, in an
+     * int[3][5], the element (1,3) will have the row major index of 8.
+     * @param args an series of ints ordered rowIdx,colIdx,ZIdx,etc...
+     * that specify a single element in this places object. The number of e
+     * lements must be equal to the number of dimensions in this places object.
+     * All indices must be non-negative.
+     *
+     * This is the inverse function of getIndexVector()
+     *
+     * @return an int representing the row-major index where this element is stored.
+     */
+    int getRowMajorIdx(...);
+
+    /**
+     * This function will take a valid (in bounds) row-major index for this
+     * places object and return a vector that contains the row, col, z, etc...
+     * indices for the place element at the given row major index.
+     *
+     * This is the inverse function of getRowMajorIdx(...)
+     *
+     * @param rowMajorIdx the index of an element in a flattened mult-dimensional
+     * array. Must be non-negative.
+     *
+     * @return a vector<int> with the multi-dimensional indices of the element.
+     */
+    std::vector<int> getIndexVector( int rowMajorIdx );
 
 protected:
 
