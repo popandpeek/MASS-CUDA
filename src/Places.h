@@ -8,53 +8,49 @@
 #ifndef PLACES_H_
 #define PLACES_H_
 
-#include <stdarg.h> // varargs
 #include <string>
 #include <vector>
-#include "Place.h"
+#include "MassException.h"
+//#include "PlacesPartition.h"
+
 
 namespace mass {
-
+// forward declarations
 class Dispatcher;
+class PlacesPartition;
 
 class Places {
 
-	friend class Model;
-	friend class Dispatcher;
+    friend class Dispatcher;
+    friend class PlacesPartition;
 public:
 
 	/**
 	 *  Destructor
 	 */
-	~Places();
+    ~Places ( );
 
-	/**
-	 *  Returns the number of dimensions in this places object. (I.e. 2D, 3D, etc...)
-	 */
-	int getDimensions();
+    /**
+    *  Returns the number of dimensions in this places object. (I.e. 2D, 3D, etc...)
+    */
+    int getDimensions ( );
 
-	/**
-	 *  Returns the actual dimensions of the Places matrix. The returned array will be getDimension() elements long.
-	 */
-	int *size();
+    /**
+    *  Returns the actual dimensions of the Places_Base matrix. The returned array will be getDimension() elements long.
+    */
+    int *size ( );
 
-	/**
-	 *  Returns an array of the Place elements contained in this Places object. This is an expensive
-	 *  operation since it requires memory transfer.
-	 */
-	Place* getElements();
-
-	/**
-	 *  Returns the handle associated with this Places object that was set at construction.
-	 */
-	int getHandle();
+    /**
+    *  Returns the handle associated with this Places_Base object that was set at construction.
+    */
+    int getHandle ( );
 
 	/**
 	 *  Executes the given functionId on each Place element within this Places.
 	 *
 	 *  @param functionId the function id passed to each Place element
 	 */
-	void callAll(int functionId);
+    void callAll ( int functionId );
 
 	/**
 	 *  Executes the given functionId on each Place element within this Places with
@@ -64,7 +60,7 @@ public:
 	 *  @param argument the argument to be passed to each Place element
 	 *  @param argSize the size in bytes of the argument
 	 */
-	void callAll(int functionId, void *argument, int argSize);
+    void callAll ( int functionId, void *argument, int argSize );
 
 	/**
 	 *  Calls the function specified on all place elements by passing argument[i]
@@ -78,7 +74,8 @@ public:
 	 *  @param argSize the size in bytes of each argument element
 	 *  @param retSize the size in bytes of the return array element
 	 */
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
+    void *callAll ( int functionId, void *arguments[ ], int argSize,
+                    int retSize );
 
 	//// TODO implement the call some functions
 	// void callSome( int functionId, int dim, int index[] );
@@ -100,14 +97,20 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-	void exchangeAll(int functionId, std::vector<int*> *destinations);
+    void exchangeAll ( int functionId, std::vector<int*> *destinations );
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
 	 */
-	void exchangeBoundary();
+    void exchangeBoundary ( );
 
-private:
+	/**
+	 *  Returns the Place elements contained in this Places object. This is an expensive
+	 *  operation since it requires memory transfer. It is up to the caller to delete this array.
+	 */
+    Place** getElements ( );
+
+protected:
 
 	/**
 	 *  Creates a Places object. Only accessible from the dispatcher.
@@ -119,16 +122,39 @@ private:
 	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
 	 *  @param size the size of each dimension. This MUST be dimensions elements long.
 	 */
-	Places(int handle, int boundary_width, void *argument, int argSize,
-			int dimensions, int size[]);
+    Places ( int handle, int boundary_width, void *argument, int argSize,
+             int dimensions, int size[ ] );
 
-	int handle;         // User-defined identifier for this Places
-	int numDims; // the number of dimensions for this Places (i.e. 1D, 2D, 3D, etc...)
-	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
-	Place *elements;        // host elements stored in row-major order
-	int numElements;    // the number of place elements in this Places
-	int boundary_width; // the width of borders between sections
-	Dispatcher *dispatcher; // the GPU dispatcher
+
+    void setTsize ( int size );
+
+    int getTsize ( );
+
+    int getNumPartitions ( );
+
+    /**
+    *  Adds partitions to this Places object.
+    */
+    void addPartitions ( std::vector<PlacesPartition*> parts );
+
+    /**
+    *  Gets a partition from this Places object.
+    */
+    PlacesPartition *getPartition ( int rank );
+
+
+    int handle;         // User-defined identifier for this Places_Base
+    int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
+    int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
+    int boundary_width; // the width of borders between sections
+    void *argument;
+    int argSize;
+    Dispatcher *dispatcher; // the GPU dispatcher
+    unsigned numElements;
+    Place **elemPtrs;
+    unsigned Tsize;
+	void *elements;
+	std::map<int, PlacesPartition*> partitions;
 };
 
 } /* namespace mass */
