@@ -89,25 +89,22 @@ int Places::getTsize() {
 	return Tsize;
 }
 
-int Places::getRowMajorIdx(...) {
+int Places::getRowMajorIdx(int *indices) {
 	// a single X will pass over y*z elements,
-	// a y will pass over z elements, and a z will pass over 1 element.
+	// a single Y will pass over z elements, and a Z will pass over 1 element.
 	// each dimension will be removed from numElements before calculating the
 	// size of each index's "step"
 	int multiplier = (int) numElements;
 	int rmi = 0; // accumulater for row major index
 
-	a_list ap;
-	va_start(ap, numDims);
 	for (int i = 0; i < numDims; i++) {
 		multiplier /= dimensions[i]; // remove dimension from multiplier
-		int idx = va_arg(ap, int); // get an index and check validity
+		int idx = indices[i]; // get an index and check validity
 		if (idx < 0 || idx >= dimensions[i]) {
 			throw MassException("The indices provided are out of bounds");
 		}
 		rmi += multiplier * idx; // calculate step
 	}
-	va_end(ap);
 
 	return rmi;
 }

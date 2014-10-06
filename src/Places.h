@@ -10,7 +10,6 @@
 
 #include <string>
 #include <vector>
-#include <stdarg.h>
 #include "MassException.h"
 //#include "PlacesPartition.h"
 
@@ -114,16 +113,17 @@ public:
     /**
      * Returns the row major index of the given coordinates. For instance, in an
      * int[3][5], the element (1,3) will have the row major index of 8.
-     * @param args an series of ints ordered rowIdx,colIdx,ZIdx,etc...
-     * that specify a single element in this places object. The number of e
-     * lements must be equal to the number of dimensions in this places object.
+     *
+     * @param indices an series of ints ordered rowIdx,colIdx,ZIdx,etc...
+     * that specify a single element in this places object. The number of
+     * elements must be equal to the number of dimensions in this places object.
      * All indices must be non-negative.
      *
      * This is the inverse function of getIndexVector()
      *
      * @return an int representing the row-major index where this element is stored.
      */
-    int getRowMajorIdx(...);
+    int getRowMajorIdx(int *indices);
 
     /**
      * This function will take a valid (in bounds) row-major index for this
