@@ -11,8 +11,10 @@
 #include <vector>
 #include <queue>
 
+#include "PlacesPartition.h"
 #include "Agent.h"
 #include "Agents.h"
+#include "DeviceConfig.h"
 #include "Place.h"
 #include "Places.h"
 
@@ -21,14 +23,6 @@ namespace mass {
 // forward declarations
 class AgentsPartition;
 class Command;
-
-
-struct DeviceData {
-    int deviceNum;
-    cudaStream_t inputStream;
-    cudaStream_t outputStream;
-    cudaEvent_t deviceEvent;
-};
 
 class Dispatcher {
 
@@ -70,9 +64,36 @@ public:
 	 */
 	template<typename T>
 	Places *createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[]) {
+			int dimensions, int size[], int boundary_width) {
 		// TODO implement
-		return NULL;
+		Places *retVal = new Places(handle, argument, argSize, dimensions, size, boundary_width);
+		int Tsize = sizeof(T);
+		retVal->Tsize = Tsize;
+
+		std::vector<PlacesPartition*> parts;
+
+		if(deviceInfo.size() == 1){
+			// create the places on the GPUs
+			DeviceConfig d = deviceInfo.front();
+			PlaceArray &arr = d.devPlaces;
+
+			if(0 == arr.qty || arr.qty < retVal->numElements){
+				if(NULL == arr.devPtr){
+					cudaFree(arr.devPtr);
+				}
+				Place** dPtr = arr.devPtr;
+				arr.qty = retVal->numElements;
+				cudaMalloc(&arr.devPtr, arr.qty * sizeof(Place*));
+			}
+
+			// allocate space for the places
+			PlacesPartition *part = new PlacesPartition ( handle, 0, retVal->numElements, 0,
+                    dimensions, size );
+			// install that data in the places object
+		} else {
+			// TODO phase II
+		}
+		return retVal;
 	}
 
 	/**
@@ -191,16 +212,16 @@ public:
 
 private:
 
-    void loadPlacesPartition ( PlacesPartition *part, DeviceData d );
+    void loadPlacesPartition ( PlacesPartition *part, DeviceConfig d );
     void getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve = true );
 
-    void loadAgentsPartition ( AgentsPartition *part, DeviceData d );
+    void loadAgentsPartition ( AgentsPartition *part, DeviceConfig d );
     void getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve = true );
 
 
-    std::map<PlacesPartition *, DeviceData> loadedPlaces; // tracks which partition is loaded on which GPU
-    std::map<AgentsPartition*, DeviceData> loadedAgents; // tracks whicn partition is loaded on which GPU
-    std::queue<DeviceData> deviceInfo;
+    std::map<PlacesPartition *, DeviceConfig> loadedPlaces; // tracks which partition is loaded on which GPU
+    std::map<AgentsPartition*, DeviceConfig> loadedAgents; // tracks whicn partition is loaded on which GPU
+    std::queue<DeviceConfig> deviceInfo;
 };
 // end class
 }// namespace mass

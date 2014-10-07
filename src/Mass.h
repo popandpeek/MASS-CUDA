@@ -84,7 +84,7 @@ public:
 	 */
 	template<typename T>
 	static Places *createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[]) {
+			int dimensions, int size[], int boundary_width) {
 		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument,
 				argSize, dimensions, size);
 		if (NULL != places) {

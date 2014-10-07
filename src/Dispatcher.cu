@@ -43,28 +43,28 @@ void Dispatcher::init(int ngpu) {
 	}
 
     for ( int i = 0; i < devices.size ( ); i++ ) {
-        DeviceData d;
-        d.deviceNum = devices[i];
-        cudaSetDevice ( d.deviceNum );
-        cudaStreamCreate ( &d.inputStream );
-        cudaStreamCreate ( &d.outputStream );
-        cudaEventCreate ( &d.deviceEvent );
+        DeviceConfig d(devices[i]);
+//        d.deviceNum = devices[i];
+//        cudaSetDevice ( d.deviceNum );
+//        cudaStreamCreate ( &d.inputStream );
+//        cudaStreamCreate ( &d.outputStream );
+//        cudaEventCreate ( &d.deviceEvent );
         deviceInfo.push ( d );
     }
 }
 
 Dispatcher::~Dispatcher() {
-
-    while(deviceInfo.size()>0) {
-        DeviceData d = deviceInfo.front();
-        deviceInfo.pop();
-        cudaSetDevice ( d.deviceNum );
-        // destroy streams
-        cudaStreamDestroy ( d.inputStream );
-        cudaStreamDestroy ( d.outputStream );
-        // destroy events
-        cudaEventDestroy ( d.deviceEvent );
-    }
+	deviceInfo.empty();
+//    while(deviceInfo.size()>0) {
+//        DeviceConfig d = deviceInfo.front();
+//        deviceInfo.pop();
+//        cudaSetDevice ( d.deviceNum );
+//        // destroy streams
+//        cudaStreamDestroy ( d.inputStream );
+//        cudaStreamDestroy ( d.outputStream );
+//        // destroy events
+//        cudaEventDestroy ( d.deviceEvent );
+//    }
 }
 
 void Dispatcher::refreshPlaces(Places *places) {
@@ -72,7 +72,7 @@ void Dispatcher::refreshPlaces(Places *places) {
     for ( int i = 0; i < places->getNumPartitions ( ); ++i ) {
         PlacesPartition *part = places->getPartition ( i );
         if ( part->isLoaded ( ) ) {
-            DeviceData d = loadedPlaces[ part ];
+            DeviceConfig d = loadedPlaces[ part ];
             cudaSetDevice ( d.deviceNum );
             part->retrieve ( d.outputStream, false ); // retreive via secondary stream without deleting
         }
@@ -104,7 +104,7 @@ void Dispatcher::callAllPlaces ( Places *places, int functionId, void *argument,
     
     int numRanks = places->getNumPartitions ( );
     if ( 1 == numRanks ) {
-        DeviceData d = deviceInfo.front ( );
+        DeviceConfig d = deviceInfo.front ( );
         deviceInfo.pop ( );
 
         int rank = 0;
@@ -136,7 +136,7 @@ void Dispatcher::callAllPlaces ( Places *places, int functionId, void *argument,
     }
 	//// for each rank
  //   for ( int rank = 0; rank < numRanks; ++rank ) {
- //       DeviceData d = deviceInfo.front ( );
+ //       DeviceConfig d = deviceInfo.front ( );
  //       deviceInfo.pop ( );
 
  //       PlacesPartition *pPart = places->getPartition ( rank );
@@ -196,7 +196,7 @@ void Dispatcher::manageAllAgents ( int handle ) {
 	//TODO issue call
 }
 
-void Dispatcher::loadPlacesPartition ( PlacesPartition *part, DeviceData d ) {
+void Dispatcher::loadPlacesPartition ( PlacesPartition *part, DeviceConfig d ) {
     cudaSetDevice ( d.deviceNum );
     loadedPlaces[ part ] = d;
 
@@ -219,7 +219,7 @@ void Dispatcher::loadPlacesPartition ( PlacesPartition *part, DeviceData d ) {
 
 
 void Dispatcher::getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve ) {
-    DeviceData d = loadedPlaces[ part ];
+    DeviceConfig d = loadedPlaces[ part ];
     cudaSetDevice ( d.deviceNum );
 
     // get partition onto device
@@ -239,7 +239,7 @@ void Dispatcher::getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve
 }
 
 
-void Dispatcher::loadAgentsPartition ( AgentsPartition *part, DeviceData d ) {
+void Dispatcher::loadAgentsPartition ( AgentsPartition *part, DeviceConfig d ) {
     cudaSetDevice ( d.deviceNum );
     loadedAgents[ part ] = d;
 
@@ -262,7 +262,7 @@ void Dispatcher::loadAgentsPartition ( AgentsPartition *part, DeviceData d ) {
 
 
 void Dispatcher::getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve ) {
-    DeviceData d = loadedAgents[ part ];
+    DeviceConfig d = loadedAgents[ part ];
     cudaSetDevice ( d.deviceNum );
 
     // get partition onto device
@@ -282,9 +282,9 @@ void Dispatcher::getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve
 }
 
 //int ngpu;                   // number of GPUs in use
-//std::map<PlacesPartition *, DeviceData> loadedPlaces; // tracks which partition is loaded on which GPU
-//std::map<AgentsPartition*, DeviceData> loadedAgents; // tracks whicn partition is loaded on which GPU
-//std::map<int, DeviceData> deviceInfo;
+//std::map<PlacesPartition *, DeviceConfig> loadedPlaces; // tracks which partition is loaded on which GPU
+//std::map<AgentsPartition*, DeviceConfig> loadedAgents; // tracks whicn partition is loaded on which GPU
+//std::map<int, DeviceConfig> deviceInfo;
 
 }// namespace mass
 

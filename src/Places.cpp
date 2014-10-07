@@ -129,8 +129,8 @@ PlacesPartition *Places::getPartition(int rank) {
 	return partitions[rank];
 }
 
-Places::Places(int handle, int boundary_width, void *argument, int argSize,
-		int dimensions, int size[]) {
+Places::Places(int handle, void *argument, int argSize,
+		int dimensions, int size[], int boundary_width) {
 	this->handle = handle;
 	this->numDims = dimensions;
 	this->dimensions = size;

@@ -151,8 +151,8 @@ protected:
 	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
 	 *  @param size the size of each dimension. This MUST be dimensions elements long.
 	 */
-    Places ( int handle, int boundary_width, void *argument, int argSize,
-             int dimensions, int size[ ] );
+    Places ( int handle, void *argument, int argSize,
+             int dimensions, int size[ ], int boundary_width );
 
 
     void setTsize ( int size );
