@@ -7,6 +7,9 @@
  */
 
 #include "AllTests.h"
+#include "src/Mass.h"
+
+using namespace mass;
 
 AllTests::AllTests() {
 
@@ -22,6 +25,7 @@ bool AllTests::runDispatcherTests(){
 }
 
 bool AllTests::runMassTests() {
+
 	return true;
 }
 
