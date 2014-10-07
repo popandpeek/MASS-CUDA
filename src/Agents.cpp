@@ -5,9 +5,12 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
+#include "Agent.h"
 #include "Agents.h"
 #include "AgentsPartition.h"
 #include "Mass.h"
+#include "Places.h"
+#include "Dispatcher.h"
 
 namespace mass {
 

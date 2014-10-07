@@ -6,9 +6,11 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 #include "Mass.h"
+#include "Place.h"
 #include "Places.h"
 #include "PlacesPartition.h"
 #include "Dispatcher.h"
+#include "MassException.h"
 
 using namespace std;
 

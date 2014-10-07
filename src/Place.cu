@@ -7,6 +7,7 @@
  */
 
 #include "Place.h"
+#include "Agent.h"
 
 namespace mass {
 

@@ -13,13 +13,11 @@
 #include <cuda_runtime.h>
 #include <string>
 #include <vector>
-#include "Mass.h"
-#include "Place.h"
-#include "Places.h"
+//#include "Mass.h"
+//#include "Place.h"
+//#include "Places.h"
 
 namespace mass {
-
-class Dispatcher;
 
 class PlacesPartition {
     friend class Places;

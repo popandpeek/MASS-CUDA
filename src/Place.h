@@ -12,15 +12,19 @@
 #define MAXNEIGHBORS 8
 
 #include<cuda_runtime.h>
-#include "Agent.h"
+
+#include "MObject.h"
 
 namespace mass {
+
+// forward declaration
+class Agent;
 
 /**
  *  The Place class defines the default functions for acheiving GPU parallelism between place objects.
  *  It also defines the interface necessary for end users to implement.
  */
-class Place {
+class Place : public MObject {
 	friend class Agent;
 
 public:
@@ -30,13 +34,13 @@ public:
 	 */
 	__host__ __device__ Place(void *args);
 
-	/** 
-	 *  Called by MASS while executing Places.callAll().
-	 *
-	 * @param functionId user-defined function id
-	 * @param args user-defined arguments
-	 */
-	__device__ virtual void callMethod(int functionId, void* args) = 0;
+//	/**
+//	 *  Called by MASS while executing Places.callAll().
+//	 *
+//	 * @param functionId user-defined function id
+//	 * @param args user-defined arguments
+//	 */
+//	__host__ __device__ virtual void callMethod(int functionId, void* args) = 0;
 
 	/**
 	 *  Gets a pointer to this place's out message.

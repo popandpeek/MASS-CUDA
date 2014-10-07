@@ -11,18 +11,15 @@
 #include <vector>
 #include <queue>
 
-#include "PlacesPartition.h"
-#include "Agent.h"
-#include "Agents.h"
 #include "DeviceConfig.h"
-#include "Place.h"
-#include "Places.h"
 
 namespace mass {
 
 // forward declarations
 class AgentsPartition;
-class Command;
+class PlacesPartition;
+class Agents;
+class Places;
 
 class Dispatcher {
 
@@ -56,45 +53,15 @@ public:
 	 *  Creates a Places object.
 	 *
 	 *  @param handle the unique identifier of this places collections
+	 *  @param classname the name of the Place class to be dynamically loaded
 	 *  @param argument a continuous space of arguments used to initialize the places
 	 *  @param argSize the size in bytes of the argument array
 	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
 	 *  @param size the size of each dimension. This MUST be dimensions elements long.
 	 *  @return the created Places collection
 	 */
-	template<typename T>
-	Places *createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int boundary_width) {
-		// TODO implement
-		Places *retVal = new Places(handle, argument, argSize, dimensions, size, boundary_width);
-		int Tsize = sizeof(T);
-		retVal->Tsize = Tsize;
-
-		std::vector<PlacesPartition*> parts;
-
-		if(deviceInfo.size() == 1){
-			// create the places on the GPUs
-			DeviceConfig d = deviceInfo.front();
-			PlaceArray &arr = d.devPlaces;
-
-			if(0 == arr.qty || arr.qty < retVal->numElements){
-				if(NULL == arr.devPtr){
-					cudaFree(arr.devPtr);
-				}
-				Place** dPtr = arr.devPtr;
-				arr.qty = retVal->numElements;
-				cudaMalloc(&arr.devPtr, arr.qty * sizeof(Place*));
-			}
-
-			// allocate space for the places
-			PlacesPartition *part = new PlacesPartition ( handle, 0, retVal->numElements, 0,
-                    dimensions, size );
-			// install that data in the places object
-		} else {
-			// TODO phase II
-		}
-		return retVal;
-	}
+	Places *createPlaces(int handle, std::string classname, void *argument, int argSize,
+			int dimensions, int size[], int boundary_width);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This
@@ -158,18 +125,14 @@ public:
 	/**
 	 * Creates an Agents object with the specified parameters.
 	 * @param handle the unique number that will identify this Agents object.
+	 * @param classname the name of the Agent class to be dynamically loaded
 	 * @param argument an argument that will be passed to all Agents upon creation
 	 * @param argSize the size in bytes of argument
 	 * @param places the Places object upon which this agents collection will operate.
 	 * @param initPopulation the starting number of agents to instantiate
 	 * @return the created Agents collection
 	 */
-	template<typename T>
-	T *createAgents(int handle, void *argument, int argSize, Places *places, int initPopulation) {
-		T* dPtr = new T[initPopulation * 2];
-		delete[] dPtr;
-		return NULL;
-	}
+	Agents *createAgents(int handle, std::string classname, void *argument, int argSize, Places *places, int initPopulation);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This

@@ -6,9 +6,11 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 
-#include "Dispatcher.h"
+
 #include "Mass.h"
+#include "Agents.h"
 #include "Places.h"
+#include "Dispatcher.h"
 
 using namespace std;
 
@@ -33,21 +35,40 @@ void Mass::finish() {
 	delete Mass::dispatcher;
 }
 
-Places *Mass::getPlaces ( int handle ) {
-    return Mass::placesMap.find ( handle )->second;
+Places *Mass::getPlaces(int handle) {
+	return Mass::placesMap.find(handle)->second;
 }
 
-int Mass::numPlacesInstances ( ) {
-    return Mass::placesMap.size ( );
+int Mass::numPlacesInstances() {
+	return Mass::placesMap.size();
 }
-
 
 Agents *Mass::getAgents(int handle) {
-    return Mass::agentsMap.find ( handle )->second;
+	return Mass::agentsMap.find(handle)->second;
 }
 
-int Mass::numAgentsInstances ( ) {
-    return Mass::agentsMap.size ( );
+int Mass::numAgentsInstances() {
+	return Mass::agentsMap.size();
+}
+
+Places *Mass::createPlaces(int handle, std::string classname, void *argument,
+		int argSize, int dimensions, int size[], int boundary_width) {
+	Places *places = Mass::dispatcher->createPlaces(handle, classname, argument,
+			argSize, dimensions, size, boundary_width);
+	if (NULL != places) {
+		placesMap[handle] = places;
+	}
+	return places;
+}
+
+Agents *Mass::createAgents(int handle, std::string classname, void *argument, int argSize,
+		Places *places, int initPopulation) {
+	Agents *agents = Mass::dispatcher->createAgents(handle, classname, argument,
+			argSize, places, initPopulation);
+	if (NULL != agents) {
+		agentsMap[handle] = agents;
+	}
+	return agents;
 }
 
 } /* namespace mass */

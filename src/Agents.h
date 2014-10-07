@@ -11,16 +11,13 @@
 #include <string>
 #include <vector>
 
-#include "Agent.h"
-#include "Places.h"
-#include "Dispatcher.h"
+namespace mass {
 
 // forward declarations
-//class Dispatcher;
-//class Places;
+class Agent;
 class AgentsPartition;
-
-namespace mass {
+class Dispatcher;
+class Places;
 
 class Agents {
     friend class AgentsPartition;

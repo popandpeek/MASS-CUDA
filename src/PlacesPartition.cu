@@ -14,6 +14,7 @@
 #include "Dispatcher.h"
 #include "Places.h"
 #include "PlacesPartition.h"
+#include "Mass.h"
 
 namespace mass {
 

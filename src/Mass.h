@@ -10,15 +10,11 @@
 #include <iostream>
 #include <stddef.h>
 #include <map>
-#include "Agents.h"
-#include "Dispatcher.h"
-
-#define WARP_SIZE 32    // threads per warp
-#define BLOCK_SIZE 512  // max threads per block
-
 
 namespace mass {
 
+class Agents;
+class Dispatcher;
 class Places;
 
 class Mass {
@@ -74,6 +70,7 @@ public:
 	/**
 	 * Creates a Places object with the specified parameters.
 	 * @param handle the unique number that will identify this Places object.
+	 * @param classname the name of the Place class to be dynamically loaded
 	 * @param argument an argument that will be passed to all Places upon creation
 	 * @param argSize the size in bytes of argument
 	 * @param dimensions the number of dimensions in the places matrix
@@ -82,36 +79,21 @@ public:
 	 * numDeep, ...}. This must be dimensions elements long.
 	 * @return a pointer the the created places object
 	 */
-	template<typename T>
-	static Places *createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int boundary_width) {
-		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument,
-				argSize, dimensions, size);
-		if (NULL != places) {
-			placesMap[handle] = places;
-		}
-		return places;
-	}
+	static Places *createPlaces(int handle, std::string classname, void *argument,
+			int argSize, int dimensions, int size[], int boundary_width);
 
 	/**
 	 * Creates an Agents object with the specified parameters.
 	 * @param handle the unique number that will identify this Agents object.
+	 * @param classname the name of the Agent class to be dynamically loaded
 	 * @param argument an argument that will be passed to all Agents upon creation
 	 * @param argSize the size in bytes of argument
 	 * @param places the Places object upon which this agents collection will operate.
 	 * @param initPopulation the starting number of agents to instantiate
 	 * @return
 	 */
-	template<typename T>
-	static Agents *createAgents(int handle, void *argument, int argSize,
-			Places *places, int initPopulation) {
-		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument,
-				argSize, places, initPopulation);
-		if (NULL != agents) {
-			agentsMap[handle] = agents;
-		}
-		return agents;
-	}
+	static Agents *createAgents(int handle, std::string classname, void *argument, int argSize,
+			Places *places, int initPopulation);
 
 private:
     static std::map<int, Places*> placesMap;

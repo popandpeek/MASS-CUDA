@@ -5,18 +5,16 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef PLACES_H_
-#define PLACES_H_
+#pragma once
 
 #include <string>
 #include <vector>
-#include "MassException.h"
-//#include "PlacesPartition.h"
 
 
 namespace mass {
 // forward declarations
 class Dispatcher;
+class Place;
 class PlacesPartition;
 
 class Places {
@@ -187,4 +185,3 @@ protected:
 };
 
 } /* namespace mass */
-#endif // PLACES_H_

@@ -9,11 +9,11 @@
 
 #include <string>
 #include <vector>
-#include "Agents.h"
-
-//class Agents;
 
 namespace mass {
+
+// forward declarations
+class Agents;
 
 class AgentsPartition {
 

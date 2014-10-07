@@ -8,7 +8,10 @@
 
 #include <string>
 #include <vector>
+
 #include "AgentsPartition.h"
+#include "Agents.h"
+#include "cudaUtil.h"
 #include "Mass.h"
 
 
