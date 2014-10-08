@@ -10,6 +10,8 @@
 #include<cuda_runtime.h>
 #include <string>
 
+#include "MObject.h"
+
 namespace mass {
 class Place;
 /**
