@@ -12,21 +12,51 @@
 using namespace mass;
 
 AllTests::AllTests() {
-
 }
 
 AllTests::~AllTests() {
-
 }
 
-bool AllTests::runDispatcherTests(){
+bool AllTests::runDispatcherTests() {
 
 	return true;
 }
 
 bool AllTests::runMassTests() {
+	Mass::log("Running Mass tests");
+	int failures = 0;
 
-	return true;
+	if (Mass::numAgentsInstances() != 0) {
+		++failures;
+		Mass::log(
+				"Mass::numAgentsInstances() returning more than 0, but should be 0.");
+	} else {
+		Mass::log("Mass::numAgentsInstances() passed.");
+	}
+
+	if (Mass::numPlacesInstances() != 0) {
+		++failures;
+		Mass::log(
+				"Mass::numPlacesInstances() returning more than 0, but should be 0.");
+	} else {
+		Mass::log("Mass::numPlacesInstances() passed.");
+	}
+
+	if (NULL != Mass::getAgents(0)) {
+		++failures;
+		Mass::log("Mass::getAgents(0) is not returning NULL, but should.");
+	} else {
+		Mass::log("Mass::getAgents(0) passed.");
+	}
+
+	if (NULL != Mass::getPlaces(0)) {
+		++failures;
+		Mass::log("Mass::getPlaces(0) is not returning NULL, but should.");
+	} else {
+		Mass::log("Mass::getPlaces(0) passed.");
+	}
+
+	return 0 == failures;
 }
 
 bool AllTests::runPlacesTests() {

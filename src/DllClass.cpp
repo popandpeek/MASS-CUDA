@@ -1,6 +1,6 @@
 /**
- *  @file DllClass.h
- *  @author Prof. Fukuda
+ *  @file DllClass.cpp
+ *  @author Prof. Fukuda, modified by Nate Hart
  *
  *  This file was adapted from the file DllClass.cpp in the Mass c++ library.
  *
@@ -11,6 +11,8 @@
 #include <sstream>
 #include "DllClass.h"
 #include "Mass.h"
+#include "Agent.h"
+#include "Place.h"
 
 using namespace std;
 
@@ -29,7 +31,8 @@ DllClass::DllClass(string className) {
 
 	// load a given class
 	if ((dllHandle = dlopen(dot_className, RTLD_LAZY)) == NULL) {
-		ss << "class: " << dot_className << " not found. Exiting program." << flush;
+		ss << "class: " << dot_className << " not found. Exiting program."
+				<< flush;
 		Mass::log(ss.str());
 		exit(-1);
 	}
@@ -37,6 +40,19 @@ DllClass::DllClass(string className) {
 	// register the object instantiation/destroy functions
 	instantiate = (instantiate_t *) dlsym(dllHandle, "instantiate");
 	destroy = (destroy_t *) dlsym(dllHandle, "destroy");
+}
+
+DllClass::~DllClass() {
+	if (NULL != placeElements) {
+		 free(placeElements);
+	}
+
+	for (int i = 0; i < agentElements.size(); ++i) {
+		if (NULL != agentElements[i]) {
+			free(agentElements[i]);
+		}
+	}
+	agentElements.empty();
 }
 
 } /* namespace mass */

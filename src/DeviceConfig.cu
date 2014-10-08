@@ -10,6 +10,7 @@
 #include "Dispatcher.h"
 #include "Agent.h"
 #include "Place.h"
+#include "Mass.h"
 
 namespace mass {
 
@@ -19,6 +20,7 @@ DeviceConfig::DeviceConfig() :
 
 DeviceConfig::DeviceConfig(int device) :
 		deviceNum(device), loaded(false) {
+	Mass::log("Initializing deviceConfig");
 	cudaSetDevice(deviceNum);
 	cudaStreamCreate(&inputStream);
 	cudaStreamCreate(&outputStream);
@@ -26,8 +28,11 @@ DeviceConfig::DeviceConfig(int device) :
 }
 
 DeviceConfig::~DeviceConfig() {
+	Mass::log("Destroying deviceConfig");
 	cudaSetDevice(deviceNum);
 	// destroy streams
+
+	// TODO there is a bug here that crashes the program.
 	cudaStreamDestroy(inputStream);
 	cudaStreamDestroy(outputStream);
 	// destroy events

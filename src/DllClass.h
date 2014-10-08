@@ -14,8 +14,7 @@
 #include <string>
 #include <vector>
 #include <dlfcn.h> // dlopen dlsym dlclose
-#include "Agent.h"
-#include "Place.h"
+#include "MObject.h"
 
 namespace mass {
 
@@ -43,6 +42,11 @@ public:
 	 * @param className the name of a valid user implemented class.
 	 */
 	DllClass(std::string className);
+
+	/**
+	 * Destroys this DllClass
+	 */
+	~DllClass();
 
 	// place instances
 	void *placeElements;

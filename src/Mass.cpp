@@ -25,20 +25,20 @@ time_t Mass::rawtime;
 struct tm * Mass::ptm;
 
 void Mass::init(string args[], int ngpu) {
-	Mass::dispatcher->init(ngpu);
 	Mass::log("Initializing Mass");
+	Mass::dispatcher->init(ngpu);
 }
 
 void Mass::init(string args[]) {
+	Mass::log("Initializing Mass");
 	Mass::dispatcher = new Dispatcher();
 	// 0 is the flag to use all available GPU resources
 	Mass::dispatcher->init(0);
-	Mass::log("Initializing Mass");
 }
 
 void Mass::finish() {
-	delete Mass::dispatcher;
 	Mass::log("Finishing Mass");
+	delete Mass::dispatcher;
 	Mass::logger.close();
 }
 
@@ -70,7 +70,7 @@ void Mass::log(std::string message) {
 	}
 
 	strftime(buf, BUFSIZE, "%H:%M:%S ", ptm); // record time
-	Mass::logger << buf << message << "\n"; // log message
+	Mass::logger << buf << message << endl; // log message
 }
 
 void Mass::setLogFile(std::string filename) {

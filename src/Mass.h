@@ -36,7 +36,7 @@ public:
 	 *  Must be called prior to all other MASS methods.
 	 *  @param args what do these do?
 	 */
-	static void init(std::string args[]);
+	static void init(std::string args[] = NULL);
 
 	/**
 	 *  Shuts down the MASS environment, releasing all resources.

@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include "Dispatcher.h"
+//#include "DllClass.h"
 #include "Places.h"
 #include "PlacesPartition.h"
 #include "Mass.h"
@@ -132,9 +133,9 @@ void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
 	// set pointer
 	Places *places = Mass::getPlaces(handle);
 	if (0 == rank) {
-		hPtr = places->elements;
+		hPtr = places->dllClass->placeElements;
 	} else {
-		hPtr = shiftPtr(places->elements, rank * numElements - ghostWidth, Tsize);
+		hPtr = shiftPtr(places->dllClass->placeElements, rank * numElements - ghostWidth, Tsize);
 	}
 }
 

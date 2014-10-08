@@ -9,10 +9,12 @@
 
 #include <string>
 #include <vector>
+#include "DllClass.h"
 
 namespace mass {
 // forward declarations
 class Dispatcher;
+//class DllClass;
 class Place;
 class PlacesPartition;
 
@@ -168,18 +170,19 @@ protected:
 	 */
 	PlacesPartition *getPartition(int rank);
 
+	void init_all( void *argument, int argSize );
+
 	int handle;         // User-defined identifier for this Places_Base
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	int boundary_width; // the width of borders between sections
-	void *argument;
-	int argSize;
 	Dispatcher *dispatcher; // the GPU dispatcher
 	unsigned numElements;
 	Place **elemPtrs;
 	unsigned Tsize;
-	void *elements;
 	std::map<int, PlacesPartition*> partitions;
+	std::string classname;
+	DllClass *dllClass;
 };
 
 } /* namespace mass */

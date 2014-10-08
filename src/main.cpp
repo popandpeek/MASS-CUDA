@@ -26,10 +26,17 @@ int main() {
 	Mass::setLogFile("test_results.txt");
 	Mass::log("Logging in test file successfully.");
 
+	Mass::init();
+
+	Mass::log("Mass::init() successful.");
+
+	Mass::log("Beginning testing of Mass class.");
 	if (!tests.runMassTests()) {
 		ss << "\tMass Tests\n";
 	}
+	Mass::log("Done testing Mass class.");
 
+	Mass::log("Beginning testing of Dispatcher class.");
 	if (!tests.runDispatcherTests()) {
 		ss << "\tDispatcher Tests\n";
 	}
@@ -49,6 +56,12 @@ int main() {
 	if (!tests.runAgentsTests()) {
 		ss << "\tAgents Tests\n";
 	}
+
+
+	Mass::log("Calling Mass::finish()");
+	Mass::finish();
+
+	Mass::log("Mass::finish() passed.");
 
 	cout << "Tests finished. The following tests failed:\n" << ss.str() << "\n"
 			<< "End failed tests." << endl;

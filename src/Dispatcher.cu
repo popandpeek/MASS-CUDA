@@ -7,7 +7,7 @@
  */
 
 #define COMPUTE_CAPABILITY_MAJOR 3
-
+#include <sstream>
 #include "Agents.h"
 #include "AgentsPartition.h"
 #include "cudaUtil.h"
@@ -26,7 +26,8 @@ Dispatcher::Dispatcher() {
 
 void Dispatcher::init(int ngpu) {
 	// adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
-
+	stringstream ss;
+	Mass::log(("Initializing Dispatcher"));
 	if (0 == ngpu) { // use all available GPU resources
 		cudaGetDeviceCount(&ngpu);
 	}

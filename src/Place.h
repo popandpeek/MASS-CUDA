@@ -8,8 +8,9 @@
 #pragma once
 
 // change either of these numbers to optomize for a particular simulation's needs
-#define MAXAGENTS 4
-#define MAXNEIGHBORS 8
+#define MAX_AGENTS 4
+#define MAX_NEIGHBORS 8
+#define MAX_DIMS 6
 
 #include<cuda_runtime.h>
 
@@ -24,8 +25,9 @@ class Agent;
  *  The Place class defines the default functions for acheiving GPU parallelism between place objects.
  *  It also defines the interface necessary for end users to implement.
  */
-class Place : public MObject {
+class Place: public MObject {
 	friend class Agent;
+	friend class Places;
 
 public:
 	/**
@@ -48,6 +50,18 @@ public:
 	__host__ __device__ virtual void *getMessage() = 0;
 
 	/**
+	 * Returns the number of bytes necessary to store this agent implementation.
+	 * The most simple implementation is a single line of code:
+	 * return sizeof(*this);
+	 *
+	 * Because sizeof is respoved at compile-time, the user must implement this
+	 * function rather than inheriting it.
+	 *
+	 * @return an int >= 0;
+	 */
+	MASS_FUNCTION virtual unsigned placeSize() = 0;
+
+	/**
 	 * Registers an agent with this place.
 	 * @param agent the agent that is self-registering.
 	 */
@@ -61,15 +75,15 @@ public:
 
 protected:
 
-	int *size;            // the size of the Places matrix
+	int size[MAX_DIMS];   // the size of the Places matrix
+	char numDims;
 	int index;            // the row-major index of this place
-	Place *neighbors[MAXNEIGHBORS];  // my neighbors
-	Agent *agents[MAXAGENTS];
+	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
+	Agent *agents[MAX_AGENTS];
 	unsigned agentPop; // the population of agents on this place
 	// void* outMessage;        // out message needs to be declared in the derived class statically
-	int outMessage_size;  // the number of bytes in an out message
-	void *inMessages[MAXNEIGHBORS]; // holds a pointer to each neighbor's outmessage.
-	int inMessage_size; // the size of an in message
+	int message_size;  // the number of bytes in a message
+	void *inMessages[MAX_NEIGHBORS]; // holds a pointer to each neighbor's outmessage.
 
 };
 } /* namespace mass */

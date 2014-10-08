@@ -5,6 +5,8 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
+#include <sstream> // stringstream
+#include "DllClass.h"
 #include "Mass.h"
 #include "Place.h"
 #include "Places.h"
@@ -17,10 +19,10 @@ using namespace std;
 namespace mass {
 
 Places::~Places() {
-	if (NULL != elements) {
-		free(elements);
-	}
 	delete[] elemPtrs;
+	delete[] dimensions;
+	// destroy dll class
+	delete dllClass;
 	partitions.empty();
 }
 
@@ -70,22 +72,45 @@ int Places::getNumPartitions() {
 void Places::setPartitions(int numParts) {
 
 	// make sure update is necessary
-	if (!partitions.size() == numParts && numParts > 0) {
+	if (partitions.size() != numParts && numParts > 0) {
+		stringstream ss;
+		ss << "Setting places " << handle << " partitions to " << numParts;
+		Mass::log(ss.str());
+
 		dispatcher->refreshPlaces(this); // get current data
 
-		char *copyStart = (char*) elements; // this is a hack to allow arithmatic on a void* pointer
-		int numRanks = partitions.size();
+		// remove old partitions
+		map<int, PlacesPartition*>::iterator it = partitions.begin();
+		while (it != partitions.end()) {
+			delete it->second;
+			++it;
+		}
+
+		char *copyStart = (char*) dllClass->placeElements; // this is a hack to allow arithmetic on a void* pointer
 
 		int sliceSize = numElements / numParts;
 		int remainder = numElements % numParts;
 
-		PlacesPartition *part = new PlacesPartition( handle, 0, sliceSize,
-				boundary_width, numDims, dimensions, Tsize );
+		// there is always at least one partition
+		PlacesPartition *part = new PlacesPartition(handle, 0, sliceSize,
+				boundary_width, numDims, dimensions, Tsize);
+		part->hPtr = copyStart;
+		copyStart += Tsize * sliceSize - part->ghostWidth; // subtract ghost width as rank 0 has none
+		partitions[part->getRank()] = part;
 
-		for (int i = 0; i < numRanks; ++i) {
-
+		for (int i = 1; i < numParts; ++i) {
+			// last rank will have remainder elements, not sliceSize
+			int sz = (numParts - 1 == i) ? remainder : sliceSize;
+			// set hPtr
+			part = new PlacesPartition(handle, i, sz, boundary_width,
+					numDims, dimensions, Tsize);
+			part->hPtr = copyStart;
+			copyStart += Tsize * sliceSize;
+			partitions[part->getRank()] = part;
 		}
 	}
+
+	// TODO set corresponding agents partitions
 }
 
 void Places::setTsize(int size) {
@@ -130,29 +155,86 @@ vector<int> Places::getIndexVector(int rowMajorIdx) {
 
 PlacesPartition *Places::getPartition(int rank) {
 	if (rank < 0 || rank >= partitions.size()) {
-		throw MassException(
-				"Out of bounds rank specified in Places::getPartition()");
+		stringstream ss;
+		ss << "Requested partition " << rank << " but there are only 0 - "
+				<< getNumPartitions() - 1 << " are valid.";
+		Mass::log(ss.str());
+		throw MassException(ss.str());
 	}
 	return partitions[rank];
 }
 
-Places::Places(int handle, std::string className, void *argument, int argSize, int dimensions,
-		int size[], int boundary_width) {
+Places::Places(int handle, std::string className, void *argument, int argSize,
+		int dimensions, int size[], int boundary_width) {
 	this->handle = handle;
 	this->numDims = dimensions;
-	this->dimensions = size;
-	this->boundary_width = boundary_width;
-	this->argument = argument;
-	this->argSize = argSize;
-	this->dispatcher = Mass::dispatcher; // the GPU dispatcher
 
 	this->numElements = 1;
+	this->dimensions = new int[numDims];
 	for (int i = 0; i < numDims; ++i) {
+		this->dimensions[i] = size[i];
 		numElements *= size[i];
 	}
+
+	this->boundary_width = boundary_width;
+//	this->argument = argument;
+//	this->argSize = argSize;
+	this->dispatcher = Mass::dispatcher; // the GPU dispatcher
 	this->elemPtrs = new Place*[numElements];
 	this->Tsize = 0;
-	this->elements = NULL;
+	this->classname = className;
+	init_all(argument, argSize);
+	dispatcher->configurePlaces(this);
+}
+
+void Places::init_all(void *argument, int argSize) {
+	// For debugging
+	stringstream ss;
+
+	ss << "Places Initialization:" << "\thandle = " << handle << "\n\tclass = "
+			<< classname << "\n\targument_size = " << argSize
+			<< "\n\targument = " << (char *) argument << "\n\tdimensionality = "
+			<< numDims << "\n\tdimensions = { " << dimensions[0];
+	for (int i = 0; i < numDims; i++) {
+		ss << " ," << dimensions[i];
+	}
+	ss << " }";
+	Mass::log(ss.str());
+
+	// Print the current working directory
+	char buf[200];
+	getcwd(buf, 200);
+	ss.str("");
+	ss << "Current working directory: " << buf;
+	Mass::log(ss.str());
+
+	// load the construtor and destructor
+	dllClass = new DllClass(classname);
+
+	// instanitate a new place
+	Place *protoPlace = (Place *) (dllClass->instantiate(argument));
+	this->Tsize = protoPlace->placeSize();
+
+	// set common place fields
+	protoPlace->numDims = numDims;
+	for (int i = 0; i < numDims; ++i) {
+		protoPlace->size[i] = dimensions[i];
+	}
+
+	//  space for an entire set of place instances
+	dllClass->placeElements = malloc(numElements * Tsize);
+
+	// char is used to allow void* arithmatic in bytes
+	char *copyDest = (char*) dllClass->placeElements;
+
+	for (int i = 0; i < numElements; ++i) {
+		// memcpy protoplace
+		memcpy(copyDest, protoPlace, Tsize);
+		((Place *) copyDest)->index = i; // set the unique index
+		copyDest += Tsize; // increment copy destination
+	}
+
+	dllClass->destroy(protoPlace); // we no longer need this
 }
 
 } /* namespace mass */
