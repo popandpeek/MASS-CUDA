@@ -74,7 +74,7 @@ void Dispatcher::refreshPlaces(Places *places) {
 		if (part->isLoaded()) {
 			DeviceConfig d = loadedPlaces[part];
 			cudaSetDevice(d.deviceNum);
-			part->retrieve(d.outputStream, false); // retreive via secondary stream without deleting
+//			part->retrieve(d.outputStream, false); // retreive via secondary stream without deleting
 		}
 	}
 }
@@ -134,7 +134,7 @@ void Dispatcher::callAllPlaces(Places *places, int functionId, void *argument,
 	} else {
 		// TODO in phase 2
 	}
-	//// for each rank
+	// for each rank
 	//   for ( int rank = 0; rank < numRanks; ++rank ) {
 	//       DeviceConfig d = deviceInfo.front ( );
 	//       deviceInfo.pop ( );
@@ -286,46 +286,19 @@ void Dispatcher::getAgentsPartition(AgentsPartition *part,
 	}
 }
 
-Places *Dispatcher::createPlaces(int handle, string classname, void *argument,
-		int argSize, int dimensions, int size[], int boundary_width) {
-	// TODO implement
-	Places *retVal = new Places(handle, argument, argSize, dimensions, size,
-			boundary_width);
+void Dispatcher::configurePlaces(Places *places) {
 
-	// capture size of dll object
-//	int Tsize = sizeof(T);
-//	retVal->Tsize = Tsize;
+	// determine simulation size, if small enough, run on one GPU
+	places->setPartitions(1);
 
-	std::vector<PlacesPartition*> parts;
-
-	if (deviceInfo.size() == 1) {
-		// create the places on the GPUs
-		DeviceConfig d = deviceInfo.front();
-		PlaceArray &arr = d.devPlaces;
-
-		if (0 == arr.qty || arr.qty < retVal->numElements) {
-			if (NULL == arr.devPtr) {
-				cudaFree(arr.devPtr);
-			}
-
-			arr.qty = retVal->numElements;
-			cudaMalloc(&arr.devPtr, arr.qty * sizeof(Place*));
-		}
-
-		// allocate space for the places
-		PlacesPartition *part = new PlacesPartition(handle, 0,
-				retVal->numElements, 0, dimensions, size);
-		// install that data in the places object
-	} else {
-		// TODO phase II
-	}
-	return retVal;
+	// if possible, run simulation one partition per GPU
+	// TODO phase II
+	// else create n GPU-sized partitions
+	// TODO phase III
 }
 
-Agents *Dispatcher::createAgents(int handle, string classname, void *argument,
-		int argSize, Places *places, int initPopulation) {
-	// capture size of dll object
-	return NULL;
+void Dispatcher::configureAgents(Agents *agents) {
+	// TODO implement
 }
 
 //int ngpu;                   // number of GPUs in use

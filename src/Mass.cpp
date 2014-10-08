@@ -58,26 +58,6 @@ int Mass::numAgentsInstances() {
 	return Mass::agentsMap.size();
 }
 
-Places *Mass::createPlaces(int handle, std::string classname, void *argument,
-		int argSize, int dimensions, int size[], int boundary_width) {
-	Places *places = Mass::dispatcher->createPlaces(handle, classname, argument,
-			argSize, dimensions, size, boundary_width);
-	if (NULL != places) {
-		placesMap[handle] = places;
-	}
-	return places;
-}
-
-Agents *Mass::createAgents(int handle, std::string classname, void *argument,
-		int argSize, Places *places, int initPopulation) {
-	Agents *agents = Mass::dispatcher->createAgents(handle, classname, argument,
-			argSize, places, initPopulation);
-	if (NULL != agents) {
-		agentsMap[handle] = agents;
-	}
-	return agents;
-}
-
 void Mass::log(std::string message) {
 	// get local time
 	time(&rawtime);

@@ -20,93 +20,150 @@
 namespace mass {
 
 class PlacesPartition {
-    friend class Places;
+	friend class Places;
 
 public:
 
-    PlacesPartition ( int handle, int rank, int numElements, int ghostWidth,
-                      int n, int *dimensions );
+	/**
+	 * Constructor.
+	 * @param handle the handle of the places instance this partition belongs to
+	 * @param rank the rank of this place in range [0,n)
+	 * @param numElements the number of elements in this partition, not including ghost width
+	 * @param ghostWidth the number of x elements to exchange in ghost space
+	 * @param n the number of dimensions in this places instance
+	 * @param dimensions the size of the n dimensions
+	 * @param Tsize the number of bytes in a place instance
+	 */
+	PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
+			int n, int *dimensions, int Tsize);
+
 	/**
 	 *  Destructor
 	 */
-    ~PlacesPartition ( );
+	~PlacesPartition();
 
 	/**
 	 *  Returns the number of place elements in this partition.
 	 */
-    int size ( );
+	int size();
 
 	/**
 	 *  Returns the number of place elements and ghost elements.
 	 */
-    int sizePlusGhosts ( );
+	int sizePlusGhosts();
 
 	/**
 	 *  Gets the rank of this partition.
 	 */
-    int getRank ( );
+	int getRank();
 
 	/**
 	 *  Returns an array of the Place elements contained in this PlacesPartition object. This is an expensive
 	 *  operation since it requires memory transfer.
 	 */
-    void *hostPtr ( );
+	void *hostPtr();
 
 	/**
 	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
 	 */
-    void *hostPtrPlusGhosts ( );
+	void *hostPtrPlusGhosts();
 
 	/**
 	 *  Returns the pointer to the GPU data. NULL if not on GPU.
 	 */
-    void *devicePtr ( );
+	void *devicePtr();
 
-    void setDevicePtr ( void *places );
+	void setDevicePtr(void *places);
 
 	/**
 	 *  Returns the handle associated with this PlacesPartition object that was set at construction.
 	 */
-    int getHandle ( );
+	int getHandle();
 
 	/**
 	 *  Sets the start and number of places in this partition.
 	 */
-    void setSection ( void *start );
+	void setSection(void *start);
 
-    void setQty ( int qty );
+	/**
+	 * Queries to see if this partition is loaded on a device.
+	 * @return true if it is loaded
+	 */
+	bool isLoaded();
 
-    bool isLoaded ( );
+	/**
+	 * Set the loaded status of this partition.
+	 * @param loaded
+	 */
+	void setLoaded(bool loaded);
 
-    void setLoaded ( bool loaded );
+	/**
+	 * Returns the number of elements in the ghost width.
+	 * @return
+	 */
+	int getGhostWidth();
 
-    void makeLoadable ( );
+	/**
+	 * Sets the ghost width to width X elements. Calculates the actual number
+	 * of elements using n and dimensions, then sets pointers accordingly.
+	 * @param width the number of rows in the X direction to exchange between turns.
+	 * @param n the number of dimensions
+	 * @param dimensions the size of each n dimensions
+	 */
+	void setGhostWidth(int width, int n, int *dimensions);
 
-    void load ( cudaStream_t stream );
+	/**
+	 * Returns a pointer to the left buffer.
+	 */
+	void *getLeftBuffer();
 
-    bool retrieve ( cudaStream_t stream, bool freeOnRetrieve );
+	/**
+	 * Returns a pointer to the right buffer.
+	 */
+	void *getRightBuffer();
 
-    int getGhostWidth ( );
+	/**
+	 * Returns a pointer to the start of the left ghost space.
+	 */
+	void *getLeftGhost();
 
-    void setGhostWidth ( int width, int n, int *dimensions );
+	/**
+	 * Returns a pointer to the start of the right ghost space.
+	 */
+	void *getRightGhost();
 
-	void updateLeftGhost(void *ghost, cudaStream_t stream);
+	/**
+	 * Returns the ideal block dimension for this partition. Used for launching
+	 * kernel functions on this partition's data.
+	 *
+	 * @return
+	 */
+	dim3 blockDim();
 
-    void updateRightGhost ( void *ghost, cudaStream_t stream );
+	/**
+	 * Returns the ideal thread dimension for this partition. Used for launching
+	 * kernel functions on this partition's data.
+	 *
+	 * @return
+	 */
+	dim3 threadDim();
 
-    void *getLeftBuffer ( );
-
-    void *getRightBuffer ( );
-
-    dim3 blockDim ( );
-
-    dim3 threadDim ( );
-
-    void setIdealDims ( );
-
-    int getPlaceBytes ( );
+	/**
+	 * Gets the number of bytes for a single place element in the Places instance
+	 * this partition belongs to.
+	 *
+	 * @return an int >= 0
+	 */
+	int getPlaceBytes();
 
 private:
+
+	/**
+	 * Refreshes the ideal dimensions for kernel launches. This should be called
+	 * only when the partition is created or ghost width changes.
+	 */
+	void setIdealDims();
+
 	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
 	void *dPtr; // pointer to GPU data
 	int handle;         // User-defined identifier for this PlacesPartition

@@ -50,18 +50,11 @@ public:
 	 **************************************************************************/
 
 	/**
-	 *  Creates a Places object.
+	 *  Configures a Places object.
 	 *
-	 *  @param handle the unique identifier of this places collections
-	 *  @param classname the name of the Place class to be dynamically loaded
-	 *  @param argument a continuous space of arguments used to initialize the places
-	 *  @param argSize the size in bytes of the argument array
-	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
-	 *  @param size the size of each dimension. This MUST be dimensions elements long.
-	 *  @return the created Places collection
+	 *  @param places the places object to configure.
 	 */
-	Places *createPlaces(int handle, std::string classname, void *argument, int argSize,
-			int dimensions, int size[], int boundary_width);
+	void configurePlaces(Places *places);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This
@@ -124,15 +117,9 @@ public:
 
 	/**
 	 * Creates an Agents object with the specified parameters.
-	 * @param handle the unique number that will identify this Agents object.
-	 * @param classname the name of the Agent class to be dynamically loaded
-	 * @param argument an argument that will be passed to all Agents upon creation
-	 * @param argSize the size in bytes of argument
-	 * @param places the Places object upon which this agents collection will operate.
-	 * @param initPopulation the starting number of agents to instantiate
-	 * @return the created Agents collection
+	 * @param agents the collection to configure
 	 */
-	Agents *createAgents(int handle, std::string classname, void *argument, int argSize, Places *places, int initPopulation);
+	void configureAgents(Agents *agents);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This

@@ -67,19 +67,24 @@ int Places::getNumPartitions() {
 	return partitions.size();
 }
 
-void Places::addPartitions(std::vector<PlacesPartition*> parts) {
+void Places::setPartitions(int numParts) {
 
-	// make sure add is valid
-	if (NULL == elements) {
-		elements = malloc(Tsize * numElements);
-	}
+	// make sure update is necessary
+	if (!partitions.size() == numParts && numParts > 0) {
+		dispatcher->refreshPlaces(this); // get current data
 
-	char *copyStart = (char*) elements; // this is a hack to allow arithmatic on a void* pointer
-	int numRanks = parts.size();
+		char *copyStart = (char*) elements; // this is a hack to allow arithmatic on a void* pointer
+		int numRanks = partitions.size();
 
-	for (int i = 0; i < numRanks; ++i) {
-		PlacesPartition* part = parts[i];
-		partitions[i] = part;
+		int sliceSize = numElements / numParts;
+		int remainder = numElements % numParts;
+
+		PlacesPartition *part = new PlacesPartition( handle, 0, sliceSize,
+				boundary_width, numDims, dimensions, Tsize );
+
+		for (int i = 0; i < numRanks; ++i) {
+
+		}
 	}
 }
 
@@ -131,8 +136,8 @@ PlacesPartition *Places::getPartition(int rank) {
 	return partitions[rank];
 }
 
-Places::Places(int handle, void *argument, int argSize,
-		int dimensions, int size[], int boundary_width) {
+Places::Places(int handle, std::string className, void *argument, int argSize, int dimensions,
+		int size[], int boundary_width) {
 	this->handle = handle;
 	this->numDims = dimensions;
 	this->dimensions = size;

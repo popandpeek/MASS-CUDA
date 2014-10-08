@@ -67,35 +67,6 @@ public:
      */
     static int numAgentsInstances ( );
 
-
-	/**
-	 * Creates a Places object with the specified parameters.
-	 * @param handle the unique number that will identify this Places object.
-	 * @param classname the name of the Place class to be dynamically loaded
-	 * @param argument an argument that will be passed to all Places upon creation
-	 * @param argSize the size in bytes of argument
-	 * @param dimensions the number of dimensions in the places matrix
-	 * (i.e. 1, 2, 3, etc...)
-	 * @param size the size of each dimension ordered {numRows, numCols,
-	 * numDeep, ...}. This must be dimensions elements long.
-	 * @return a pointer the the created places object
-	 */
-	static Places *createPlaces(int handle, std::string classname, void *argument,
-			int argSize, int dimensions, int size[], int boundary_width);
-
-	/**
-	 * Creates an Agents object with the specified parameters.
-	 * @param handle the unique number that will identify this Agents object.
-	 * @param classname the name of the Agent class to be dynamically loaded
-	 * @param argument an argument that will be passed to all Agents upon creation
-	 * @param argSize the size in bytes of argument
-	 * @param places the Places object upon which this agents collection will operate.
-	 * @param initPopulation the starting number of agents to instantiate
-	 * @return
-	 */
-	static Agents *createAgents(int handle, std::string classname, void *argument, int argSize,
-			Places *places, int initPopulation);
-
 	/**
 	 * Logs a message. This function will record the time of the log event and add
 	 * a newline to the end of the message. All logged events are appended to
