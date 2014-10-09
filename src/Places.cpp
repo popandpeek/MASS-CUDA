@@ -191,21 +191,19 @@ void Places::init_all(void *argument, int argSize) {
 	// For debugging
 	stringstream ss;
 
-	ss << "Places Initialization:" << "\thandle = " << handle << "\n\tclass = "
+	ss << "Places Initialization:\n" << "\thandle = " << handle << "\n\tclass = "
 			<< classname << "\n\targument_size = " << argSize
 			<< "\n\targument = " << (char *) argument << "\n\tdimensionality = "
 			<< numDims << "\n\tdimensions = { " << dimensions[0];
-	for (int i = 0; i < numDims; i++) {
+	for (int i = 1; i < numDims; i++) {
 		ss << " ," << dimensions[i];
 	}
 	ss << " }";
-	Mass::log(ss.str());
 
 	// Print the current working directory
 	char buf[200];
 	getcwd(buf, 200);
-	ss.str("");
-	ss << "Current working directory: " << buf;
+	ss << "\n\tCurrent working directory: " << buf;
 	Mass::log(ss.str());
 
 	// load the construtor and destructor

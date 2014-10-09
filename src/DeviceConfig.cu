@@ -11,6 +11,7 @@
 #include "Agent.h"
 #include "Place.h"
 #include "Mass.h"
+#include "cudaUtil.h"
 
 namespace mass {
 
@@ -21,29 +22,59 @@ DeviceConfig::DeviceConfig() :
 DeviceConfig::DeviceConfig(int device) :
 		deviceNum(device), loaded(false) {
 	Mass::log("Initializing deviceConfig");
-	cudaSetDevice(deviceNum);
-	cudaStreamCreate(&inputStream);
-	cudaStreamCreate(&outputStream);
-	cudaEventCreate(&deviceEvent);
+	CATCH(cudaSetDevice(deviceNum));
+	CATCH(cudaStreamCreate(&inputStream));
+	CATCH(cudaStreamCreate(&outputStream));
+	CATCH(cudaEventCreate(&deviceEvent));
 }
 
 DeviceConfig::~DeviceConfig() {
-	Mass::log("Destroying deviceConfig");
-	cudaSetDevice(deviceNum);
+	Mass::log("deviceConfig destructor ");
+}
+
+void DeviceConfig::free() {
+	Mass::log("deviceConfig free ");
+	CATCH(cudaSetDevice(deviceNum));
 	// destroy streams
 
 	// TODO there is a bug here that crashes the program.
-	cudaStreamDestroy(inputStream);
-	cudaStreamDestroy(outputStream);
+	CATCH(cudaStreamDestroy(inputStream));
+	CATCH(cudaStreamDestroy(outputStream));
 	// destroy events
-	cudaEventDestroy(deviceEvent);
+	CATCH(cudaEventDestroy(deviceEvent));
 }
 
 bool DeviceConfig::isLoaded() {
 	return loaded;
 }
+
 void DeviceConfig::setLoaded(bool loaded) {
 	this->loaded = loaded;
 }
 
+DeviceConfig::DeviceConfig(const DeviceConfig& other) {
+	Mass::log("DeviceConfig copy constructor.");
+	deviceNum = other.deviceNum;
+	inputStream = other.inputStream;
+	outputStream = other.outputStream;
+	deviceEvent = other.deviceEvent;
+	devPlaces = other.devPlaces;
+	loaded = other.loaded;
+	devAgents = other.devAgents;
 }
+
+DeviceConfig &DeviceConfig::operator=(const DeviceConfig &rhs) {
+	Mass::log("DeviceConfig assignment operator.");
+	if (this != &rhs) {
+
+		deviceNum = rhs.deviceNum;
+		inputStream = rhs.inputStream;
+		outputStream = rhs.outputStream;
+		deviceEvent = rhs.deviceEvent;
+		devPlaces = rhs.devPlaces;
+		loaded = rhs.loaded;
+		devAgents = rhs.devAgents;
+	}
+	return *this;
+}
+} // end Mass namespace

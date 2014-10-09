@@ -75,7 +75,7 @@ public:
 	 *
 	 * @param message the message to log.
 	 */
-	static void log(std::string message);
+	static void log(const std::string &message);
 
 	/**
 	 * Sets the file to be used for logging. Closes out any existing logger if

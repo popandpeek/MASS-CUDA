@@ -10,6 +10,7 @@
  * define CERR to turn on error checking
  */
 #pragma once
+#include <cuda_runtime.h>
 
 namespace mass {
 

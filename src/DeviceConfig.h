@@ -10,25 +10,25 @@
 
 #include <map>
 
-namespace mass{
+namespace mass {
 
 // forward declarations
 class Agent;
 class Place;
 
-struct PlaceArray{
+struct PlaceArray {
 	Place** devPtr;
 	int qty;
-	PlaceArray(){
+	PlaceArray() {
 		devPtr = NULL;
 		qty = 0;
 	}
 };
 
-struct AgentArray{
+struct AgentArray {
 	Agent** devPtr;
 	int qty;
-	AgentArray(){
+	AgentArray() {
 		devPtr = NULL;
 		qty = 0;
 	}
@@ -38,11 +38,15 @@ class DeviceConfig {
 	friend class Dispatcher;
 
 public:
-	DeviceConfig( );
-	DeviceConfig( int device );
+	DeviceConfig();
+	DeviceConfig(int device);
 	virtual ~DeviceConfig();
 	bool isLoaded();
 	void setLoaded(bool loaded);
+	void free();
+	DeviceConfig( const DeviceConfig& other );
+
+	DeviceConfig &operator=(const DeviceConfig &rhs);
 
 private:
 	int deviceNum;
@@ -53,6 +57,7 @@ private:
 	std::map<int, AgentArray> devAgents;
 	bool loaded;
 
-}; // end class
+};
+// end class
 
 }// end namespace

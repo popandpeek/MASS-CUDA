@@ -30,13 +30,10 @@ int main() {
 
 	Mass::log("Mass::init() successful.");
 
-	Mass::log("Beginning testing of Mass class.");
 	if (!tests.runMassTests()) {
 		ss << "\tMass Tests\n";
 	}
-	Mass::log("Done testing Mass class.");
 
-	Mass::log("Beginning testing of Dispatcher class.");
 	if (!tests.runDispatcherTests()) {
 		ss << "\tDispatcher Tests\n";
 	}

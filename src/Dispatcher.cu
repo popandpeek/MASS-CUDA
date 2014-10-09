@@ -35,37 +35,34 @@ void Dispatcher::init(int ngpu) {
 	for (int device = 0; device < ngpu; ++device) {
 		cudaDeviceProp deviceProp;
 		cudaGetDeviceProperties(&deviceProp, device);
-		printf("Device %d has compute capability %d.%d.\n", device,
-				deviceProp.major, deviceProp.minor);
+		ss.str("");
+		ss << "Device " << device << " has compute capability "
+				<< deviceProp.major << "." << deviceProp.minor;
+		Mass::log(ss.str());
+		printf(ss.str().c_str());
+		printf("\n");
+
 		if (COMPUTE_CAPABILITY_MAJOR == deviceProp.major) {
 			// use this GPU
 			devices.push_back(device);
 		}
 	}
+	ss.str("");
+	ss << "Found " << devices.size() << " device(s) with compute capability "
+			<< COMPUTE_CAPABILITY_MAJOR << ".X";
+	Mass::log(ss.str());
 
 	for (int i = 0; i < devices.size(); i++) {
 		DeviceConfig d(devices[i]);
-//        d.deviceNum = devices[i];
-//        cudaSetDevice ( d.deviceNum );
-//        cudaStreamCreate ( &d.inputStream );
-//        cudaStreamCreate ( &d.outputStream );
-//        cudaEventCreate ( &d.deviceEvent );
 		deviceInfo.push(d);
 	}
 }
 
 Dispatcher::~Dispatcher() {
-	deviceInfo.empty();
-//    while(deviceInfo.size()>0) {
-//        DeviceConfig d = deviceInfo.front();
-//        deviceInfo.pop();
-//        cudaSetDevice ( d.deviceNum );
-//        // destroy streams
-//        cudaStreamDestroy ( d.inputStream );
-//        cudaStreamDestroy ( d.outputStream );
-//        // destroy events
-//        cudaEventDestroy ( d.deviceEvent );
-//    }
+    while(deviceInfo.size()>0) {
+        deviceInfo.front().free();
+        deviceInfo.pop();
+    }
 }
 
 void Dispatcher::refreshPlaces(Places *places) {

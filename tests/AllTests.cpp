@@ -8,6 +8,7 @@
 
 #include "AllTests.h"
 #include "src/Mass.h"
+#include "src/Places.h"
 
 using namespace mass;
 
@@ -18,12 +19,13 @@ AllTests::~AllTests() {
 }
 
 bool AllTests::runDispatcherTests() {
-
+//	Mass::log("Beginning testing of Dispatcher class.");
+//	Mass::log("Done testing of Dispatcher class.");
 	return true;
 }
 
 bool AllTests::runMassTests() {
-	Mass::log("Running Mass tests");
+	Mass::log("Beginning testing of Mass class.");
 	int failures = 0;
 
 	if (Mass::numAgentsInstances() != 0) {
@@ -56,10 +58,18 @@ bool AllTests::runMassTests() {
 		Mass::log("Mass::getPlaces(0) passed.");
 	}
 
+	Mass::log("Done testing of Mass class.");
 	return 0 == failures;
 }
 
 bool AllTests::runPlacesTests() {
+	Mass::log("Beginning testing of Places class.");
+
+	int arg = 5;
+	int size[] = {5};
+	Places *p = new Places(0, "Debug/tests/TestPlace.d", &arg, sizeof(int),1,size,0);
+
+	Mass::log("Done testing of Places class.");
 	return true;
 }
 

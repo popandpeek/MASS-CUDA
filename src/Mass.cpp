@@ -58,7 +58,7 @@ int Mass::numAgentsInstances() {
 	return Mass::agentsMap.size();
 }
 
-void Mass::log(std::string message) {
+void Mass::log(const std::string &message) {
 	// get local time
 	time(&rawtime);
 	ptm = localtime(&rawtime);
