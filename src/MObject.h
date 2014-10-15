@@ -6,7 +6,6 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 #pragma once
-#include <cuda_runtime.h>
 
 // easier for end users to understand than the __host__ __device__ meaning.
 #define MASS_FUNCTION __host__ __device__
@@ -25,15 +24,15 @@ public:
 	/**
 	 * Default constructor.
 	 */
-	MASS_FUNCTION MObject(){}
+	MObject(){}
 
 	/**
 	 * Default destructor.
 	 */
-	MASS_FUNCTION virtual ~MObject(){}
+	virtual ~MObject(){}
 
 	// TODO remove this call if not necessary
-	MASS_FUNCTION virtual void callMethod( int functionId, void *arg) = 0;
+//	MASS_FUNCTION virtual void callMethod( int functionId, void *arg) = 0;
 
 };
 

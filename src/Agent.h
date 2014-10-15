@@ -19,7 +19,7 @@ class Place;
  *  used as the parent class for any user-defined agents. Virtual functions may
  *  be overridden as necessary,
  */
-class Agent {
+class Agent : public MObject {
 	friend class Place;
 
 public:

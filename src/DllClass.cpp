@@ -9,6 +9,7 @@
  */
 
 #include <sstream>
+#include <cuda_runtime.h>
 #include "DllClass.h"
 #include "Mass.h"
 #include "Agent.h"
@@ -31,8 +32,7 @@ DllClass::DllClass(string className) {
 
 	// load a given class
 	if ((dllHandle = dlopen(dot_className, RTLD_LAZY)) == NULL) {
-		ss << "class: " << dot_className << " not found. Exiting program."
-				<< flush;
+		ss << "class: " << dot_className << " not found. Exiting program.";
 		Mass::log(ss.str());
 		exit(-1);
 	}

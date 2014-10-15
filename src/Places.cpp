@@ -193,7 +193,7 @@ void Places::init_all(void *argument, int argSize) {
 
 	ss << "Places Initialization:\n" << "\thandle = " << handle << "\n\tclass = "
 			<< classname << "\n\targument_size = " << argSize
-			<< "\n\targument = " << (char *) argument << "\n\tdimensionality = "
+			<< "\n\targument = " << *((char *) argument) << "\n\tdimensionality = "
 			<< numDims << "\n\tdimensions = { " << dimensions[0];
 	for (int i = 1; i < numDims; i++) {
 		ss << " ," << dimensions[i];
