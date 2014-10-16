@@ -116,4 +116,16 @@ __device__ void Agent::spawn(int numAgents, void* arguments, int argSize) {
 	}
 }
 
+extern "C"
+MObject *instantiate_t( void *argument ){
+  return new Agent(argument);
+}
+
+extern "C"
+void destroy_t( MObject *obj ){
+  if(NULL != obj){
+    delete obj;
+  }
+}
+
 } // namespace mass
