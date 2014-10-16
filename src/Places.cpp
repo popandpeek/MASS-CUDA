@@ -70,7 +70,8 @@ int Places::getNumPartitions() {
 }
 
 void Places::setPartitions(int numParts) {
-
+	Mass::log("Places::setPartitions(int numParts) is commented out.");
+/*
 	// make sure update is necessary
 	if (partitions.size() != numParts && numParts > 0) {
 		stringstream ss;
@@ -109,7 +110,7 @@ void Places::setPartitions(int numParts) {
 			partitions[part->getRank()] = part;
 		}
 	}
-
+*/
 	// TODO set corresponding agents partitions
 }
 
@@ -206,11 +207,15 @@ void Places::init_all(void *argument, int argSize) {
 	ss << "\n\tCurrent working directory: " << buf;
 	Mass::log(ss.str());
 
+//	Mass::log("Place initialization is commented out.");
+
 	// load the construtor and destructor
 	dllClass = new DllClass(classname);
 
 	// instanitate a new place
+	Mass::log("Attempting to instantiate a place.");
 	Place *protoPlace = (Place *) (dllClass->instantiate(argument));
+	Mass::log("Place instantiation successful.");
 	this->Tsize = protoPlace->placeSize();
 
 	// set common place fields
@@ -233,6 +238,7 @@ void Places::init_all(void *argument, int argSize) {
 	}
 
 	dllClass->destroy(protoPlace); // we no longer need this
+
 }
 
 } /* namespace mass */

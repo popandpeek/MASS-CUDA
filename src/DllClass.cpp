@@ -35,11 +35,15 @@ DllClass::DllClass(string className) {
 		ss << "class: " << dot_className << " not found. Exiting program.";
 		Mass::log(ss.str());
 		exit(-1);
+	} else {
+		ss << "class: " << dot_className << " was located. Program execution should continue.";
+		Mass::log(ss.str());
 	}
 
 	// register the object instantiation/destroy functions
 	instantiate = (instantiate_t *) dlsym(dllHandle, "instantiate");
 	destroy = (destroy_t *) dlsym(dllHandle, "destroy");
+	Mass::log("Done with DllClass constructor");
 }
 
 DllClass::~DllClass() {
