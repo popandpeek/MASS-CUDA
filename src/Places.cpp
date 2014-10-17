@@ -70,47 +70,69 @@ int Places::getNumPartitions() {
 }
 
 void Places::setPartitions(int numParts) {
-	Mass::log("Places::setPartitions(int numParts) is commented out.");
-/*
-	// make sure update is necessary
+//	Mass::log("Places::setPartitions(int numParts) is commented out.");
+
+// make sure update is necessary
 	if (partitions.size() != numParts && numParts > 0) {
 		stringstream ss;
 		ss << "Setting places " << handle << " partitions to " << numParts;
 		Mass::log(ss.str());
 
-		dispatcher->refreshPlaces(this); // get current data
+		if (partitions.size() > 0) { // this isn't the initial setPartitions call
+			Mass::log("Refreshing data and removing old partitions.");
+			dispatcher->refreshPlaces(this); // get current data
 
-		// remove old partitions
-		map<int, PlacesPartition*>::iterator it = partitions.begin();
-		while (it != partitions.end()) {
-			delete it->second;
-			++it;
+			// remove old partitions
+			map<int, PlacesPartition*>::iterator it = partitions.begin();
+			while (it != partitions.end()) {
+				delete it->second;
+				++it;
+			}
 		}
 
 		char *copyStart = (char*) dllClass->placeElements; // this is a hack to allow arithmetic on a void* pointer
 
 		int sliceSize = numElements / numParts;
 		int remainder = numElements % numParts;
+		ss.str("");
+		ss << "Partitions info:\n\tnumElements = " << numElements
+				<< "\n\tsliceSize = " << sliceSize << "\n\tremainder = "
+				<< remainder;
+		Mass::log(ss.str());
 
 		// there is always at least one partition
+		Mass::log("Creating first places partition.");
 		PlacesPartition *part = new PlacesPartition(handle, 0, sliceSize,
 				boundary_width, numDims, dimensions, Tsize);
+		Mass::log("Done with constructor.");
 		part->hPtr = copyStart;
+
+		Mass::log("Some pointer math.");
 		copyStart += Tsize * sliceSize - part->ghostWidth; // subtract ghost width as rank 0 has none
+
+		Mass::log("Adding partition 0 to partitions map.");
 		partitions[part->getRank()] = part;
 
 		for (int i = 1; i < numParts; ++i) {
+			ss.str("");
+
 			// last rank will have remainder elements, not sliceSize
 			int sz = (numParts - 1 == i) ? remainder : sliceSize;
+
 			// set hPtr
-			part = new PlacesPartition(handle, i, sz, boundary_width,
-					numDims, dimensions, Tsize);
+			ss << "Adding partition " << i << "\n\tsize = " << sz;
+			Mass::log(ss.str());
+			part = new PlacesPartition(handle, i, sz, boundary_width, numDims,
+					dimensions, Tsize);
 			part->hPtr = copyStart;
 			copyStart += Tsize * sliceSize;
 			partitions[part->getRank()] = part;
 		}
+	} else {
+		Mass::log(
+				"Number of partitions specified is either invalid or does not change the partition count.");
 	}
-*/
+	Mass::log("Done partitioning places");
 	// TODO set corresponding agents partitions
 }
 
@@ -185,6 +207,7 @@ Places::Places(int handle, std::string className, void *argument, int argSize,
 	this->Tsize = 0;
 	this->classname = className;
 	init_all(argument, argSize);
+	Mass::placesMap[handle] = this;
 	dispatcher->configurePlaces(this);
 }
 
@@ -192,10 +215,11 @@ void Places::init_all(void *argument, int argSize) {
 	// For debugging
 	stringstream ss;
 
-	ss << "Places Initialization:\n" << "\thandle = " << handle << "\n\tclass = "
-			<< classname << "\n\targument_size = " << argSize
-			<< "\n\targument = " << *((char *) argument) << "\n\tdimensionality = "
-			<< numDims << "\n\tdimensions = { " << dimensions[0];
+	ss << "Places Initialization:\n" << "\thandle = " << handle
+			<< "\n\tclass = " << classname << "\n\targument_size = " << argSize
+			<< "\n\targument = " << *((char *) argument)
+			<< "\n\tdimensionality = " << numDims << "\n\tdimensions = { "
+			<< dimensions[0];
 	for (int i = 1; i < numDims; i++) {
 		ss << " ," << dimensions[i];
 	}
@@ -219,17 +243,21 @@ void Places::init_all(void *argument, int argSize) {
 	this->Tsize = protoPlace->placeSize();
 
 	// set common place fields
+	Mass::log("Setting common place fields.");
 	protoPlace->numDims = numDims;
 	for (int i = 0; i < numDims; ++i) {
 		protoPlace->size[i] = dimensions[i];
 	}
 
 	//  space for an entire set of place instances
+	Mass::log("Allocating place elements.");
 	dllClass->placeElements = malloc(numElements * Tsize);
+	Mass::log("Done allocating place elements.");
 
 	// char is used to allow void* arithmatic in bytes
 	char *copyDest = (char*) dllClass->placeElements;
 
+	Mass::log("Copying protoplace to each element.");
 	for (int i = 0; i < numElements; ++i) {
 		// memcpy protoplace
 		memcpy(copyDest, protoPlace, Tsize);
@@ -237,7 +265,10 @@ void Places::init_all(void *argument, int argSize) {
 		copyDest += Tsize; // increment copy destination
 	}
 
+	Mass::log("Copied all proto places successfully.");
+	Mass::log("Destroying the protoplace.");
 	dllClass->destroy(protoPlace); // we no longer need this
+	Mass::log("Proto place destroyed.");
 
 }
 
