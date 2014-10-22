@@ -16,6 +16,8 @@ namespace mass {
 
 #define WARP_SIZE 32    // threads per warp
 #define BLOCK_SIZE 512  // max threads per block
+#define H2D cudaMemcpyHostToDevice
+#define D2H cudaMemcpyDeviceToHost
 
 /*! If a cuda error occurs, terminates the program with a descriptive error message.
  */

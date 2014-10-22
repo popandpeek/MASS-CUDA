@@ -165,13 +165,16 @@ private:
     void loadPlacesPartition ( PlacesPartition *part, DeviceConfig d );
     void getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve = true );
 
-    void loadAgentsPartition ( AgentsPartition *part, DeviceConfig d );
+    void loadAgentsPartition ( AgentsPartition *part, DeviceConfig &d );
     void getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve = true );
+
+    DeviceConfig &getNextDevice();
 
 
     std::map<PlacesPartition *, DeviceConfig> loadedPlaces; // tracks which partition is loaded on which GPU
     std::map<AgentsPartition*, DeviceConfig> loadedAgents; // tracks whicn partition is loaded on which GPU
-    std::queue<DeviceConfig> deviceInfo;
+    std::vector<DeviceConfig> deviceInfo;
+    int nextDevice; // tracks which device in deviceInfo is next to be used
 };
 // end class
 }// namespace mass

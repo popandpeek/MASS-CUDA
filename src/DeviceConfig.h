@@ -41,10 +41,17 @@ public:
 	DeviceConfig();
 	DeviceConfig(int device);
 	virtual ~DeviceConfig();
+	void setAsActiveDevice();
 	bool isLoaded();
 	void setLoaded(bool loaded);
-	void free();
+	void freeDevice();
 	DeviceConfig( const DeviceConfig& other );
+
+	void setNumPlaces(int numPlaces);
+
+	Place** getPlaces(int rank);
+	int getNumPlacePtrs(int rank);
+
 
 	DeviceConfig &operator=(const DeviceConfig &rhs);
 

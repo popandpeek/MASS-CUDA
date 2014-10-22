@@ -54,6 +54,12 @@ public:
 	int *size();
 
 	/**
+	 * Returns the number of places present in this places collection.
+	 * @return
+	 */
+	int getNumPlaces();
+
+	/**
 	 *  Returns the handle associated with this Places_Base object that was set at construction.
 	 */
 	int getHandle();

@@ -52,14 +52,14 @@ public:
 	/**
 	 * Returns the number of bytes necessary to store this agent implementation.
 	 * The most simple implementation is a single line of code:
-	 * return sizeof(*this);
+	 * return sizeof(ThisClass);
 	 *
 	 * Because sizeof is respoved at compile-time, the user must implement this
 	 * function rather than inheriting it.
 	 *
 	 * @return an int >= 0;
 	 */
-	MASS_FUNCTION virtual unsigned placeSize() = 0;
+	MASS_FUNCTION virtual int placeSize() = 0;
 
 	/**
 	 * Registers an agent with this place.

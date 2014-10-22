@@ -21,7 +21,7 @@ DeviceConfig::DeviceConfig() :
 
 DeviceConfig::DeviceConfig(int device) :
 		deviceNum(device), loaded(false) {
-	Mass::log("Initializing deviceConfig");
+	Mass::logger.debug("Initializing deviceConfig");
 	CATCH(cudaSetDevice(deviceNum));
 	CATCH(cudaStreamCreate(&inputStream));
 	CATCH(cudaStreamCreate(&outputStream));
@@ -29,19 +29,25 @@ DeviceConfig::DeviceConfig(int device) :
 }
 
 DeviceConfig::~DeviceConfig() {
-	Mass::log("deviceConfig destructor ");
+	Mass::logger.debug("deviceConfig destructor ");
 }
 
-void DeviceConfig::free() {
-	Mass::log("deviceConfig free ");
+void DeviceConfig::setAsActiveDevice(){
+	Mass::logger.debug("Active device is now %d", deviceNum);
 	CATCH(cudaSetDevice(deviceNum));
-	// destroy streams
+}
+
+void DeviceConfig::freeDevice() {
+	Mass::logger.debug("deviceConfig free ");
+	CATCH(cudaSetDevice(deviceNum));
 
 	// TODO there is a bug here that crashes the program.
+	// destroy streams
 	CATCH(cudaStreamDestroy(inputStream));
 	CATCH(cudaStreamDestroy(outputStream));
 	// destroy events
 	CATCH(cudaEventDestroy(deviceEvent));
+	Mass::logger.debug("Done with deviceConfig freeDevice().");
 }
 
 bool DeviceConfig::isLoaded() {
@@ -53,7 +59,7 @@ void DeviceConfig::setLoaded(bool loaded) {
 }
 
 DeviceConfig::DeviceConfig(const DeviceConfig& other) {
-	Mass::log("DeviceConfig copy constructor.");
+	Mass::logger.debug("DeviceConfig copy constructor.");
 	deviceNum = other.deviceNum;
 	inputStream = other.inputStream;
 	outputStream = other.outputStream;
@@ -64,7 +70,7 @@ DeviceConfig::DeviceConfig(const DeviceConfig& other) {
 }
 
 DeviceConfig &DeviceConfig::operator=(const DeviceConfig &rhs) {
-	Mass::log("DeviceConfig assignment operator.");
+	Mass::logger.debug("DeviceConfig assignment operator.");
 	if (this != &rhs) {
 
 		deviceNum = rhs.deviceNum;
@@ -77,4 +83,27 @@ DeviceConfig &DeviceConfig::operator=(const DeviceConfig &rhs) {
 	}
 	return *this;
 }
+
+void DeviceConfig::setNumPlaces(int numPlaces){
+	if(numPlaces > devPlaces.qty){
+		if(NULL != devPlaces.devPtr){
+			CATCH(cudaFree(devPlaces.devPtr));
+		}
+		Place** ptr = NULL;
+		CATCH(cudaMalloc((void**) ptr, numPlaces * sizeof(Place*)));
+		devPlaces.devPtr = ptr;
+		devPlaces.qty = numPlaces;
+	}
+}
+
+
+Place** DeviceConfig::getPlaces(int rank){
+	return devPlaces.devPtr;
+}
+
+
+int DeviceConfig::getNumPlacePtrs(int rank){
+	return devPlaces.qty;
+}
+
 } // end Mass namespace

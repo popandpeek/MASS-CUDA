@@ -43,7 +43,7 @@ public:
 	 *  @param functionId the id of a user specified function.
 	 *  @param arguments the arguments for that function.
 	 */
-	__device__ virtual void* callMethod(int functionId, void *arguments) = 0;
+//	__device__ virtual void* callMethod(int functionId, void *arguments) = 0;
 
 	/**
 	 *  Is called from Agents.callAll. It invokes the function specified with
@@ -52,7 +52,7 @@ public:
 	 *
 	 *  @param functionId the id of a user specified function.
 	 */
-	__device__ virtual void* callMethod(int functionId) = 0;
+//	__device__ virtual void* callMethod(int functionId) = 0;
 
 	/*******************************************************************************
 	 *  END ABSTRACT FUNCTIONS.
@@ -72,7 +72,7 @@ public:
 	/**
 	 *  The destructor.
 	 */
-	~Agent();
+	MASS_FUNCTION virtual ~Agent();
 
 	/**
 	 *  Returns the number of agents to initially instantiate on a place indexed

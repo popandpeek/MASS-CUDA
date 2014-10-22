@@ -12,6 +12,8 @@
 #include <stddef.h>
 #include <map>
 
+#include "Logger.h"
+
 namespace mass {
 
 class Agents;
@@ -75,25 +77,26 @@ public:
 	 *
 	 * @param message the message to log.
 	 */
-	static void log(const std::string &message);
-
-	/**
-	 * Sets the file to be used for logging. Closes out any existing logger if
-	 * one already exists. If filename does not exist, it will be created.
-	 *
-	 * @param filename the relative file path to where the log file is to be
-	 * stored or created.
-	 */
-	static void setLogFile(std::string filename);
+//	static void log(const std::string &message);
+//
+//	/**
+//	 * Sets the file to be used for logging. Closes out any existing logger if
+//	 * one already exists. If filename does not exist, it will be created.
+//	 *
+//	 * @param filename the relative file path to where the log file is to be
+//	 * stored or created.
+//	 */
+//	static void setLogFile(std::string filename);
+	static Logger logger; /**< The logger used to log messages with time stamps. */
 
 private:
 
     static std::map<int, Places*> placesMap;
     static std::map<int, Agents*> agentsMap;
 	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
-	static std::ofstream logger; /**< Stream used for logging messages. */
-	static struct std::tm * ptm; /**< A time struct used for time stamping log events.*/
-	static std::time_t rawtime; /**< The number of seconds since epoch.*/
+//	static std::ofstream logger; /**< Stream used for logging messages. */
+//	static struct std::tm * ptm; /**< A time struct used for time stamping log events.*/
+//	static std::time_t rawtime; /**< The number of seconds since epoch.*/
 };
 
 } /* namespace mass */

@@ -34,15 +34,21 @@ int *Places::size() {
 	return dimensions;
 }
 
+int Places::getNumPlaces(){
+	return numElements;
+}
+
 int Places::getHandle() {
 	return handle;
 }
 
 void Places::callAll(int functionId) {
+	Mass::logger.debug("Entering callAll(int functionId)");
 	callAll(functionId, NULL, 0);
 }
 
 void Places::callAll(int functionId, void *argument, int argSize) {
+	Mass::logger.debug("Entering callAll(int functionId, void *argument, int argSize)");
 	dispatcher->callAllPlaces(this, functionId, argument, argSize);
 }
 
@@ -70,16 +76,15 @@ int Places::getNumPartitions() {
 }
 
 void Places::setPartitions(int numParts) {
-//	Mass::log("Places::setPartitions(int numParts) is commented out.");
+//	Mass::logger.info("Places::setPartitions(int numParts) is commented out.");
 
 // make sure update is necessary
 	if (partitions.size() != numParts && numParts > 0) {
 		stringstream ss;
-		ss << "Setting places " << handle << " partitions to " << numParts;
-		Mass::log(ss.str());
+		Mass::logger.debug("Setting places %d partitions to %d.", handle, numParts);
 
 		if (partitions.size() > 0) { // this isn't the initial setPartitions call
-			Mass::log("Refreshing data and removing old partitions.");
+			Mass::logger.debug("Refreshing data and removing old partitions.");
 			dispatcher->refreshPlaces(this); // get current data
 
 			// remove old partitions
@@ -94,34 +99,24 @@ void Places::setPartitions(int numParts) {
 
 		int sliceSize = numElements / numParts;
 		int remainder = numElements % numParts;
-		ss.str("");
-		ss << "Partitions info:\n\tnumElements = " << numElements
-				<< "\n\tsliceSize = " << sliceSize << "\n\tremainder = "
-				<< remainder;
-		Mass::log(ss.str());
+
+		Mass::logger.debug("Partitions info:\n\tnumElements = %d\n\tsliceSize = %d\n\tremainder = %d"
+				,numElements, sliceSize, remainder);
 
 		// there is always at least one partition
-		Mass::log("Creating first places partition.");
 		PlacesPartition *part = new PlacesPartition(handle, 0, sliceSize,
 				boundary_width, numDims, dimensions, Tsize);
-		Mass::log("Done with constructor.");
 		part->hPtr = copyStart;
-
-		Mass::log("Some pointer math.");
 		copyStart += Tsize * sliceSize - part->ghostWidth; // subtract ghost width as rank 0 has none
-
-		Mass::log("Adding partition 0 to partitions map.");
 		partitions[part->getRank()] = part;
 
 		for (int i = 1; i < numParts; ++i) {
-			ss.str("");
 
 			// last rank will have remainder elements, not sliceSize
 			int sz = (numParts - 1 == i) ? remainder : sliceSize;
 
 			// set hPtr
-			ss << "Adding partition " << i << "\n\tsize = " << sz;
-			Mass::log(ss.str());
+			Mass::logger.debug("Adding partition %d\n\tsize = %d",i, sz);
 			part = new PlacesPartition(handle, i, sz, boundary_width, numDims,
 					dimensions, Tsize);
 			part->hPtr = copyStart;
@@ -129,10 +124,10 @@ void Places::setPartitions(int numParts) {
 			partitions[part->getRank()] = part;
 		}
 	} else {
-		Mass::log(
+		Mass::logger.debug(
 				"Number of partitions specified is either invalid or does not change the partition count.");
 	}
-	Mass::log("Done partitioning places");
+	Mass::logger.debug("Done partitioning places");
 	// TODO set corresponding agents partitions
 }
 
@@ -181,7 +176,9 @@ PlacesPartition *Places::getPartition(int rank) {
 		stringstream ss;
 		ss << "Requested partition " << rank << " but there are only 0 - "
 				<< getNumPartitions() - 1 << " are valid.";
-		Mass::log(ss.str());
+
+		Mass::logger.debug("Requested partition %d but there are only 0 - %d are valid.",
+				rank, getNumPartitions() -1);
 		throw MassException(ss.str());
 	}
 	return partitions[rank];
@@ -204,6 +201,7 @@ Places::Places(int handle, std::string className, void *argument, int argSize,
 //	this->argSize = argSize;
 	this->dispatcher = Mass::dispatcher; // the GPU dispatcher
 	this->elemPtrs = new Place*[numElements];
+	memset(elemPtrs,0,numElements * sizeof(Place*));
 	this->Tsize = 0;
 	this->classname = className;
 	init_all(argument, argSize);
@@ -229,47 +227,47 @@ void Places::init_all(void *argument, int argSize) {
 	char buf[200];
 	getcwd(buf, 200);
 	ss << "\n\tCurrent working directory: " << buf;
-	Mass::log(ss.str());
-
-//	Mass::log("Place initialization is commented out.");
+	char cstr[500];
+	strcpy(cstr, ss.str().c_str());
+	Mass::logger.debug(cstr);
 
 	// load the construtor and destructor
 	dllClass = new DllClass(classname);
 
 	// instanitate a new place
-	Mass::log("Attempting to instantiate a place.");
+	Mass::logger.debug("Attempting to instantiate a place.");
 	Place *protoPlace = (Place *) (dllClass->instantiate(argument));
-	Mass::log("Place instantiation successful.");
+	Mass::logger.debug("Place instantiation successful.");
 	this->Tsize = protoPlace->placeSize();
 
 	// set common place fields
-	Mass::log("Setting common place fields.");
+	Mass::logger.debug("Setting common place fields.");
 	protoPlace->numDims = numDims;
 	for (int i = 0; i < numDims; ++i) {
 		protoPlace->size[i] = dimensions[i];
 	}
 
 	//  space for an entire set of place instances
-	Mass::log("Allocating place elements.");
+	Mass::logger.debug("Allocating place elements.");
 	dllClass->placeElements = malloc(numElements * Tsize);
-	Mass::log("Done allocating place elements.");
+	Mass::logger.debug("Done allocating place elements.");
 
 	// char is used to allow void* arithmatic in bytes
 	char *copyDest = (char*) dllClass->placeElements;
 
-	Mass::log("Copying protoplace to each element.");
+	Mass::logger.debug("Copying protoplace to each element.");
 	for (int i = 0; i < numElements; ++i) {
 		// memcpy protoplace
 		memcpy(copyDest, protoPlace, Tsize);
-		((Place *) copyDest)->index = i; // set the unique index
+		elemPtrs[i] = (Place *) copyDest;
+		elemPtrs[i]->index = i; // set the unique index
 		copyDest += Tsize; // increment copy destination
 	}
 
-	Mass::log("Copied all proto places successfully.");
-	Mass::log("Destroying the protoplace.");
+	Mass::logger.debug("Copied all proto places successfully.");
+	Mass::logger.debug("Destroying the protoplace.");
 	dllClass->destroy(protoPlace); // we no longer need this
-	Mass::log("Proto place destroyed.");
-
+	Mass::logger.debug("Proto place destroyed.");
 }
 
 } /* namespace mass */
