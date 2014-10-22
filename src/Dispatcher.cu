@@ -22,11 +22,11 @@ using namespace std;
 namespace mass {
 
 __global__ void setPlacePtrsKernel(Place **ptrs, void *objs, int nPtrs,
-		int nObjs, int step) {
+		int nObjs, int Tsize) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;
 	if (idx < nPtrs) {
 		if (idx < nObjs) {
-			char* dest = ((char*) objs) + idx * step;
+			char* dest = ((char*) objs) + idx * Tsize;
 			ptrs[idx] = (Place*) dest;
 		} else {
 			ptrs[idx] = NULL;
@@ -51,11 +51,15 @@ void Dispatcher::init(int ngpu) {
 	// adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
 
 	Mass::logger.debug(("Initializing Dispatcher"));
+	int allgpus;
+	cudaGetDeviceCount(&allgpus);
+
 	if (0 == ngpu) { // use all available GPU resources
-		cudaGetDeviceCount(&ngpu);
+		ngpu = allgpus;
 	}
+
 	vector<int> devices;
-	for (int device = 0; device < ngpu; ++device) {
+	for (int device = 0; device < ngpu && device < allgpus; ++device) {
 		cudaDeviceProp deviceProp;
 		cudaGetDeviceProperties(&deviceProp, device);
 
@@ -134,7 +138,10 @@ void Dispatcher::callAllPlaces(Places *places, int functionId, void *argument,
 					}
 				}
 			}
+		} else {
+			d = loadedPlaces[pPart];
 		}
+
 		d.setAsActiveDevice();
 		// execute the call on the partition
 		void *argPtr = NULL;
@@ -225,7 +232,7 @@ void Dispatcher::manageAllAgents(int handle) {
 }
 
 void Dispatcher::loadPlacesPartition(PlacesPartition *part, DeviceConfig d) {
-	cudaSetDevice(d.deviceNum);
+	d.setAsActiveDevice();
 	loadedPlaces[part] = d;
 
 	// load partition onto device
@@ -267,7 +274,7 @@ void Dispatcher::getPlacesPartition(PlacesPartition *part,
 		return;
 	}
 
-	DeviceConfig d = loadedPlaces[part];
+	DeviceConfig &d = loadedPlaces[part];
 	cudaSetDevice(d.deviceNum);
 
 	// get partition onto device

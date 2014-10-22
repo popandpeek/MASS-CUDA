@@ -17,11 +17,12 @@ namespace mass {
 
 DeviceConfig::DeviceConfig() :
 		deviceNum(-1), loaded(false) {
+	Mass::logger.warn("Dispatcher::NoParam constructor");
 }
 
 DeviceConfig::DeviceConfig(int device) :
 		deviceNum(device), loaded(false) {
-	Mass::logger.debug("Initializing deviceConfig");
+	Mass::logger.debug("Dispatcher(int) constructor");
 	CATCH(cudaSetDevice(deviceNum));
 	CATCH(cudaStreamCreate(&inputStream));
 	CATCH(cudaStreamCreate(&outputStream));

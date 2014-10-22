@@ -21,9 +21,6 @@ Dispatcher *Mass::dispatcher = new Dispatcher();
 map<int, Places*> Mass::placesMap;
 map<int, Agents*> Mass::agentsMap;
 Logger Mass::logger;
-//ofstream Mass::logger;
-//time_t Mass::rawtime;
-//struct tm * Mass::ptm;
 
 void Mass::init(string args[], int ngpu) {
 	Mass::logger.debug("Initializing Mass");
@@ -57,40 +54,5 @@ Agents *Mass::getAgents(int handle) {
 int Mass::numAgentsInstances() {
 	return Mass::agentsMap.size();
 }
-
-//void Mass::log(const std::string &message) {
-//	// get local time
-//	time(&rawtime);
-//	ptm = localtime(&rawtime);
-//	const size_t BUFSIZE = 80;
-//	char buf[BUFSIZE];
-//
-//	if (!Mass::logger.is_open()) {
-//		setLogFile("mass_log.txt");
-//	}
-//
-//	strftime(buf, BUFSIZE, "%H:%M:%S ", ptm); // record time
-//	Mass::logger << buf << message << endl; // log message
-//}
-
-//void Mass::setLogFile(std::string filename) {
-//
-//	// get local time
-//	time(&rawtime);
-//	ptm = localtime(&rawtime);
-//	const size_t BUFSIZE = 80;
-//	char buf[BUFSIZE];
-//
-//	if (Mass::logger.is_open()) {
-//		strftime(buf, BUFSIZE, "%H:%M:%S ", ptm); // record time
-//		Mass::logger << buf << "Log file switched to " << filename << endl;
-//		Mass::logger.close();
-//	}
-//
-//	Mass::logger.open(filename.c_str(), ios::out | ios::app); // open log file
-//	strftime(buf, BUFSIZE, "%a %Y/%m/%d %H:%M:%S ", ptm); // record detailed time
-//	Mass::logger << "\n\n" << buf << " Logger initialized\n"; // log init
-//
-//}
 
 } /* namespace mass */

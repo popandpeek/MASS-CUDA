@@ -5,6 +5,8 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
+
+#include <cuda_runtime.h>
 #include <sstream> // stringstream
 #include "DllClass.h"
 #include "Mass.h"
@@ -13,6 +15,7 @@
 #include "PlacesPartition.h"
 #include "Dispatcher.h"
 #include "MassException.h"
+#include "cudaUtil.h"
 
 using namespace std;
 
@@ -34,7 +37,7 @@ int *Places::size() {
 	return dimensions;
 }
 
-int Places::getNumPlaces(){
+int Places::getNumPlaces() {
 	return numElements;
 }
 
@@ -48,7 +51,8 @@ void Places::callAll(int functionId) {
 }
 
 void Places::callAll(int functionId, void *argument, int argSize) {
-	Mass::logger.debug("Entering callAll(int functionId, void *argument, int argSize)");
+	Mass::logger.debug(
+			"Entering callAll(int functionId, void *argument, int argSize)");
 	dispatcher->callAllPlaces(this, functionId, argument, argSize);
 }
 
@@ -76,12 +80,12 @@ int Places::getNumPartitions() {
 }
 
 void Places::setPartitions(int numParts) {
-//	Mass::logger.info("Places::setPartitions(int numParts) is commented out.");
+	Mass::logger.debug("Entering Places::setPartitions(int numParts).");
 
-// make sure update is necessary
+	// make sure update is necessary
 	if (partitions.size() != numParts && numParts > 0) {
-		stringstream ss;
-		Mass::logger.debug("Setting places %d partitions to %d.", handle, numParts);
+		Mass::logger.debug("Setting places %d partitions to %d.", handle,
+				numParts);
 
 		if (partitions.size() > 0) { // this isn't the initial setPartitions call
 			Mass::logger.debug("Refreshing data and removing old partitions.");
@@ -90,7 +94,11 @@ void Places::setPartitions(int numParts) {
 			// remove old partitions
 			map<int, PlacesPartition*>::iterator it = partitions.begin();
 			while (it != partitions.end()) {
-				delete it->second;
+				map<int, PlacesPartition*>::iterator tmp = it;
+				it++;
+				delete tmp->second;
+				tmp->second = NULL;
+				partitions.erase(tmp);
 				++it;
 			}
 		}
@@ -100,8 +108,9 @@ void Places::setPartitions(int numParts) {
 		int sliceSize = numElements / numParts;
 		int remainder = numElements % numParts;
 
-		Mass::logger.debug("Partitions info:\n\tnumElements = %d\n\tsliceSize = %d\n\tremainder = %d"
-				,numElements, sliceSize, remainder);
+		Mass::logger.debug(
+				"Partitions info:\n\tnumElements = %d\n\tsliceSize = %d\n\tremainder = %d",
+				numElements, sliceSize, remainder);
 
 		// there is always at least one partition
 		PlacesPartition *part = new PlacesPartition(handle, 0, sliceSize,
@@ -116,7 +125,7 @@ void Places::setPartitions(int numParts) {
 			int sz = (numParts - 1 == i) ? remainder : sliceSize;
 
 			// set hPtr
-			Mass::logger.debug("Adding partition %d\n\tsize = %d",i, sz);
+			Mass::logger.debug("Adding partition %d\n\tsize = %d", i, sz);
 			part = new PlacesPartition(handle, i, sz, boundary_width, numDims,
 					dimensions, Tsize);
 			part->hPtr = copyStart;
@@ -177,8 +186,9 @@ PlacesPartition *Places::getPartition(int rank) {
 		ss << "Requested partition " << rank << " but there are only 0 - "
 				<< getNumPartitions() - 1 << " are valid.";
 
-		Mass::logger.debug("Requested partition %d but there are only 0 - %d are valid.",
-				rank, getNumPartitions() -1);
+		Mass::logger.debug(
+				"Requested partition %d but there are only 0 - %d are valid.",
+				rank, getNumPartitions() - 1);
 		throw MassException(ss.str());
 	}
 	return partitions[rank];
@@ -197,11 +207,9 @@ Places::Places(int handle, std::string className, void *argument, int argSize,
 	}
 
 	this->boundary_width = boundary_width;
-//	this->argument = argument;
-//	this->argSize = argSize;
 	this->dispatcher = Mass::dispatcher; // the GPU dispatcher
 	this->elemPtrs = new Place*[numElements];
-	memset(elemPtrs,0,numElements * sizeof(Place*));
+//	memset(elemPtrs,0,numElements * sizeof(Place*));
 	this->Tsize = 0;
 	this->classname = className;
 	init_all(argument, argSize);
@@ -235,22 +243,26 @@ void Places::init_all(void *argument, int argSize) {
 	dllClass = new DllClass(classname);
 
 	// instanitate a new place
-	Mass::logger.debug("Attempting to instantiate a place.");
-	Place *protoPlace = (Place *) (dllClass->instantiate(argument));
-	Mass::logger.debug("Place instantiation successful.");
+	Place *protoPlace = (Place *) dllClass->instantiate(argument);
 	this->Tsize = protoPlace->placeSize();
 
 	// set common place fields
-	Mass::logger.debug("Setting common place fields.");
 	protoPlace->numDims = numDims;
 	for (int i = 0; i < numDims; ++i) {
 		protoPlace->size[i] = dimensions[i];
 	}
+	if (numDims < MAX_DIMS) {
+		// set remaining dimensions to zero
+		memset(protoPlace->size + numDims, 0,
+				sizeof(int) * (MAX_DIMS - numDims));
+	}
 
 	//  space for an entire set of place instances
-	Mass::logger.debug("Allocating place elements.");
-	dllClass->placeElements = malloc(numElements * Tsize);
-	Mass::logger.debug("Done allocating place elements.");
+	void *elems;
+	Mass::logger.debug("cudaMallocHost call");
+	CATCH(cudaMallocHost((void**) elems, numElements * Tsize));
+	Mass::logger.debug("cudaMallocHost call finished");
+	dllClass->placeElements = elems;
 
 	// char is used to allow void* arithmatic in bytes
 	char *copyDest = (char*) dllClass->placeElements;
@@ -258,16 +270,14 @@ void Places::init_all(void *argument, int argSize) {
 	Mass::logger.debug("Copying protoplace to each element.");
 	for (int i = 0; i < numElements; ++i) {
 		// memcpy protoplace
-		memcpy(copyDest, protoPlace, Tsize);
+		memcpy((void*) copyDest, protoPlace, Tsize);
 		elemPtrs[i] = (Place *) copyDest;
 		elemPtrs[i]->index = i; // set the unique index
 		copyDest += Tsize; // increment copy destination
 	}
 
-	Mass::logger.debug("Copied all proto places successfully.");
-	Mass::logger.debug("Destroying the protoplace.");
 	dllClass->destroy(protoPlace); // we no longer need this
-	Mass::logger.debug("Proto place destroyed.");
+	Mass::logger.debug("Exiting Places::init_all");
 }
 
 } /* namespace mass */

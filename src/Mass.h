@@ -69,24 +69,6 @@ public:
      */
     static int numAgentsInstances ( );
 
-	/**
-	 * Logs a message. This function will record the time of the log event and add
-	 * a newline to the end of the message. All logged events are appended to
-	 * the log file. If no file is specified using the setLogFile() function,
-	 * the events will be logged in "mass_log.txt" by default.
-	 *
-	 * @param message the message to log.
-	 */
-//	static void log(const std::string &message);
-//
-//	/**
-//	 * Sets the file to be used for logging. Closes out any existing logger if
-//	 * one already exists. If filename does not exist, it will be created.
-//	 *
-//	 * @param filename the relative file path to where the log file is to be
-//	 * stored or created.
-//	 */
-//	static void setLogFile(std::string filename);
 	static Logger logger; /**< The logger used to log messages with time stamps. */
 
 private:
@@ -94,9 +76,6 @@ private:
     static std::map<int, Places*> placesMap;
     static std::map<int, Agents*> agentsMap;
 	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
-//	static std::ofstream logger; /**< Stream used for logging messages. */
-//	static struct std::tm * ptm; /**< A time struct used for time stamping log events.*/
-//	static std::time_t rawtime; /**< The number of seconds since epoch.*/
 };
 
 } /* namespace mass */
