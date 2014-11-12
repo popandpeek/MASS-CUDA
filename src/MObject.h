@@ -31,9 +31,6 @@ public:
 	 */
 	MASS_FUNCTION virtual ~MObject(){}
 
-	// TODO remove this call if not necessary
-	MASS_FUNCTION virtual void callMethod( int functionId, void *arg = NULL) = 0;
-
 };
 
 typedef MObject *instantiate_t( void *argument );

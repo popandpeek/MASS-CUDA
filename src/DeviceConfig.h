@@ -34,6 +34,11 @@ struct AgentArray {
 	}
 };
 
+/**
+ *  This class represents a computational resource. In most cases it will
+ *  represent a GPU, but it could also be used to encapsulate a CPU
+ *  computing resource.
+ */
 class DeviceConfig {
 	friend class Dispatcher;
 
@@ -41,19 +46,23 @@ public:
 	DeviceConfig();
 	DeviceConfig(int device);
 	virtual ~DeviceConfig();
+ 
+	void freeDevice();
 	void setAsActiveDevice();
+  
+  // void loadPlaces(PlacesPartition *part);
+  // void loadAgents(AgentsPartition *part);
+  
 	bool isLoaded();
 	void setLoaded(bool loaded);
-	void freeDevice();
-	DeviceConfig( const DeviceConfig& other );
 
 	void setNumPlaces(int numPlaces);
 
 	Place** getPlaces(int rank);
 	int getNumPlacePtrs(int rank);
 
-
-	DeviceConfig &operator=(const DeviceConfig &rhs);
+	DeviceConfig( const DeviceConfig& other ); // copy constructor
+	DeviceConfig &operator=(const DeviceConfig &rhs); // assignment operator
 
 private:
 	int deviceNum;

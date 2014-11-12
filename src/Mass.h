@@ -31,7 +31,7 @@ public:
 	 *  @param args what do these do?
 	 *  @param ngpu the number of GPUs to use
 	 */
-	static void init(std::string args[], int ngpu);
+	static void init(std::string args[], int &ngpu);
 
 	/**
 	 *  Initializes the MASS environment using all available GPU resources. 

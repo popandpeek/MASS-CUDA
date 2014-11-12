@@ -47,7 +47,7 @@ Dispatcher::Dispatcher() {
 	nextDevice = 0;
 }
 
-void Dispatcher::init(int ngpu) {
+void Dispatcher::init(int &ngpu) {
 	// adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
 
 	Mass::logger.debug(("Initializing Dispatcher"));

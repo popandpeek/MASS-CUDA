@@ -19,9 +19,7 @@ using namespace std;
 
 namespace mass {
 
-DllClass::DllClass(string className):placeElements(NULL) {
-	// For logging
-//	stringstream ss;
+DllClass::DllClass(string className):placeElements(NULL), prototype(NULL) {
 
 	// Create "./className"
 	int char_len = 2 + className.size() + 1;
@@ -32,12 +30,8 @@ DllClass::DllClass(string className):placeElements(NULL) {
 
 	// load a given class
 	if ((dllHandle = dlopen(dot_className, RTLD_LAZY)) == NULL) {
-//		ss << "class: " << dot_className << " not found. Exiting program.";
 		Mass::logger.debug("class: %s not found. Exiting program.", dot_className);
 		exit(-1);
-	} else {
-//		ss << "class: " << dot_className << " was located. Program execution should continue.";
-		Mass::logger.debug("class: %s was located. Program execution should continue.", dot_className);
 	}
 
 	// register the object instantiation/destroy functions
@@ -46,9 +40,14 @@ DllClass::DllClass(string className):placeElements(NULL) {
 	Mass::logger.debug("Done with DllClass constructor");
 }
 
+DllClass::DllClass(MObject *proto){
+	Mass::logger.debug("DllClass with prototype MObject");
+	prototype = proto;
+}
+
 DllClass::~DllClass() {
 	if (NULL != placeElements) {
-		 free(placeElements);
+		 cudaFreeHost(placeElements);
 	}
 
 	for (int i = 0; i < agentElements.size(); ++i) {
@@ -56,6 +55,10 @@ DllClass::~DllClass() {
 			free(agentElements[i]);
 		}
 	}
+  
+  if(NULL != prototype){
+    delete prototype;
+  }
 	agentElements.empty();
 }
 

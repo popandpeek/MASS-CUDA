@@ -73,6 +73,10 @@ public:
 	 */
 	__host__ __device__ void removeAgent(Agent *agent);
 
+
+	// TODO remove this call if not necessary
+	MASS_FUNCTION virtual void callMethod( int functionId, void *arg = NULL) = 0;
+
 protected:
 
 	int size[MAX_DIMS];   // the size of the Places matrix

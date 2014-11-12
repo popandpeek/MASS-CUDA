@@ -280,4 +280,86 @@ void Places::init_all(void *argument, int argSize) {
 	Mass::logger.debug("Exiting Places::init_all");
 }
 
+
+Places::Places(int handle, Place *proto, void *argument, int argSize,
+			int dimensions, int size[], int boundary_width){
+  this->handle = handle;
+	this->numDims = dimensions;
+
+	this->numElements = 1;
+	this->dimensions = new int[numDims];
+	for (int i = 0; i < numDims; ++i) {
+		this->dimensions[i] = size[i];
+		numElements *= size[i];
+	}
+
+	this->boundary_width = boundary_width;
+	this->dispatcher = Mass::dispatcher; // the GPU dispatcher
+	this->elemPtrs = new Place*[numElements];
+//	memset(elemPtrs,0,numElements * sizeof(Place*));
+	this->Tsize = proto->placeSize();
+	this->classname = "";
+	init_all(proto, argument, argSize);
+	Mass::placesMap[handle] = this;
+	dispatcher->configurePlaces(this);
+}
+
+void Places::init_all(Place * proto, void *argument, int argSize) {
+	// For debugging
+	stringstream ss;
+
+	ss << "Places Initialization:\n" << "\thandle = " << handle
+			<< "\n\targument_size = " << argSize
+			<< "\n\targument = " << *((char *) argument)
+			<< "\n\tdimensionality = " << numDims << "\n\tdimensions = { "
+			<< dimensions[0];
+	for (int i = 1; i < numDims; i++) {
+		ss << " ," << dimensions[i];
+	}
+	ss << " }";
+
+	// Print the current working directory
+	char buf[200];
+	getcwd(buf, 200);
+	ss << "\n\tCurrent working directory: " << buf;
+	char cstr[500];
+	strcpy(cstr, ss.str().c_str());
+	Mass::logger.debug(cstr);
+  dllClass = new DllClass(proto);
+	this->Tsize = proto->placeSize();
+
+	// set common place fields
+	proto->numDims = numDims;
+	for (int i = 0; i < numDims; ++i) {
+		proto->size[i] = dimensions[i];
+	}
+  
+	if (numDims < MAX_DIMS) {
+		// set remaining dimensions to zero
+		memset(proto->size + numDims, 0,
+				sizeof(int) * (MAX_DIMS - numDims));
+	}
+
+	//  space for an entire set of place instances
+	void *elems;
+	Mass::logger.debug("cudaMallocHost call");
+	CATCH(cudaMallocHost((void**) elems, numElements * Tsize));
+	Mass::logger.debug("cudaMallocHost call finished");
+	dllClass->placeElements = elems;
+
+	// char is used to allow void* arithmatic in bytes
+	char *copyDest = (char*) dllClass->placeElements;
+
+	Mass::logger.debug("Copying protoplace to each element.");
+	for (int i = 0; i < numElements; ++i) {
+		// memcpy protoplace
+		memcpy((void*) copyDest, proto, Tsize);
+		elemPtrs[i] = (Place *) copyDest;
+		elemPtrs[i]->index = i; // set the unique index
+		copyDest += Tsize; // increment copy destination
+	}
+
+	Mass::logger.debug("Exiting Places::init_all");
+}
+
 } /* namespace mass */

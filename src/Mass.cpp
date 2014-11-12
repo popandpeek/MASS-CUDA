@@ -22,21 +22,28 @@ map<int, Places*> Mass::placesMap;
 map<int, Agents*> Mass::agentsMap;
 Logger Mass::logger;
 
-void Mass::init(string args[], int ngpu) {
+void Mass::init(string args[], int &ngpu) {
 	Mass::logger.debug("Initializing Mass");
+  if(NULL == Mass::dispatcher){
+    Mass::dispatcher = new Dispatcher();
+  }
 	Mass::dispatcher->init(ngpu);
 }
 
 void Mass::init(string args[]) {
 	Mass::logger.debug("Initializing Mass");
-	Mass::dispatcher = new Dispatcher();
+  if(NULL == Mass::dispatcher){
+    Mass::dispatcher = new Dispatcher();
+  }
 	// 0 is the flag to use all available GPU resources
-	Mass::dispatcher->init(0);
+  int flag = 0;
+	Mass::dispatcher->init(flag);
 }
 
 void Mass::finish() {
 	Mass::logger.debug("Finishing Mass");
 	delete Mass::dispatcher;
+  Mass::dispatcher = NULL;
 }
 
 Places *Mass::getPlaces(int handle) {

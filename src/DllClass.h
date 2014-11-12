@@ -19,6 +19,7 @@
 namespace mass {
 
 class DllClass {
+
 public:
 
 	/**
@@ -42,12 +43,22 @@ public:
 	 * @param className the name of a valid user implemented class.
 	 */
 	DllClass(std::string className);
+  
+  /**
+	 * Constructor for this class. Requires the pointer to a valid Agent or Place class.
+	 * @param className the name of a valid user implemented class.
+	 */
+  DllClass(MObject *proto);
 
 	/**
 	 * Destroys this DllClass
 	 */
 	~DllClass();
 
+  // the prototype used for cloning
+  MObject *prototype;
+  
+  
 	// place instances
 	void *placeElements;
 

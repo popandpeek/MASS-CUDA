@@ -50,6 +50,10 @@ __host__ __device__ void Place::removeAgent(Agent *agent) {
 	--agentPop;
 }
 
+__host__ __device__ void *Place::getMessage(){
+	return NULL;
+}
+
 //	int *size;            // the size of the Places matrix
 //	int index;            // the row-major index of this place
 //	Place *neighbors[MAXNEIGHBORS];  // my neighbors
