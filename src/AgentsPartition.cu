@@ -10,9 +10,9 @@
 #include <vector>
 
 #include "AgentsPartition.h"
-#include "Agents.h"
+//#include "Agents.h"
 #include "cudaUtil.h"
-#include "Mass.h"
+//#include "Mass.h"
 
 
 namespace mass {
@@ -32,7 +32,7 @@ namespace mass {
 		this->rank = rank;
 		this->numElements = numElements;
 		this->isloaded = false;
-        Tbytes = Mass::getAgents ( handle )->getTsize ( );;
+//        Tbytes = Mass::getAgents ( handle )->getTsize ( );;
         setIdealDims ( );
     }
 
@@ -45,7 +45,7 @@ namespace mass {
     *  Returns the number of elements in this partition.
     */
     int AgentsPartition::size ( ) {
-        int numRanks = Mass::getAgents ( handle )->getNumPartitions ( );
+        int numRanks = 1;// Mass::getAgents ( handle )->getNumPartitions ( );
         if ( 1 == numRanks ) {
             return numElements;
         }
@@ -192,7 +192,7 @@ namespace mass {
     }
 
     void AgentsPartition::updateRightGhost ( void *ghost, cudaStream_t stream ) {
-        int numRanks = Mass::getAgents ( handle )->getNumPartitions ( );
+        int numRanks = 1; // Mass::getAgents ( handle )->getNumPartitions ( );
         if ( rank < numRanks - 1 ) {
             if ( isloaded ) {
                 cudaMemcpyAsync ( movePtr(dPtr, numElements) , ghost, Tbytes * ghostWidth,

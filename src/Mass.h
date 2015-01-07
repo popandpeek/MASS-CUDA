@@ -12,13 +12,11 @@
 #include <stddef.h>
 #include <map>
 
-#include "Logger.h"
+#include "Dispatcher.h"
+#include "Agents.h"
+#include "Places.h"
 
 namespace mass {
-
-class Agents;
-class Dispatcher;
-class Places;
 
 class Mass {
     friend class Agents;
@@ -69,7 +67,9 @@ public:
      */
     static int numAgentsInstances ( );
 
-	static Logger logger; /**< The logger used to log messages with time stamps. */
+	template <typename T>
+	static Places* createPlaces(T instantiator, int handle, void *argument,
+			int argSize,int dimensions, int size[], int boundary_width);
 
 private:
 
@@ -77,5 +77,20 @@ private:
     static std::map<int, Agents*> agentsMap;
 	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
 };
+
+template <typename T>
+Places* Mass::createPlaces(T instantiator, int handle, void *argument,
+		int argSize,int dimensions, int size[], int boundary_width){
+
+	Places *places = new Places(handle, "", argument, argSize,
+			dimensions, size, boundary_width);
+	places->setDispatcher(Mass::dispatcher);
+	Mass::dispatcher->configurePlaces(places);
+	Place** p = Mass::dispatcher->instantiatePlaces(instantiator,argument, argSize,
+			handle, places->numElements);
+	places->setDevicePlaces(p);
+	placesMap[handle] = places;
+	return places;
+}
 
 } /* namespace mass */

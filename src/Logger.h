@@ -8,6 +8,7 @@
 
 #ifndef LOGGER_H_
 #define LOGGER_H_
+#include <ctime>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
@@ -20,37 +21,39 @@ namespace mass {
 class Logger {
 
 public:
-	Logger();
-	virtual ~Logger();
 
+	/**
+	 * Closes the logger. This is called by default in the destructor.
+	 */
+	static void close();
 
 	/**
 	 * Log a formatted message with the flag [DEBUG]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	void debug(char *fmt, ...);
+	static void debug(char *fmt, ...);
 
 	/**
 	 * Log a formatted message with the flag [WARNING]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	void warn(char *fmt, ...);
+	static void warn(char *fmt, ...);
 
 	/**
 	 * Log a formatted message with the flag [ERROR]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	void error(char *fmt, ...);
+	static void error(char *fmt, ...);
 
 	/**
 	 * Log a formatted message with the flag [INFO]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	void info(char *fmt, ...);
+	static void info(char *fmt, ...);
 
 	/**
 	 * Sets the file to be used for logging. Closes out any existing logger if
@@ -59,29 +62,25 @@ public:
 	 * @param filename the relative file path to where the log file is to be
 	 * stored or created.
 	 */
-	void setLogFile(std::string filename);
+	static void setLogFile(std::string filename);
 
 private:
-	FILE *pFile; /**< The output file.*/
-	bool isOpen; /**< Tracks if an output file is open for this logger.*/
 
-	struct std::tm * ptm; /**< A time struct used for time stamping log events.*/
-	std::time_t rawtime; /**< The number of seconds since epoch.*/
+	static Logger instance;
+	static FILE *pFile; /**< The output file.*/
+	static bool isOpen; /**< Tracks if an output file is open for this logger.*/
+
+	static struct std::tm * ptm; /**< A time struct used for time stamping log events.*/
+	static std::time_t rawtime; /**< The number of seconds since epoch.*/
 
 	const static size_t BUFSIZE = 80; /**< The max chars for a time stamp.*/
-	char buf[BUFSIZE]; /**< The space for the most recent time stamp.*/
+	static char buf[BUFSIZE]; /**< The space for the most recent time stamp.*/
 
 	/**
 	 * Stores the local time in buf
 	 * @return buf
 	 */
-	char *getLocalTime();
-
-	/**
-	 * Closes the logger. This is called by default in the destructor.
-	 */
-	void close();
-
+	static char *getLocalTime();
 };
 
 } /* namespace mass */

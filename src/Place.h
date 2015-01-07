@@ -20,6 +20,7 @@ namespace mass {
 
 // forward declaration
 class Agent;
+class PlaceState;
 
 /**
  *  The Place class defines the default functions for acheiving GPU parallelism between place objects.
@@ -34,7 +35,7 @@ public:
 	 *  A contiguous space of arguments is passed 
 	 *  to the constructor.
 	 */
-	__host__ __device__ Place(void *args);
+	MASS_FUNCTION Place(void *args = NULL);
 
 //	/**
 //	 *  Called by MASS while executing Places.callAll().
@@ -42,12 +43,12 @@ public:
 //	 * @param functionId user-defined function id
 //	 * @param args user-defined arguments
 //	 */
-//	__host__ __device__ virtual void callMethod(int functionId, void* args) = 0;
+//	MASS_FUNCTION virtual void callMethod(int functionId, void* args) = 0;
 
 	/**
 	 *  Gets a pointer to this place's out message.
 	 */
-	__host__ __device__ virtual void *getMessage() = 0;
+	MASS_FUNCTION virtual void *getMessage() = 0;
 
 	/**
 	 * Returns the number of bytes necessary to store this agent implementation.
@@ -65,29 +66,36 @@ public:
 	 * Registers an agent with this place.
 	 * @param agent the agent that is self-registering.
 	 */
-	__host__ __device__ void addAgent(Agent *agent);
+	MASS_FUNCTION void addAgent(Agent *agent);
 
 	/**
 	 * Unregisters an agent with this place.
 	 * @param agent the agent that is self-unregistering.
 	 */
-	__host__ __device__ void removeAgent(Agent *agent);
+	MASS_FUNCTION void removeAgent(Agent *agent);
 
 
 	// TODO remove this call if not necessary
 	MASS_FUNCTION virtual void callMethod( int functionId, void *arg = NULL) = 0;
 
+	MASS_FUNCTION virtual void setState(PlaceState *s);
+
+	MASS_FUNCTION virtual PlaceState* getState();
+
+	MASS_FUNCTION int getIndex();
+
 protected:
 
-	int size[MAX_DIMS];   // the size of the Places matrix
-	char numDims;
-	int index;            // the row-major index of this place
-	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
-	Agent *agents[MAX_AGENTS];
-	unsigned agentPop; // the population of agents on this place
-	// void* outMessage;        // out message needs to be declared in the derived class statically
-	int message_size;  // the number of bytes in a message
-	void *inMessages[MAX_NEIGHBORS]; // holds a pointer to each neighbor's outmessage.
+//	int size[MAX_DIMS];   // the size of the Places matrix
+//	char numDims;
+//	int index;            // the row-major index of this place
+//	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
+//	Agent *agents[MAX_AGENTS];
+//	unsigned agentPop; // the population of agents on this place
+//	// void* outMessage;        // out message needs to be declared in the derived class statically
+//	int message_size;  // the number of bytes in a message
+//	void *inMessages[MAX_NEIGHBORS]; // holds a pointer to each neighbor's outmessage.
+	PlaceState *state;
 
 };
 } /* namespace mass */

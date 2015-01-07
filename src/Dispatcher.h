@@ -125,56 +125,63 @@ public:
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents
 	 * collection.
-	 * @param handle the handle of the agents object to refresh.
+	 * @param agents the agents object to refresh.
 	 */
-    void refreshAgents ( int handle );
+    void refreshAgents ( Agents *agents );
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
 	 * as the function parameter.
-	 * @param handle the handle of the agents object to call all on
+	 * @param agents the agents object to call all on
 	 * @param functionId the user specified function ID
 	 * @param argument the argument for the function
 	 * @param argSize the size in bytes of the argument
 	 */
-    void callAllAgents ( int handle, int functionId, void *argument, int argSize );
+    void callAllAgents ( Agents *agents, int functionId, void *argument, int argSize );
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
 	 * as the function parameter. Returns a void* with an element of retSize for
 	 * every agent in the group.
 	 *
-	 * @param handle the handle of the agents object to call all on
+	 * @param agents the agents object to call all on
 	 * @param functionId the user specified function ID
 	 * @param arguments one void* argument per agent
 	 * @param argSize the size in bytes of each argument
 	 * @param retSize the size in bytes of the return value
 	 * @return a void* with an element of retSize for every agent in the group.
 	 */
-    void *callAllAgents ( int handle, int functionId, void *arguments[ ],
+    void *callAllAgents ( Agents *agents, int functionId, void *arguments[ ],
 			int argSize, int retSize);
 
 	/**
 	 * Calls manage on all agents of the specified group.
-	 * @param handle the handle of the agents to manage.
+	 * @param agents the agents to manage.
 	 */
-    void manageAllAgents ( int handle );
+    void manageAllAgents ( Agents *agents );
 
+    template<class T>
+    Place** instantiatePlaces(T instantiator,void* arg, int argSize, int handle, int qty);
 private:
 
-    void loadPlacesPartition ( PlacesPartition *part, DeviceConfig d );
+    void loadPlacesPartition ( PlacesPartition *part, DeviceConfig *d );
     void getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve = true );
 
-    void loadAgentsPartition ( AgentsPartition *part, DeviceConfig &d );
+    void loadAgentsPartition ( AgentsPartition *part, DeviceConfig *d );
     void getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve = true );
 
-    DeviceConfig &getNextDevice();
+    DeviceConfig *getNextDevice();
 
 
-    std::map<PlacesPartition *, DeviceConfig> loadedPlaces; // tracks which partition is loaded on which GPU
-    std::map<AgentsPartition*, DeviceConfig> loadedAgents; // tracks whicn partition is loaded on which GPU
+    std::map<PlacesPartition *, DeviceConfig*> loadedPlaces; // tracks which partition is loaded on which GPU
+    std::map<AgentsPartition*, DeviceConfig*> loadedAgents; // tracks whicn partition is loaded on which GPU
     std::vector<DeviceConfig> deviceInfo;
     int nextDevice; // tracks which device in deviceInfo is next to be used
-};
-// end class
+};// end class
+
+template<class T>
+Place** Dispatcher::instantiatePlaces(T instantiator,void* arg, int argSize, int handle, int qty){
+	DeviceConfig *d = getNextDevice();
+	return d->instantiatePlaces<T>(instantiator,arg, argSize, handle, qty);
+}
 }// namespace mass

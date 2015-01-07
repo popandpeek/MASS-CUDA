@@ -8,9 +8,10 @@
 
 #include <time.h>
 #include "Mass.h"
-#include "Agents.h"
-#include "Places.h"
-#include "Dispatcher.h"
+//#include "Agents.h"
+//#include "Places.h"
+//#include "Dispatcher.h"
+#include "Logger.h"
 
 using namespace std;
 
@@ -20,30 +21,29 @@ namespace mass {
 Dispatcher *Mass::dispatcher = new Dispatcher();
 map<int, Places*> Mass::placesMap;
 map<int, Agents*> Mass::agentsMap;
-Logger Mass::logger;
 
 void Mass::init(string args[], int &ngpu) {
-	Mass::logger.debug("Initializing Mass");
-  if(NULL == Mass::dispatcher){
-    Mass::dispatcher = new Dispatcher();
-  }
+	Logger::debug("Initializing Mass");
+	if (NULL == Mass::dispatcher) {
+		Mass::dispatcher = new Dispatcher();
+	}
 	Mass::dispatcher->init(ngpu);
 }
 
 void Mass::init(string args[]) {
-	Mass::logger.debug("Initializing Mass");
-  if(NULL == Mass::dispatcher){
-    Mass::dispatcher = new Dispatcher();
-  }
+	Logger::debug("Initializing Mass");
+	if (NULL == Mass::dispatcher) {
+		Mass::dispatcher = new Dispatcher();
+	}
 	// 0 is the flag to use all available GPU resources
-  int flag = 0;
+	int flag = 0;
 	Mass::dispatcher->init(flag);
 }
 
 void Mass::finish() {
-	Mass::logger.debug("Finishing Mass");
+	Logger::debug("Finishing Mass");
 	delete Mass::dispatcher;
-  Mass::dispatcher = NULL;
+	Mass::dispatcher = NULL;
 }
 
 Places *Mass::getPlaces(int handle) {

@@ -7,6 +7,7 @@
  */
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 #include "DllClass.h"
@@ -14,12 +15,11 @@
 namespace mass {
 // forward declarations
 class Dispatcher;
-//class DllClass;
 class Place;
 class PlacesPartition;
 
 class Places {
-
+	friend class Mass;
 	friend class Dispatcher;
 	friend class PlacesPartition;
 public:
@@ -185,14 +185,20 @@ protected:
 	 */
 	void setPartitions(int numParts);
 
+	void setDevicePlaces(Place **p);
+
+	void setDispatcher(Dispatcher *d);
+
 	/**
 	 *  Gets a partition from this Places object.
 	 */
 	PlacesPartition *getPartition(int rank);
 
+
 	void init_all(void *argument, int argSize);
 
 	void init_all(Place * proto, void *argument, int argSize);
+
 
 	int handle;         // User-defined identifier for this Places_Base
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
@@ -201,8 +207,8 @@ protected:
 	Dispatcher *dispatcher; // the GPU dispatcher
 	unsigned numElements;
 	Place **elemPtrs;
-	unsigned Tsize;
 	std::map<int, PlacesPartition*> partitions;
+	unsigned Tsize;
 	std::string classname;
 	DllClass *dllClass;
 };

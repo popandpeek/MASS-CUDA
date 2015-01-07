@@ -9,6 +9,8 @@
 #pragma once
 
 #include <map>
+#include "cudaUtil.h"
+#include "Logger.h"
 
 namespace mass {
 
@@ -46,13 +48,13 @@ public:
 	DeviceConfig();
 	DeviceConfig(int device);
 	virtual ~DeviceConfig();
- 
+
 	void freeDevice();
 	void setAsActiveDevice();
-  
-  // void loadPlaces(PlacesPartition *part);
-  // void loadAgents(AgentsPartition *part);
-  
+
+	// void loadPlaces(PlacesPartition *part);
+	// void loadAgents(AgentsPartition *part);
+
 	bool isLoaded();
 	void setLoaded(bool loaded);
 
@@ -61,19 +63,80 @@ public:
 	Place** getPlaces(int rank);
 	int getNumPlacePtrs(int rank);
 
-	DeviceConfig( const DeviceConfig& other ); // copy constructor
+	DeviceConfig(const DeviceConfig& other); // copy constructor
 	DeviceConfig &operator=(const DeviceConfig &rhs); // assignment operator
+
+	template<class T>
+	Place** instantiatePlaces(T instantiator, void* arg, int argSize,
+			int handle, int qty);
+
+	void deletePlaces(Place **places, int qty);
 
 private:
 	int deviceNum;
-	cudaStream_t inputStream;
-	cudaStream_t outputStream;
-	cudaEvent_t deviceEvent;
-	PlaceArray devPlaces;
+//	cudaStream_t inputStream;
+//	cudaStream_t outputStream;
+//	cudaEvent_t deviceEvent;
+//	PlaceArray devPlaces;
 	std::map<int, AgentArray> devAgents;
+	std::map<int, PlaceArray> devPlacesMap;
 	bool loaded;
 
 };
 // end class
 
-}// end namespace
+template<class T>
+__global__ void instantiatePlacesKernel(T* instantiator, Place** places,
+		void *arg, int qty) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if (idx < qty) {
+		places[idx] = instantiator->instantiate(arg);
+	}
+}
+
+template<class T>
+Place** DeviceConfig::instantiatePlaces(T instantiator, void* arg, int argSize,
+		int handle, int qty) {
+	if (devPlacesMap.count(handle) > 0) {
+		return NULL;
+	}
+	setAsActiveDevice();
+
+	// create places tracking
+	PlaceArray p;
+	p.qty = qty;
+	devPlacesMap[handle] = p;
+
+	Logger::warn("Attempting lethal cudaMalloc on %s %d", __FILE__, __LINE__);
+	// allocate device pointers
+	CATCH(cudaMalloc((void** ) &p.devPtr, qty * sizeof(Place*)));
+
+	// copy instantiator to device
+	T *d_inst; // device side instantiator
+	CATCH(cudaMalloc((void** ) &d_inst, sizeof(T)));
+	CATCH(cudaMemcpy(d_inst, &instantiator, sizeof(T), H2D));
+
+	// handle arg
+	void *d_arg = NULL;
+	if (NULL != arg) {
+		CATCH(cudaMalloc((void** ) &d_arg, argSize));
+		CATCH(cudaMemcpy(d_arg, arg, argSize, H2D));
+	}
+
+	// launch instantiation kernel
+	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
+	int threadDim = (qty - 1) / blockDim + 1;
+	instantiatePlacesKernel<T> <<<blockDim, threadDim>>>(d_inst, p.devPtr, arg, qty);
+	CHECK();
+
+	// clean up memory
+	CATCH(cudaFree(d_inst));
+	if(NULL != d_arg){
+		CATCH(cudaFree(d_arg));
+	}
+
+	return p.devPtr;
+}
+
+} // end namespace

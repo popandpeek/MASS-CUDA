@@ -84,7 +84,7 @@ __device__ bool Agent::isAlive() {
  */
 __device__ void Agent::setPlace(Place *placePtr) {
 	place = placePtr;
-	index = place->index;
+	index = place->getIndex();
 }
 
 /**
