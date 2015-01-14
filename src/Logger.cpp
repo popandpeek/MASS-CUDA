@@ -102,7 +102,7 @@ void Logger::setLogFile(std::string filename) {
 
 	pFile = fopen(filename.c_str(), "a");
 	strftime(buf, BUFSIZE, "%a %Y/%m/%d %H:%M:%S ", ptm); // get detailed time
-	fprintf(pFile, "%s [INFO] Logger initialized.\n", buf);
+	fprintf(pFile, "\n\n%s [INFO] Logger initialized.\n", buf);
 	fflush(pFile);
 	isOpen = true;
 }
