@@ -12,14 +12,13 @@
 #include <queue>
 
 #include "DeviceConfig.h"
+#include "DataModel.h"
 
 namespace mass {
 
 // forward declarations
 class AgentsPartition;
 class PlacesPartition;
-class Agents;
-class Places;
 
 class Dispatcher {
 
@@ -50,19 +49,12 @@ public:
 	 **************************************************************************/
 
 	/**
-	 *  Configures a Places object.
-	 *
-	 *  @param places the places object to configure.
-	 */
-	void configurePlaces(Places *places);
-
-	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified places
 	 * collection.
 	 * @param handle the handle of the places object to refresh.
 	 */
-	void refreshPlaces(Places *places);
+	Place** refreshPlaces(int placeHandle);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -72,7 +64,8 @@ public:
 	 * @param argument the function argument. Can be NULL.
 	 * @param argSize the size of argument in bytes. If argument == NULL, argSize is not used.
 	 */
-	void callAllPlaces(Places *places, int functionId, void *argument, int argSize);
+	void callAllPlaces(int placeHandle, int functionId, void *argument,
+			int argSize);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -84,7 +77,7 @@ public:
 	 * @param retSize the size of the return value in bytes. If retSize == 0, NULL will be returned.
 	 * @return an array with one element of argSize per place. NULL if retSize == 0
 	 */
-	void *callAllPlaces(Places *places, int functionId, void *arguments[],
+	void *callAllPlaces(int placeHandle, int functionId, void *arguments[],
 			int argSize, int retSize);
 
 	/**
@@ -101,14 +94,14 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-	void exchangeAllPlaces(Places *places, int functionId,
+	void exchangeAllPlaces(int placeHandle, int functionId,
 			std::vector<int*> *destinations);
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes.
 	 *  @param handle the handle for which boundaries should be exchanged
 	 */
-	void exchangeBoundaryPlaces(Places *places);
+	void exchangeBoundaryPlaces(int placeHandle);
 
 	/**************************************************************************
 	 * These are the commands that will execute commands on agents objects on
@@ -116,18 +109,12 @@ public:
 	 **************************************************************************/
 
 	/**
-	 * Creates an Agents object with the specified parameters.
-	 * @param agents the collection to configure
-	 */
-	void configureAgents(Agents *agents);
-
-	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents
 	 * collection.
 	 * @param agents the agents object to refresh.
 	 */
-    void refreshAgents ( Agents *agents );
+	Agent** refreshAgents(int handle);
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
@@ -137,7 +124,7 @@ public:
 	 * @param argument the argument for the function
 	 * @param argSize the size in bytes of the argument
 	 */
-    void callAllAgents ( Agents *agents, int functionId, void *argument, int argSize );
+	void callAllAgents(int handle, int functionId, void *argument, int argSize);
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
@@ -151,37 +138,54 @@ public:
 	 * @param retSize the size in bytes of the return value
 	 * @return a void* with an element of retSize for every agent in the group.
 	 */
-    void *callAllAgents ( Agents *agents, int functionId, void *arguments[ ],
+	void *callAllAgents(int handle, int functionId, void *arguments[],
 			int argSize, int retSize);
 
 	/**
 	 * Calls manage on all agents of the specified group.
 	 * @param agents the agents to manage.
 	 */
-    void manageAllAgents ( Agents *agents );
+	void manageAllAgents(int handle);
 
-    template<class T>
-    Place** instantiatePlaces(T instantiator,void* arg, int argSize, int handle, int qty);
+	template<typename P, typename S>
+	void instantiatePlaces(int handle, void *argument, int argSize,
+			int dimensions, int size[], int qty, int boundary_width);
+
 private:
 
-    void loadPlacesPartition ( PlacesPartition *part, DeviceConfig *d );
-    void getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve = true );
+	DeviceConfig *getNextDevice();
+	void unloadDevice(DeviceConfig *device);
 
-    void loadAgentsPartition ( AgentsPartition *part, DeviceConfig *d );
-    void getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve = true );
+	std::map<Partition*, DeviceConfig*> partToDevice;
+	std::map<DeviceConfig*, Partition*> deviceToPart;
+	std::vector<DeviceConfig> deviceInfo;
 
-    DeviceConfig *getNextDevice();
+	int nextDevice; // tracks which device in deviceInfo is next to be used
+	DataModel *model;
+	bool initialized;
 
+};
+// end class
 
-    std::map<PlacesPartition *, DeviceConfig*> loadedPlaces; // tracks which partition is loaded on which GPU
-    std::map<AgentsPartition*, DeviceConfig*> loadedAgents; // tracks whicn partition is loaded on which GPU
-    std::vector<DeviceConfig> deviceInfo;
-    int nextDevice; // tracks which device in deviceInfo is next to be used
-};// end class
+template<typename P, typename S>
+void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
+		int dimensions, int size[], int qty, int boundary_width) {
 
-template<class T>
-Place** Dispatcher::instantiatePlaces(T instantiator,void* arg, int argSize, int handle, int qty){
-	DeviceConfig *d = getNextDevice();
-	return d->instantiatePlaces<T>(instantiator,arg, argSize, handle, qty);
+	// modify host-side data model
+	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+			qty, boundary_width);
+
+	// TODO this does not yet handle multiple places reliably
+	// TODO this does not yet handle more partitions than GPUs
+	for (int i = 0; i < deviceInfo.size(); ++i) {
+		DeviceConfig *d = getNextDevice();
+		Partition *p = model->getPartition(i);
+
+		int objCount = p->getPlacesPartition(handle)->sizeWithGhosts();
+		d->instantiatePlaces<P, S>(handle, argument, argSize, objCount);
+		partToDevice[p] = d;
+		deviceToPart[d] = p;
+	}
 }
-}// namespace mass
+
+} // namespace mass

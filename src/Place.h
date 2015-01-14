@@ -35,7 +35,7 @@ public:
 	 *  A contiguous space of arguments is passed 
 	 *  to the constructor.
 	 */
-	MASS_FUNCTION Place(void *args = NULL);
+	MASS_FUNCTION Place(PlaceState* state, void *args = NULL);
 
 //	/**
 //	 *  Called by MASS while executing Places.callAll().
@@ -83,6 +83,8 @@ public:
 	MASS_FUNCTION virtual PlaceState* getState();
 
 	MASS_FUNCTION int getIndex();
+
+	MASS_FUNCTION void setIndex(int index);
 
 protected:
 

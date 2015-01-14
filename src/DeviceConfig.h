@@ -11,6 +11,8 @@
 #include <map>
 #include "cudaUtil.h"
 #include "Logger.h"
+#include "PlaceState.h"
+#include "Partition.h"
 
 namespace mass {
 
@@ -20,20 +22,14 @@ class Place;
 
 struct PlaceArray {
 	Place** devPtr;
+	void *devState;
 	int qty;
-	PlaceArray() {
-		devPtr = NULL;
-		qty = 0;
-	}
 };
 
 struct AgentArray {
 	Agent** devPtr;
+	void *devState;
 	int qty;
-	AgentArray() {
-		devPtr = NULL;
-		qty = 0;
-	}
 };
 
 /**
@@ -47,30 +43,37 @@ class DeviceConfig {
 public:
 	DeviceConfig();
 	DeviceConfig(int device);
-	virtual ~DeviceConfig();
 
+	virtual ~DeviceConfig();
 	void freeDevice();
+
 	void setAsActiveDevice();
 
-	// void loadPlaces(PlacesPartition *part);
-	// void loadAgents(AgentsPartition *part);
+	void load(void*& destination, const void* source, size_t bytes);
+	void unload(void* destination, void* source, size_t bytes);
 
-	bool isLoaded();
-	void setLoaded(bool loaded);
+	void loadPartition(Partition* partition, int placeHandle);
 
-	void setNumPlaces(int numPlaces);
+	/*
+	 * Place Mutators
+	 */
 
-	Place** getPlaces(int rank);
-	int getNumPlacePtrs(int rank);
+	Place** getDevPlaces(int handle);
+	void* getPlaceState(int handle);
+
+	void deletePlaces(int handle);
+	int getNumPlacePtrs(int handle);
+
+	/*
+	 * Agent Mutators
+	 */
+	void* getAgentState(int handle);
+
+	template<typename P, typename S>
+	Place** instantiatePlaces(int handle, void *argument, int argSize, int qty);
 
 	DeviceConfig(const DeviceConfig& other); // copy constructor
 	DeviceConfig &operator=(const DeviceConfig &rhs); // assignment operator
-
-	template<class T>
-	Place** instantiatePlaces(T instantiator, void* arg, int argSize,
-			int handle, int qty);
-
-	void deletePlaces(Place **places, int qty);
 
 private:
 	int deviceNum;
@@ -80,62 +83,68 @@ private:
 //	PlaceArray devPlaces;
 	std::map<int, AgentArray> devAgents;
 	std::map<int, PlaceArray> devPlacesMap;
-	bool loaded;
 
 };
 // end class
 
-template<class T>
-__global__ void instantiatePlacesKernel(T* instantiator, Place** places,
-		void *arg, int qty) {
+template<typename PlaceType>
+__global__ void instantiatePlacesKernel(Place** places, void *state,
+		int stateBytes, void *arg, int qty) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if (idx < qty) {
-		places[idx] = instantiator->instantiate(arg);
+		// set pointer to corresponding state object
+		char *tmpPtr = ((char*) state) + (idx * stateBytes);
+
+		places[idx] = new PlaceType((PlaceState*) tmpPtr, arg);
+		places[idx]->setIndex(idx);
 	}
 }
 
-template<class T>
-Place** DeviceConfig::instantiatePlaces(T instantiator, void* arg, int argSize,
-		int handle, int qty) {
+template<typename P, typename S>
+Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
+		int qty) {
+
 	if (devPlacesMap.count(handle) > 0) {
 		return NULL;
 	}
+
 	setAsActiveDevice();
 
 	// create places tracking
 	PlaceArray p;
 	p.qty = qty;
-	devPlacesMap[handle] = p;
 
-	Logger::warn("Attempting lethal cudaMalloc on %s %d", __FILE__, __LINE__);
+	// create state array on device
+	void* tmp = NULL;
+	CATCH(cudaMalloc((void** ) &tmp, qty * sizeof(S)));
+	p.devState = tmp;
+
 	// allocate device pointers
-	CATCH(cudaMalloc((void** ) &p.devPtr, qty * sizeof(Place*)));
-
-	// copy instantiator to device
-	T *d_inst; // device side instantiator
-	CATCH(cudaMalloc((void** ) &d_inst, sizeof(T)));
-	CATCH(cudaMemcpy(d_inst, &instantiator, sizeof(T), H2D));
+	Place** tmpPlaces = NULL;
+	CATCH(cudaMalloc((void** ) &tmpPlaces, qty * sizeof(Place*)));
+	p.devPtr = tmpPlaces;
 
 	// handle arg
 	void *d_arg = NULL;
-	if (NULL != arg) {
+	if (NULL != argument) {
 		CATCH(cudaMalloc((void** ) &d_arg, argSize));
-		CATCH(cudaMemcpy(d_arg, arg, argSize, H2D));
+		CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 	}
 
 	// launch instantiation kernel
 	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
 	int threadDim = (qty - 1) / blockDim + 1;
-	instantiatePlacesKernel<T> <<<blockDim, threadDim>>>(d_inst, p.devPtr, arg, qty);
+	instantiatePlacesKernel<P> <<<blockDim, threadDim>>>(p.devPtr, p.devState,
+			sizeof(S), d_arg, qty);
 	CHECK();
 
 	// clean up memory
-	CATCH(cudaFree(d_inst));
-	if(NULL != d_arg){
+	if (NULL != argument) {
 		CATCH(cudaFree(d_arg));
 	}
 
+	devPlacesMap[handle] = p;
 	return p.devPtr;
 }
 

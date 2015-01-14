@@ -9,6 +9,7 @@
 #define TESTPLACE_H_
 
 #include "../src/Place.h"
+#include "TestState.h"
 
 namespace mass {
 
@@ -25,7 +26,7 @@ public:
 		SET_TO_ARG //!< SET_TO_ARG
 	};
 
-	MASS_FUNCTION TestPlace(void *argument);
+	MASS_FUNCTION TestPlace(PlaceState* state, void *argument);
 
 	/**
 	 *  Gets a pointer to this place's out message.

@@ -15,13 +15,11 @@ namespace mass {
 
 // forward declarations
 class Agent;
-class AgentsPartition;
 class Dispatcher;
 class Places;
 
 class Agents {
-    friend class AgentsPartition;
-    friend class Dispatcher;
+    friend class Mass;
 
 public:
 
@@ -30,6 +28,8 @@ public:
     int getHandle ( );
 
     int getPlacesHandle ( );
+
+    Agent** getAgentElements();
 
     int nAgents ( );
 
@@ -41,34 +41,20 @@ public:
 
     void manageAll ( );
 
-    int getNumPartitions ( );
-
 
 protected:
 	// Agent creation is handled through Mass::createAgents(...) call
     Agents ( int handle, void *argument, int argument_size, Places *places,
              int initPopulation );
 
-    
-    void addPartitions ( std::vector<AgentsPartition*> parts );
-
-    AgentsPartition *getPartition ( int rank );
-    
-    void setTsize ( int size );
-
-    int getTsize ( );
+	void setDispatcher(Dispatcher *d);
 
     Places *places; /**< The places used in this simulation. */
     int handle; /**< Identifies the type of agent this is.*/
-    void *argument;
-    int argSize;
     int numAgents; /**< Running count of living agents in system.*/
-    int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
-    int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
     Dispatcher *dispatcher;
-    int Tsize;
     Agent **agentPtrs;
-	std::map<int, AgentsPartition*> partitions;
+
 };// end class
 
 }// mass namespace

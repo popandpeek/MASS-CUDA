@@ -18,9 +18,9 @@ int main() {
 
 	// test logging
 	Logger::setLogFile("test_results.txt");
-	Logger::info("Logging in test file successfully.");
 
-	Mass::init();
+	int ngpu = 1;
+	Mass::init(NULL, ngpu);
 
 	Logger::info("Mass::init() successful.");
 
@@ -31,30 +31,27 @@ int main() {
 	if (!tests.runMassTests()) {
 		ss << "\tMass Tests\n";
 	}
-//
-//	if (!tests.runDllClassTests()) {
-//		ss << "\tDllClass Tests\n";
-//	}
-//
+
 	if (!tests.runPlacesTests()) {
 		ss << "\tPlaces Tests\n";
 	}
+
 //
 //	if (!tests.runDispatcherTests()) {
 //		ss << "\tDispatcher Tests\n";
 //	}
 //
-	//	if (!tests.runPlacesPartitionTests()) {
-	//		ss << "\tPlacesPartition Tests\n";
-	//	}
-	//
-	//	if (!tests.runAgentsPartitionTests()) {
-	//		ss << "\tAgentsPartition Tests\n";
-	//	}
-	//
-	//	if (!tests.runAgentsTests()) {
-	//		ss << "\tAgents Tests\n";
-	//	}
+//	if (!tests.runPlacesPartitionTests()) {
+//		ss << "\tPlacesPartition Tests\n";
+//	}
+//
+//	if (!tests.runAgentsPartitionTests()) {
+//		ss << "\tAgentsPartition Tests\n";
+//	}
+//
+//	if (!tests.runAgentsTests()) {
+//		ss << "\tAgents Tests\n";
+//	}
 //
 	Logger::info("Calling Mass::finish()");
 	Mass::finish();
@@ -65,8 +62,8 @@ int main() {
 //			<< "\n" << "End failed tests." << endl;
 	char buf[500];
 	strcpy(buf, ss.str().c_str());
-	if(tests.failedTests > 0){
-	Logger::info("Tests finished. The following tests failed:\n%s\n", buf);
+	if (tests.failedTests > 0) {
+		Logger::info("Tests finished. The following tests failed:\n%s\n", buf);
 	} else {
 		Logger::info("All tests passed.");
 	}

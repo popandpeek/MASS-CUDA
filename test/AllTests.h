@@ -17,13 +17,9 @@ public:
 	AllTests();
 	virtual ~AllTests();
 
-	bool proofOfConcept();
-
-	bool runDispatcherTests();
-
 	bool runMassTests();
 
-	bool runDllClassTests();
+	bool runDispatcherTests();
 
 	bool runPlacesTests();
 

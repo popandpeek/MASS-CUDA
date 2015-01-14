@@ -32,7 +32,7 @@ void Logger::close() {
 	}
 }
 
-void Logger::info(char* fmt, ...) {
+void Logger::info(std::string fmt, ...) {
 	if (!isOpen) {
 		setLogFile("mass_log.txt");
 	}
@@ -40,13 +40,13 @@ void Logger::info(char* fmt, ...) {
 	fprintf(pFile, "%s [INFO]    ", Logger::getLocalTime());
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(pFile, fmt, args);
+	vfprintf(pFile, fmt.c_str(), args);
 	fprintf(pFile, "\n");
 	va_end(args);
 	fflush(pFile); // make sure all logs make it out in event of a crash
 }
 
-void Logger::warn(char* fmt, ...) {
+void Logger::warn(std::string fmt, ...) {
 	if (!isOpen) {
 		setLogFile("mass_log.txt");
 	}
@@ -54,13 +54,13 @@ void Logger::warn(char* fmt, ...) {
 	fprintf(pFile, "%s [WARNING] ", Logger::getLocalTime());
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(pFile, fmt, args);
+	vfprintf(pFile, fmt.c_str(), args);
 	fprintf(pFile, "\n");
 	va_end(args);
 	fflush(pFile); // make sure all logs make it out in event of a crash
 }
 
-void Logger::error(char* fmt, ...) {
+void Logger::error(std::string fmt, ...) {
 	if (!isOpen) {
 		setLogFile("mass_log.txt");
 	}
@@ -68,13 +68,13 @@ void Logger::error(char* fmt, ...) {
 	fprintf(pFile, "%s [ERROR]   ", Logger::getLocalTime());
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(pFile, fmt, args);
+	vfprintf(pFile, fmt.c_str(), args);
 	fprintf(pFile, "\n");
 	va_end(args);
 	fflush(pFile); // make sure all logs make it out in event of a crash
 }
 
-void Logger::debug(char* fmt, ...) {
+void Logger::debug(std::string fmt, ...) {
 #ifdef DEBUG // gives ability to turn off this logging functionality from a single place
 	if (!isOpen) {
 		setLogFile("mass_log.txt");
@@ -83,7 +83,7 @@ void Logger::debug(char* fmt, ...) {
 	fprintf(pFile, "%s [DEBUG]   ", Logger::getLocalTime());
 	va_list args;
 	va_start(args, fmt);
-	vfprintf(pFile, fmt, args);
+	vfprintf(pFile, fmt.c_str(), args);
 	fprintf(pFile, "\n");
 	va_end(args);
 	fflush(pFile); // make sure all logs make it out in event of a crash

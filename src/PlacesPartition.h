@@ -13,9 +13,8 @@
 #include <cuda_runtime.h>
 #include <string>
 #include <vector>
-//#include "Mass.h"
-//#include "Place.h"
-//#include "Places.h"
+
+#include "Place.h"
 
 namespace mass {
 
@@ -32,10 +31,9 @@ public:
 	 * @param ghostWidth the number of x elements to exchange in ghost space
 	 * @param n the number of dimensions in this places instance
 	 * @param dimensions the size of the n dimensions
-	 * @param Tsize the number of bytes in a place instance
 	 */
 	PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
-			int n, int *dimensions, int Tsize);
+			int n, int *dimensions);
 
 	/**
 	 *  Destructor
@@ -43,37 +41,19 @@ public:
 	~PlacesPartition();
 
 	/**
-	 *  Returns the number of place elements in this partition.
-	 */
-	int size();
-
-	/**
-	 *  Returns the number of place elements and ghost elements.
-	 */
-	int sizePlusGhosts();
-
-	/**
 	 *  Gets the rank of this partition.
 	 */
 	int getRank();
 
 	/**
-	 *  Returns an array of the Place elements contained in this PlacesPartition object. This is an expensive
-	 *  operation since it requires memory transfer.
+	 *  Returns the number of place elements in this partition.
 	 */
-	void *hostPtr();
+	int size();
 
 	/**
-	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
+	 *  Returns the number of place elements plus ghost elements.
 	 */
-	void *hostPtrPlusGhosts();
-
-	/**
-	 *  Returns the pointer to the GPU data. NULL if not on GPU.
-	 */
-	void *devicePtr();
-
-	void setDevicePtr(void *places);
+	int sizeWithGhosts();
 
 	/**
 	 *  Returns the handle associated with this PlacesPartition object that was set at construction.
@@ -83,19 +63,7 @@ public:
 	/**
 	 *  Sets the start and number of places in this partition.
 	 */
-	void setSection(void *start);
-
-	/**
-	 * Queries to see if this partition is loaded on a device.
-	 * @return true if it is loaded
-	 */
-	bool isLoaded();
-
-	/**
-	 * Set the loaded status of this partition.
-	 * @param loaded
-	 */
-	void setLoaded(bool loaded);
+	void setSection(Place **start);
 
 	/**
 	 * Returns the number of elements in the ghost width.
@@ -112,25 +80,52 @@ public:
 	 */
 	void setGhostWidth(int width, int n, int *dimensions);
 
+
+
+	/**************************************************************************
+	 * A block of a places element is laid out thusly:
+	 *
+	 * 1. Left ghost
+	 * 2. Left Buffer
+	 * 3. Right Buffer
+	 * 4. Right Ghost
+	 *
+	 *       |-------This rank's data-------|
+	 *   ----------------------------------------
+	 *   | 1 |/2/|//////////////////////|/3/| 4 |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   ----------------------------------------
+	 *
+	 * The block of memory on the GPU spans 1 - 4, but a rank should only copy
+	 * out data between 2 & 3. Ghost space is to allow a rank to "reach across"
+	 * the rank borders for shared computation. Rank 1's left buffer is rank 0's
+	 * right ghost space.
+	 */
+
 	/**
 	 * Returns a pointer to the left buffer.
 	 */
-	void *getLeftBuffer();
+	Place *getLeftBuffer();
 
 	/**
 	 * Returns a pointer to the right buffer.
 	 */
-	void *getRightBuffer();
+	Place *getRightBuffer();
 
 	/**
 	 * Returns a pointer to the start of the left ghost space.
 	 */
-	void *getLeftGhost();
+	Place *getLeftGhost();
 
 	/**
 	 * Returns a pointer to the start of the right ghost space.
 	 */
-	void *getRightGhost();
+	Place *getRightGhost();
 
 	/**
 	 * Returns the ideal block dimension for this partition. Used for launching
@@ -149,7 +144,7 @@ public:
 	dim3 threadDim();
 
 	/**
-	 * Gets the number of bytes for a single place element in the Places instance
+	 * Gets the number of bytes for a single state element in the Places instance
 	 * this partition belongs to.
 	 *
 	 * @return an int >= 0
@@ -164,14 +159,11 @@ private:
 	 */
 	void setIdealDims();
 
-	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
-	void *dPtr; // pointer to GPU data
+	Place **hPtr; // this starts at the left ghost
 	int handle;         // User-defined identifier for this PlacesPartition
 	int rank; // the rank of this partition
-	int numElements;    // the number of place elements in this PlacesPartition
-	int Tsize; // sizeof(agent)
-	bool isloaded;
-	bool loadable;
+	int numElements;    // the number of place elements in this PlacesPartition from left ghost to right ghost
+	int Tsize; // TODO remove
 	int ghostWidth;
 	dim3 dims[2]; // 0 is blockdim, 1 is threaddim
 };

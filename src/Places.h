@@ -10,9 +10,9 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "DllClass.h"
 
 namespace mass {
+
 // forward declarations
 class Dispatcher;
 class Place;
@@ -20,37 +20,8 @@ class PlacesPartition;
 
 class Places {
 	friend class Mass;
-	friend class Dispatcher;
-	friend class PlacesPartition;
+
 public:
-
-	/**
-	 *  Creates a Places object. Only accessible from the dispatcher.
-	 *
-	 *  @param handle the unique identifier of this places collections
-	 *  @param classname the name of the Place class to be dynamically loaded
-	 *  @param boundary_width the width of the border, in elements, to exchange between segments.
-	 *  @param argument a continuous space of arguments used to initialize the places
-	 *  @param argSize the size in bytes of the argument array
-	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
-	 *  @param size the size of each dimension. This MUST be dimensions elements long.
-	 */
-	Places(int handle, std::string className, void *argument, int argSize,
-			int dimensions, int size[], int boundary_width);
-
-	/**
-	 *  Creates a Places object. Only accessible from the dispatcher.
-	 *
-	 *  @param handle the unique identifier of this places collections
-	 *  @param class a pointer to a user instantiated Place instance
-	 *  @param boundary_width the width of the border, in elements, to exchange between segments.
-	 *  @param argument a continuous space of arguments used to initialize the places
-	 *  @param argSize the size in bytes of the argument array
-	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
-	 *  @param size the size of each dimension. This MUST be dimensions elements long.
-	 */
-	Places(int handle, Place *proto, void *argument, int argSize,
-			int dimensions, int size[], int boundary_width);
 
 	/**
 	 *  Destructor
@@ -158,6 +129,8 @@ public:
 	 */
 	int getRowMajorIdx(int *indices);
 
+	int getRowMajorIdx(std::vector<int> indices);
+
 	/**
 	 * This function will take a valid (in bounds) row-major index for this
 	 * places object and return a vector that contains the row, col, z, etc...
@@ -172,45 +145,24 @@ public:
 	 */
 	std::vector<int> getIndexVector(int rowMajorIdx);
 
-protected:
-
-	void setTsize(int size);
-
-	int getTsize();
-
-	int getNumPartitions();
-
+private:
 	/**
-	 *  Sets the number of partitions in this Places object.
+	 *  Creates a Places object. Only accessible from the dispatcher.
+	 *
+	 *  @param handle the unique identifier of this places collections
 	 */
-	void setPartitions(int numParts);
-
-	void setDevicePlaces(Place **p);
-
-	void setDispatcher(Dispatcher *d);
-
-	/**
-	 *  Gets a partition from this Places object.
-	 */
-	PlacesPartition *getPartition(int rank);
-
-
-	void init_all(void *argument, int argSize);
-
-	void init_all(Place * proto, void *argument, int argSize);
+	Places(int handle, int dimensions, int size[], Dispatcher *d);
 
 
 	int handle;         // User-defined identifier for this Places_Base
+	Dispatcher *dispatcher; // the GPU dispatcher
+
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
-	int boundary_width; // the width of borders between sections
-	Dispatcher *dispatcher; // the GPU dispatcher
 	unsigned numElements;
 	Place **elemPtrs;
-	std::map<int, PlacesPartition*> partitions;
-	unsigned Tsize;
-	std::string classname;
-	DllClass *dllClass;
+
+
 };
 
 } /* namespace mass */

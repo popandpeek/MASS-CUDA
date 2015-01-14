@@ -16,7 +16,8 @@ namespace mass {
  *  A contiguous space of arguments is passed
  *  to the constructor.
  */
-MASS_FUNCTION Place::Place(void *args) {
+MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
+	this->state = state;
 	state->index = 0;
 	state->agentPop = 0;
 	state->message_size = 0;
@@ -71,6 +72,10 @@ MASS_FUNCTION PlaceState* Place::getState() {
 
 MASS_FUNCTION int Place::getIndex(){
 	return state->index;
+}
+
+MASS_FUNCTION void Place::setIndex(int index){
+	state->index = index;
 }
 
 } /* namespace mass */

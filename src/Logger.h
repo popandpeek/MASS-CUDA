@@ -32,28 +32,28 @@ public:
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	static void debug(char *fmt, ...);
+	static void debug(std::string fmt, ...);
 
 	/**
 	 * Log a formatted message with the flag [WARNING]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	static void warn(char *fmt, ...);
+	static void warn(std::string fmt, ...);
 
 	/**
 	 * Log a formatted message with the flag [ERROR]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	static void error(char *fmt, ...);
+	static void error(std::string fmt, ...);
 
 	/**
 	 * Log a formatted message with the flag [INFO]
 	 * @param fmt the format string
 	 * @param va_arg the arguments for the formatted string
 	 */
-	static void info(char *fmt, ...);
+	static void info(std::string fmt, ...);
 
 	/**
 	 * Sets the file to be used for logging. Closes out any existing logger if

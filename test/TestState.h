@@ -10,12 +10,16 @@
 
 #include "../src/PlaceState.h"
 
+namespace mass {
+
+
 class TestState
-		: public mass::PlaceState {
+		: public PlaceState {
 
 public:
 	int message;
 };
 
+} // end namespace
 
 #endif /* TESTSTATE_H_ */

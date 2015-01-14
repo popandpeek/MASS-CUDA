@@ -67,9 +67,12 @@ public:
      */
     static int numAgentsInstances ( );
 
-	template <typename T>
-	static Places* createPlaces(T instantiator, int handle, void *argument,
-			int argSize,int dimensions, int size[], int boundary_width);
+    /**
+     * Creates a Places instance with the provided parameters.
+     */
+	template <typename P, typename S>
+	static Places* createPlaces(int handle, void *argument,
+			int argSize, int dimensions, int size[], int boundary_width);
 
 private:
 
@@ -78,18 +81,18 @@ private:
 	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
 };
 
-template <typename T>
-Places* Mass::createPlaces(T instantiator, int handle, void *argument,
-		int argSize,int dimensions, int size[], int boundary_width){
+template <typename P, typename S>
+Places* Mass::createPlaces(int handle, void *argument,
+		int argSize, int dimensions, int size[], int boundary_width){
 
-	Places *places = new Places(handle, "", argument, argSize,
-			dimensions, size, boundary_width);
-	places->setDispatcher(Mass::dispatcher);
-	Mass::dispatcher->configurePlaces(places);
-	Place** p = Mass::dispatcher->instantiatePlaces(instantiator,argument, argSize,
-			handle, places->numElements);
-	places->setDevicePlaces(p);
+	// create an API object for this Places collection
+	Places *places = new Places(handle, dimensions, size, dispatcher);
 	placesMap[handle] = places;
+
+	// perform actual instantiation of user classes
+	dispatcher->instantiatePlaces<P,S>(handle, argument, argSize, dimensions, size,
+			places->numElements, boundary_width);
+
 	return places;
 }
 

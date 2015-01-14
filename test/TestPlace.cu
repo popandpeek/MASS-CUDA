@@ -5,7 +5,6 @@
  *      Author: natehart
  */
 
-
 #include "../src/Mass.h"
 
 #include "TestPlace.h"
@@ -13,7 +12,8 @@
 
 namespace mass {
 
-MASS_FUNCTION TestPlace::TestPlace(void *arg):Place(arg){
+MASS_FUNCTION TestPlace::TestPlace(PlaceState* state, void *arg) :
+		Place(state, arg) {
 	if (NULL != arg) {
 		((TestState*) state)->message = *((int*) arg);
 	} else {
@@ -34,8 +34,7 @@ MASS_FUNCTION void *TestPlace::getMessage() {
  * function rather than inheriting it.
  *
  * @return an int >= 0;
- */
-MASS_FUNCTION int TestPlace::placeSize() {
+ */MASS_FUNCTION int TestPlace::placeSize() {
 	return sizeof(TestPlace);
 }
 
@@ -58,7 +57,7 @@ MASS_FUNCTION void TestPlace::setToOne() {
 }
 
 MASS_FUNCTION void TestPlace::setToArg(int *arg) {
-	if(NULL != arg){
+	if (NULL != arg) {
 		((TestState*) state)->message = *arg;
 	} else {
 		((TestState*) state)->message = -10; // null argument

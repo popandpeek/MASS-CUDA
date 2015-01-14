@@ -18,6 +18,7 @@ namespace mass {
 #define BLOCK_SIZE 512  // max threads per block
 #define H2D cudaMemcpyHostToDevice
 #define D2H cudaMemcpyDeviceToHost
+#define CERR
 
 /*! If a cuda error occurs, terminates the program with a descriptive error message.
  */

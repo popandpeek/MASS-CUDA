@@ -5,9 +5,8 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#include "Agent.h"
-#include "AgentsPartition.h"
 #include "Agents.h"
+#include "Agent.h"
 #include "Mass.h"
 #include "Places.h"
 #include "Dispatcher.h"
@@ -18,7 +17,6 @@ namespace mass {
         if ( NULL != agentPtrs ) {
             delete[ ] agentPtrs;
         }
-        partitions.empty ( );
     }
 
     int Agents::getHandle ( ) {
@@ -27,6 +25,11 @@ namespace mass {
 
     int Agents::getPlacesHandle ( ) {
         return places->getHandle ( );
+    }
+
+    Agent** Agents::getAgentElements(){
+    	agentPtrs = dispatcher->refreshAgents(handle);
+    	return agentPtrs;
     }
 
     int Agents::nAgents ( ) {
@@ -38,74 +41,29 @@ namespace mass {
     }
 
     void Agents::callAll ( int functionId, void *argument, int argSize ) {
-        dispatcher->callAllAgents ( this, functionId, argument, argSize );
+        dispatcher->callAllAgents ( handle, functionId, argument, argSize );
     }
 
     void *Agents::callAll ( int functionId, void *arguments[ ], int argSize,
                             int retSize ) {
-        return dispatcher->callAllAgents ( this, functionId, arguments, argSize, retSize );
+        return dispatcher->callAllAgents ( handle, functionId, arguments, argSize, retSize );
     }
 
     void Agents::manageAll ( ) {
-        dispatcher->manageAllAgents ( this );
-    }
-
-    int Agents::getNumPartitions ( ) {
-        return partitions.size ( );
+        dispatcher->manageAllAgents ( handle );
     }
 
     Agents::Agents ( int handle, void *argument, int argument_size, Places *places,
                      int initPopulation ) {
-
         this->places = places;
         this->handle = handle;
-        this->argument = argument;
-        this->argSize = argument_size;
         this->numAgents = initPopulation;
-        this->newChildren = 0;
-        this->sequenceNum = 0;
-        this->dispatcher = Mass::dispatcher;
-        this->Tsize = 0;
+        this->dispatcher = NULL;
         this->agentPtrs = NULL;
     }
 
-    void Agents::addPartitions ( std::vector<AgentsPartition*> parts ) {
-        int totalQty = 0;
-        for ( int i = 0; i < parts.size ( ); ++i ) {
-            totalQty += parts[ i ]->size ( );
-        }
+	void Agents::setDispatcher(Dispatcher *d){
+        this->dispatcher = d;
+	}
 
-        // remove any old pointers
-        if ( NULL != agentPtrs ) {
-            delete[ ] agentPtrs;
-        }
-
-        agentPtrs = new Agent*[ totalQty ];
-
-        int nextPtr = 0;
-        // set pointers to new agents
-        for ( int i = 0; i < parts.size ( ); ++i ) {
-            AgentsPartition* part = parts[ i ];
-            int qty = part->size ( );
-            // allow pointer arithmatic in bytes
-            char* nextAgent = ( char* ) part->hostPtr ( );
-            for ( int j = 0; j < qty; ++j ) {
-                agentPtrs[ nextPtr++ ] = ( Agent* ) nextAgent;
-                nextAgent += Tsize; // moves pointer to next agent's memory address
-            }
-        }
-    }
-
-    AgentsPartition *Agents::getPartition ( int rank ) {
-        return partitions[ rank ];
-    }
-
-
-    void Agents::setTsize ( int size ) {
-        Tsize = size;
-    }
-
-    int Agents::getTsize ( ) {
-        return Tsize;
-    }
 }// mass namespace

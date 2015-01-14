@@ -25,11 +25,13 @@ inline void *shiftPtr(void *origin, int qty, int Tsize) {
 	return retVal;
 }
 
-PlacesPartition::PlacesPartition(int handle, int rank, int numElements,
-		int ghostWidth, int n, int *dimensions, int Tsize) :
-		hPtr(NULL), dPtr(NULL), handle(handle), rank(rank), numElements(
-				numElements), isloaded(false), Tsize(Tsize) {
+PlacesPartition::PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
+		int n, int *dimensions){
 	Logger::debug("Entering PlacesPartition constructor.");
+	this->hPtr = NULL;
+	this->handle = handle;
+	this->rank = rank;
+	this->numElements = numElements;
 	setGhostWidth(ghostWidth, n, dimensions);
 	setIdealDims();
 }
@@ -50,7 +52,7 @@ int PlacesPartition::size() {
 /**
  *  Returns the number of place elements and ghost elements.
  */
-int PlacesPartition::sizePlusGhosts() {
+int PlacesPartition::sizeWithGhosts() {
 	int numRanks = 1;//Mass::getPlaces(handle)->getNumPartitions();
 	if (1 == numRanks) {
 		return numElements;
@@ -75,48 +77,10 @@ int PlacesPartition::getRank() {
 }
 
 /**
- *  Returns an array of the Place elements contained in this PlacesPartition object. This is an expensive
- *  operation since it requires memory transfer.
- */
-void *PlacesPartition::hostPtr() {
-	void *retVal = hPtr;
-	if (rank > 0) {
-		retVal = shiftPtr(hPtr, ghostWidth, Tsize);
-	}
-	return retVal;
-}
-
-/**
- *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
- */
-void *PlacesPartition::hostPtrPlusGhosts() {
-	return hPtr;
-}
-
-/**
- *  Returns the pointer to the GPU data. NULL if not on GPU.
- */
-void *PlacesPartition::devicePtr() {
-	return dPtr;
-}
-
-void PlacesPartition::setDevicePtr(void *places) {
-	dPtr = places;
-}
-
-/**
  *  Returns the handle associated with this PlacesPartition object that was set at construction.
  */
 int PlacesPartition::getHandle() {
 	return handle;
-}
-
-bool PlacesPartition::isLoaded() {
-	return isloaded;
-}
-
-void PlacesPartition::setLoaded(bool loaded) {
-	isloaded = loaded;
 }
 
 int PlacesPartition::getGhostWidth() {
@@ -128,7 +92,12 @@ void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
 	Logger::debug("Setting ghost width in partition.");
 	// start at 1 because we never want to factor in x step
 	for (int i = 1; i < n; ++i) {
-		ghostWidth += dimensions[i];
+		ghostWidth *= dimensions[i];
+	}
+
+	// prevent indexing out of bounds on thin sections with wide ghosts
+	if(ghostWidth > numElements){
+		ghostWidth = numElements;
 	}
 
 	// set pointer
@@ -146,30 +115,28 @@ void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
 	Logger::debug("Done setting ghost width in partition.");
 }
 
-void *PlacesPartition::getLeftBuffer() {
-	return shiftPtr(hPtr, ghostWidth, Tsize);
+Place *PlacesPartition::getLeftBuffer() {
+	return hPtr[ghostWidth];
 }
 
-void *PlacesPartition::getRightBuffer() {
-	void *retVal = shiftPtr(hPtr, numElements, Tsize);
+Place *PlacesPartition::getRightBuffer() {
 	if (0 == rank) {
 		// there is no left ghost width, shift a negative direction
-		retVal = shiftPtr(retVal, -1 * ghostWidth, Tsize);
+		return hPtr[numElements - ghostWidth];
 	}
-	return retVal;
+	return hPtr[numElements];
 }
 
-void *PlacesPartition::getLeftGhost() {
-	return hPtr; // this is where hPtr starts
+Place *PlacesPartition::getLeftGhost() {
+	return hPtr[0]; // this is where hPtr starts
 }
 
-void *PlacesPartition::getRightGhost() {
-	void *retVal = shiftPtr(hPtr, numElements, Tsize);
-	if (rank > 0) {
-		// we started at -ghostWidth elements.
-		retVal = shiftPtr(retVal, ghostWidth, Tsize);
+Place *PlacesPartition::getRightGhost() {
+	if (0 == rank) {
+		// no left ghost width to skip
+		return hPtr[numElements];
 	}
-	return retVal;
+	return hPtr[numElements + ghostWidth];
 }
 
 dim3 PlacesPartition::blockDim() {
@@ -180,15 +147,19 @@ dim3 PlacesPartition::threadDim() {
 	return dims[1];
 }
 
+void PlacesPartition::setSection(Place** start) {
+	hPtr = start;
+}
+
 void PlacesPartition::setIdealDims() {
 	Logger::debug("Setting ideal dims.");
 	int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
 	Logger::debug("Creating block dim.");
-	dim3 blockDim(numBlocks, 1, 1);
+	dim3 blockDim(numBlocks);
 
 	int nThr = (numElements - 1) / numBlocks + 1;
 	Logger::debug("Creating thread dim.");
-	dim3 threadDim(nThr, 1, 1);
+	dim3 threadDim(nThr);
 
 
 	Logger::debug("Assigning dims.");

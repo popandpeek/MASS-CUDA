@@ -8,9 +8,6 @@
 
 #include <time.h>
 #include "Mass.h"
-//#include "Agents.h"
-//#include "Places.h"
-//#include "Dispatcher.h"
 #include "Logger.h"
 
 using namespace std;
@@ -24,26 +21,22 @@ map<int, Agents*> Mass::agentsMap;
 
 void Mass::init(string args[], int &ngpu) {
 	Logger::debug("Initializing Mass");
-	if (NULL == Mass::dispatcher) {
-		Mass::dispatcher = new Dispatcher();
+	if (NULL == dispatcher) {
+		dispatcher = new Dispatcher();
 	}
-	Mass::dispatcher->init(ngpu);
+	dispatcher->init(ngpu);
 }
 
 void Mass::init(string args[]) {
-	Logger::debug("Initializing Mass");
-	if (NULL == Mass::dispatcher) {
-		Mass::dispatcher = new Dispatcher();
-	}
 	// 0 is the flag to use all available GPU resources
-	int flag = 0;
-	Mass::dispatcher->init(flag);
+	int ngpu = 0;
+	Mass::init(args, ngpu);
 }
 
 void Mass::finish() {
 	Logger::debug("Finishing Mass");
-	delete Mass::dispatcher;
-	Mass::dispatcher = NULL;
+	delete dispatcher;
+	dispatcher = NULL;
 }
 
 Places *Mass::getPlaces(int handle) {
