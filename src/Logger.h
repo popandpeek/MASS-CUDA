@@ -56,6 +56,13 @@ public:
 	static void info(std::string fmt, ...);
 
 	/**
+	 * Prints a formatted message with no flags or time stamps
+	 * @param fmt the format string
+	 * @param va_arg the arguments for the formatted string
+	 */
+	static void print(std::string fmt, ...);
+
+	/**
 	 * Sets the file to be used for logging. Closes out any existing logger if
 	 * one already exists. If filename does not exist, it will be created.
 	 *

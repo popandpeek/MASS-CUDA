@@ -46,6 +46,19 @@ void Logger::info(std::string fmt, ...) {
 	fflush(pFile); // make sure all logs make it out in event of a crash
 }
 
+void Logger::print(std::string fmt, ...) {
+	if (!isOpen) {
+		setLogFile("mass_log.txt");
+	}
+
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(pFile, fmt.c_str(), args);
+	fprintf(pFile, "\n");
+	va_end(args);
+	fflush (pFile); // make sure all logs make it out in event of a crash
+}
+
 void Logger::warn(std::string fmt, ...) {
 	if (!isOpen) {
 		setLogFile("mass_log.txt");

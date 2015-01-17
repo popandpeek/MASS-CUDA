@@ -24,16 +24,18 @@ public:
 	/**
 	 * Default constructor.
 	 */
-	MASS_FUNCTION MObject(){}
+	MASS_FUNCTION MObject() {
+	}
 
 	/**
 	 * Default destructor.
 	 */
-	MASS_FUNCTION virtual ~MObject(){}
+	MASS_FUNCTION virtual ~MObject() {
+	}
 
 };
 
-typedef MObject *instantiate_t( void *argument );
-typedef void destroy_t( MObject * );
+typedef MObject *instantiate_t(void *argument);
+typedef void destroy_t(MObject *);
 
 } /* namespace mass */

@@ -19,93 +19,93 @@ class AgentsPartition {
 
 public:
 
-	AgentsPartition ( int handle, void *argument, int argument_size, Agents *agents,
-	            int numElements );
+	AgentsPartition(int handle, void *argument, int argument_size,
+			Agents *agents, int numElements);
 
 	/**
 	 *  Destructor
 	 */
-    ~AgentsPartition ( );
+	~AgentsPartition();
 
 	/**
 	 *  Returns the number of elements in this partition.
 	 */
-    int size ( );
+	int size();
 
 	/**
 	 *  Returns the number of elements and ghost elements.
 	 */
-    int sizePlusGhosts ( );
+	int sizePlusGhosts();
 
 	/**
 	 *  Gets the rank of this partition.
 	 */
-    int getRank ( );
+	int getRank();
 
 	/**
 	 *  Returns an array of the elements contained in this Partition.
 	 */
-    void *hostPtr ( );
+	void *hostPtr();
 
 	/**
 	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
 	 */
-    void *hostPtrPlusGhosts ( );
+	void *hostPtrPlusGhosts();
 
 	/**
 	 *  Returns the pointer to the GPU data. NULL if not on GPU.
 	 */
-    void *devicePtr ( );
+	void *devicePtr();
 
-    void setDevicePtr ( void *agents );
+	void setDevicePtr(void *agents);
 
 	/**
 	 *  Returns the handle associated with this AgentsPartition object that was set at construction.
 	 */
-    int getHandle ( );
+	int getHandle();
 
 	/**
 	 *  Sets the start and number of agents in this partition.
 	 */
-    void setSection ( void *start );
+	void setSection(void *start);
 
-    void setQty ( int qty );
+	void setQty(int qty);
 
-    bool isLoaded ( );
+	bool isLoaded();
 
-    void setLoaded ( bool loaded );
+	void setLoaded(bool loaded);
 
-    void makeLoadable ( );
+	void makeLoadable();
 
-    void *load ( cudaStream_t stream );
+	void *load(cudaStream_t stream);
 
-    bool retrieve ( cudaStream_t stream, bool freeOnRetrieve );
+	bool retrieve(cudaStream_t stream, bool freeOnRetrieve);
 
-    int getGhostWidth ( );
+	int getGhostWidth();
 
-    void setGhostWidth ( int width, int n, int *dimensions );
+	void setGhostWidth(int width, int n, int *dimensions);
 
 	// TODO Do these ghost updates do what I want?
 	// look at having them move the data to a destination pointer
-    void updateLeftGhost ( void *ghost, cudaStream_t stream );
+	void updateLeftGhost(void *ghost, cudaStream_t stream);
 
-    void updateRightGhost ( void *ghost, cudaStream_t stream );
+	void updateRightGhost(void *ghost, cudaStream_t stream);
 
 	// TODO add a pointer param so buffers and ghosts can be copied directly where they need to go
-    void *getLeftBuffer ( );
+	void *getLeftBuffer();
 
-    void *getRightBuffer ( );
+	void *getRightBuffer();
 
-    dim3 blockDim ( );
+	dim3 blockDim();
 
-    dim3 threadDim ( );
+	dim3 threadDim();
 
-    void setIdealDims ( );
+	void setIdealDims();
 
-    int getPlaceBytes ( );
+	int getPlaceBytes();
 
 private:
-    void *movePtr(void *ptr, int nElements);
+	void *movePtr(void *ptr, int nElements);
 
 	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
 	void *dPtr; // pointer to GPU data

@@ -74,8 +74,8 @@ private:
 };
 
 template<typename P, typename S>
-PlacesModel* DataModel::instantiatePlaces(int handle, void *argument, int argSize,
-		int dimensions, int size[], int qty, int boundary_width) {
+PlacesModel* DataModel::instantiatePlaces(int handle, void *argument,
+		int argSize, int dimensions, int size[], int qty, int boundary_width) {
 	PlacesModel *p = PlacesModel::createPlaces<P, S>(handle, argument, argSize,
 			dimensions, size, qty, boundary_width);
 	addPlacesModel(p);

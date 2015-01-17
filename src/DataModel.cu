@@ -39,13 +39,14 @@ DataModel::~DataModel() {
 }
 
 void DataModel::addPlacesModel(PlacesModel *places) {
-	if(NULL == places){
+	if (NULL == places) {
 		throw MassException("Null pointer in addPlacesModel");
 	}
 
 	int handle = places->getHandle();
-	if(placesMap.count(handle) > 0){
-		Logger::error("DataModel::placesMap already contains PlacesModel %d", handle);
+	if (placesMap.count(handle) > 0) {
+		Logger::error("DataModel::placesMap already contains PlacesModel %d",
+				handle);
 		throw MassException("Adding same collection more than once.");
 	}
 
@@ -62,7 +63,7 @@ void DataModel::partitionPlaces(PlacesModel *places) {
 	for (int rank = 0; rank < nParts; ++rank) {
 
 		int size = sliceSize;
-		if(1 != nParts && rank == nParts - 1){
+		if (1 != nParts && rank == nParts - 1) {
 			size = remainder;
 		}
 
@@ -92,7 +93,7 @@ void DataModel::addAgents(AgentsModel *agents) {
 
 Partition* DataModel::getPartition(int rank) {
 	Partition* retVal = NULL;
-	if(partitions.count(rank)>0){
+	if (partitions.count(rank) > 0) {
 		retVal = partitions[rank];
 	}
 	return retVal;

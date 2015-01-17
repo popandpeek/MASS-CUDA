@@ -13,16 +13,14 @@
 
 namespace mass {
 
-
-
 class TestPlace: public Place {
 
 public:
 	/**
 	 * The function IDs
 	 */
-	enum{
-		SET_TO_ONE,//!< SET_TO_ONE
+	enum {
+		SET_TO_ONE, //!< SET_TO_ONE
 		SET_TO_ARG //!< SET_TO_ARG
 	};
 
@@ -45,11 +43,10 @@ public:
 	 */
 	MASS_FUNCTION virtual int placeSize();
 
-
 	/**
 	 * Calls a function specified within the class enum.
 	 */
-	MASS_FUNCTION virtual void callMethod( int functionId, void *arg = NULL);
+	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
 
 	/**
 	 * Sets message to 1. Specified using SET_TO_ONE enum.

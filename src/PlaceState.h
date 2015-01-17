@@ -16,11 +16,10 @@
 
 namespace mass {
 
-
 class PlaceState {
 	friend class Place;
 
-protected:
+public:
 	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
 	Agent *agents[MAX_AGENTS];
 	unsigned agentPop; // the population of agents on this place

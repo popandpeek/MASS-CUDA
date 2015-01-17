@@ -153,7 +153,6 @@ private:
 	 */
 	Places(int handle, int dimensions, int size[], Dispatcher *d);
 
-
 	int handle;         // User-defined identifier for this Places_Base
 	Dispatcher *dispatcher; // the GPU dispatcher
 
@@ -161,7 +160,6 @@ private:
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	unsigned numElements;
 	Place **elemPtrs;
-
 
 };
 

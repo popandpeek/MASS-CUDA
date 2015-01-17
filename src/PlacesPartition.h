@@ -80,8 +80,6 @@ public:
 	 */
 	void setGhostWidth(int width, int n, int *dimensions);
 
-
-
 	/**************************************************************************
 	 * A block of a places element is laid out thusly:
 	 *
@@ -162,7 +160,7 @@ private:
 	Place **hPtr; // this starts at the left ghost
 	int handle;         // User-defined identifier for this PlacesPartition
 	int rank; // the rank of this partition
-	int numElements;    // the number of place elements in this PlacesPartition from left ghost to right ghost
+	int numElements; // the number of place elements in this PlacesPartition from left ghost to right ghost
 	int Tsize; // TODO remove
 	int ghostWidth;
 	dim3 dims[2]; // 0 is blockdim, 1 is threaddim

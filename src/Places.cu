@@ -6,13 +6,10 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 
-
-
 #include "Places.h"
 #include "Place.h"
 #include "Dispatcher.h"
 #include "Logger.h"
-
 
 using namespace std;
 
@@ -70,7 +67,6 @@ Place** Places::getElements() {
 	return elemPtrs;
 }
 
-
 int Places::getRowMajorIdx(int *indices) {
 	// a single X will pass over y*z elements,
 	// a single Y will pass over z elements, and a Z will pass over 1 element.
@@ -91,7 +87,7 @@ int Places::getRowMajorIdx(int *indices) {
 	return rmi;
 }
 
-int Places::getRowMajorIdx(vector<int> indices){
+int Places::getRowMajorIdx(vector<int> indices) {
 	return getRowMajorIdx(&indices[0]);
 }
 
@@ -107,15 +103,14 @@ vector<int> Places::getIndexVector(int rowMajorIdx) {
 	return indices;
 }
 
-
-Places::Places(int handle, int dimensions, int size[], Dispatcher *d){
+Places::Places(int handle, int dimensions, int size[], Dispatcher *d) {
 	this->handle = handle;
 	this->dispatcher = d;
 	this->dimensions = size;
 	this->numDims = dimensions;
 	this->elemPtrs = NULL;
 	this->numElements = 1;
-	for(int i = 0; i < dimensions; ++i){
+	for (int i = 0; i < dimensions; ++i) {
 		this->numElements *= size[i];
 	}
 }

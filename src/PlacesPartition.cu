@@ -25,8 +25,8 @@ inline void *shiftPtr(void *origin, int qty, int Tsize) {
 	return retVal;
 }
 
-PlacesPartition::PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
-		int n, int *dimensions){
+PlacesPartition::PlacesPartition(int handle, int rank, int numElements,
+		int ghostWidth, int n, int *dimensions) {
 	Logger::debug("Entering PlacesPartition constructor.");
 	this->hPtr = NULL;
 	this->handle = handle;
@@ -53,7 +53,7 @@ int PlacesPartition::size() {
  *  Returns the number of place elements and ghost elements.
  */
 int PlacesPartition::sizeWithGhosts() {
-	int numRanks = 1;//Mass::getPlaces(handle)->getNumPartitions();
+	int numRanks = 1; //Mass::getPlaces(handle)->getNumPartitions();
 	if (1 == numRanks) {
 		return numElements;
 	}
@@ -96,7 +96,7 @@ void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
 	}
 
 	// prevent indexing out of bounds on thin sections with wide ghosts
-	if(ghostWidth > numElements){
+	if (ghostWidth > numElements) {
 		ghostWidth = numElements;
 	}
 
@@ -160,7 +160,6 @@ void PlacesPartition::setIdealDims() {
 	int nThr = (numElements - 1) / numBlocks + 1;
 	Logger::debug("Creating thread dim.");
 	dim3 threadDim(nThr);
-
 
 	Logger::debug("Assigning dims.");
 	dims[0] = blockDim;

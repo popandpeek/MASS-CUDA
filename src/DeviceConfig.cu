@@ -11,6 +11,7 @@
 #include "Place.h"
 #include "cudaUtil.h"
 #include "Logger.h"
+#include "MassException.h"
 
 using namespace std;
 
@@ -108,6 +109,20 @@ DeviceConfig::DeviceConfig(const DeviceConfig& other) {
 	devAgents = other.devAgents;
 }
 
+int DeviceConfig::countDevPlaces(int handle) {
+	if (devPlacesMap.count(handle) != 1) {
+		throw MassException("Handle not found.");
+	}
+	return devPlacesMap[handle].qty;
+}
+
+int DeviceConfig::countDevAgents(int handle) {
+	if (devAgents.count(handle) != 1) {
+		throw MassException("Handle not found.");
+	}
+	return devAgents[handle].qty;
+}
+
 DeviceConfig &DeviceConfig::operator=(const DeviceConfig &rhs) {
 	Logger::debug("DeviceConfig assignment operator.");
 	if (this != &rhs) {
@@ -126,10 +141,10 @@ Place** DeviceConfig::getDevPlaces(int handle) {
 	return devPlacesMap[handle].devPtr;
 }
 
-void* DeviceConfig::getPlaceState(int handle){
+void* DeviceConfig::getPlaceState(int handle) {
 	return devPlacesMap[handle].devState;
 }
-void* DeviceConfig::getAgentState(int handle){
+void* DeviceConfig::getAgentState(int handle) {
 	return devAgents[handle].devState;
 }
 

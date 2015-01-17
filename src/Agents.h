@@ -19,42 +19,42 @@ class Dispatcher;
 class Places;
 
 class Agents {
-    friend class Mass;
+	friend class Mass;
 
 public:
 
-    virtual ~Agents ( );
+	virtual ~Agents();
 
-    int getHandle ( );
+	int getHandle();
 
-    int getPlacesHandle ( );
+	int getPlacesHandle();
 
-    Agent** getAgentElements();
+	Agent** getAgentElements();
 
-    int nAgents ( );
+	int nAgents();
 
-    void callAll ( int functionId );
+	void callAll(int functionId);
 
-    void callAll ( int functionId, void *argument, int argSize );
+	void callAll(int functionId, void *argument, int argSize);
 
-    void *callAll ( int functionId, void *arguments[ ], int argSize, int retSize );
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
-    void manageAll ( );
-
+	void manageAll();
 
 protected:
 	// Agent creation is handled through Mass::createAgents(...) call
-    Agents ( int handle, void *argument, int argument_size, Places *places,
-             int initPopulation );
+	Agents(int handle, void *argument, int argument_size, Places *places,
+			int initPopulation);
 
 	void setDispatcher(Dispatcher *d);
 
-    Places *places; /**< The places used in this simulation. */
-    int handle; /**< Identifies the type of agent this is.*/
-    int numAgents; /**< Running count of living agents in system.*/
-    Dispatcher *dispatcher;
-    Agent **agentPtrs;
+	Places *places; /**< The places used in this simulation. */
+	int handle; /**< Identifies the type of agent this is.*/
+	int numAgents; /**< Running count of living agents in system.*/
+	Dispatcher *dispatcher;
+	Agent **agentPtrs;
 
-};// end class
+};
+// end class
 
 }// mass namespace

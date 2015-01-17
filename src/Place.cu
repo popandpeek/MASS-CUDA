@@ -15,8 +15,7 @@ namespace mass {
 /**
  *  A contiguous space of arguments is passed
  *  to the constructor.
- */
-MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
+ */MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
 	this->state = state;
 	state->index = 0;
 	state->agentPop = 0;
@@ -30,8 +29,7 @@ MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
 /**
  * Registers an agent with this place.
  * @param agent the agent that is self-registering.
- */
-MASS_FUNCTION void Place::addAgent(Agent *agent) {
+ */MASS_FUNCTION void Place::addAgent(Agent *agent) {
 	// this works because of unique migration pattern that prevents collisions.
 	unsigned idx = state->agentPop++;
 	if (idx >= MAX_AGENTS) {
@@ -42,40 +40,39 @@ MASS_FUNCTION void Place::addAgent(Agent *agent) {
 	}
 }
 
-
 /**
  * Unregisters an agent with this place.
  * @param agent the agent that is self-unregistering.
- */
-MASS_FUNCTION void Place::removeAgent(Agent *agent) {
+ */MASS_FUNCTION void Place::removeAgent(Agent *agent) {
 	unsigned idx = agent->placePos;
 	state->agents[idx] = NULL;
 	--state->agentPop;
 }
 
-
 MASS_FUNCTION void *Place::getMessage() {
 	return NULL;
 }
-
 
 MASS_FUNCTION void Place::setState(PlaceState *s) {
 	state = s;
 }
 
-
 MASS_FUNCTION PlaceState* Place::getState() {
 	return state;
 }
 
-
-
-MASS_FUNCTION int Place::getIndex(){
+MASS_FUNCTION int Place::getIndex() {
 	return state->index;
 }
 
-MASS_FUNCTION void Place::setIndex(int index){
+MASS_FUNCTION void Place::setIndex(int index) {
 	state->index = index;
+}
+
+MASS_FUNCTION void Place::setSize(int *dimensions, int nDims) {
+	for (int i = 0; i < nDims; ++i) {
+		state->size[i] = dimensions[i];
+	}
 }
 
 } /* namespace mass */

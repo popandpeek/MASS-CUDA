@@ -8,6 +8,9 @@
 
 #define COMPUTE_CAPABILITY_MAJOR 3
 #include <sstream>
+#include <algorithm>  // array compare
+#include <iterator>
+
 #include "Dispatcher.h"
 #include "cudaUtil.h"
 #include "Logger.h"
@@ -24,19 +27,6 @@ using namespace std;
 
 namespace mass {
 
-__global__ void setPlacePtrsKernel(Place **ptrs, void *objs, int nPtrs,
-		int nObjs, int Tsize) {
-	int idx = blockDim.x * blockIdx.x + threadIdx.x;
-	if (idx < nPtrs) {
-		if (idx < nObjs) {
-			char* dest = ((char*) objs) + idx * Tsize;
-			ptrs[idx] = (Place*) dest;
-		} else {
-			ptrs[idx] = NULL;
-		}
-	}
-}
-
 __global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
 		void *argPtr) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -46,10 +36,35 @@ __global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
 	}
 }
 
+/**
+ * neighbors is converted into a 1D offset of relative indexes before calling this function
+ */__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs,
+		int* neighbors, int nNeighbors) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if (idx < nptrs) {
+		PlaceState *state = ptrs[idx]->getState();
+		int offset;
+		int skippedNeighbors = 0;
+		for (int i = 0; i < nNeighbors; ++i) {
+			offset = neighbors[i];
+			int j = idx + neighbors[i];
+			if (j >= 0 && j < nptrs) {
+				state->neighbors[i - skippedNeighbors] = ptrs[j];
+				state->inMessages[i- skippedNeighbors] = ptrs[j]->getMessage();
+			} else {
+				skippedNeighbors++;
+			}
+		}
+	}
+}
+
 Dispatcher::Dispatcher() {
 	nextDevice = 0;
 	model = NULL;
 	initialized = false;
+	neighborhood = NULL;
+	nNeighbors = 0;
 }
 
 void Dispatcher::init(int &ngpu) {
@@ -105,7 +120,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
 
 		int stateSize = model->getPlacesModel(handle)->getStateSize();
 
-		map<DeviceConfig*,Partition*>::iterator it = deviceToPart.begin();
+		map<DeviceConfig*, Partition*>::iterator it = deviceToPart.begin();
 		while (it != deviceToPart.end()) {
 			PlacesPartition* p = it->second->getPlacesPartition(handle);
 			// gets the state belonging to this partition
@@ -120,7 +135,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
 			// copy just section results to model
 			char *src = (char*) tmp;
 			src += stateSize * p->getGhostWidth();
-			memcpy(p->getLeftBuffer()->getState(),src,p->size() * stateSize);
+			memcpy(p->getLeftBuffer()->getState(), src, p->size() * stateSize);
 
 			free(tmp);
 			++it;
@@ -234,13 +249,92 @@ void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
 	return retVal;
 }
 
+bool compArr(int* a, int aLen, int *b, int bLen) {
+	if (aLen != bLen) {
+		return false;
+	}
+
+	for (int i = 0; i < aLen; ++i) {
+		if (a[i] != b[i])
+			return false;
+	}
+	return true;
+}
+
+bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
+	int *offsets = new int[vec->size()];
+	PlacesModel *p = model->getPlacesModel(handle);
+	int nDims = p->getNumDims();
+	int *dimensions = p->getDims();
+	int numElements = p->getNumElements();
+
+	// calculate an offset for each neighbor in vec
+	for (int j = 0; j < vec->size(); ++j) {
+		int *indices = (*vec)[j];
+		int offset = 0; // accumulater for row major offset
+		int multiplier = 1;
+
+		// a single X will pass over y*z elements,
+		// a single Y will pass over z elements, and a Z will pass over 1 element.
+		// each dimension will be removed from multiplier before calculating the
+		// size of each index's "step"
+		for (int i = 0; i < nDims; i++) {
+			// convert from raster to cartesian coordinates
+			if (1 == i) {
+				offset -= multiplier * indices[i];
+			} else {
+				offset += multiplier * indices[i];
+			}
+
+			multiplier *= dimensions[i]; // remove dimension from multiplier
+		}
+		offsets[j] = offset;
+	}
+
+	bool same = compArr(neighborhood, nNeighbors, offsets, vec->size());
+
+	if (!same) {
+		delete[] neighborhood;
+		neighborhood = offsets;
+		nNeighbors = vec->size();
+	} else {
+		delete[] offsets;
+	}
+
+	return same;
+}
+
 void Dispatcher::exchangeAllPlaces(int handle, int functionId,
 		std::vector<int*> *destinations) {
-	// TODO issue call
+
+	updateNeighborhood(handle, destinations);
+
+	// exchange places if necessary
+	if ( model->getNumPartitions() == 1) {
+		Place** ptrs = deviceInfo[0].getDevPlaces(handle);
+		int nptrs = deviceInfo[0].countDevPlaces(handle);
+		PlacesPartition *p = model->getPartition(0)->getPlacesPartition(handle);
+
+		// TODO move this to a global params object on GPU
+		int *d_nbrs = NULL;
+		size_t bytes = sizeof(int) * nNeighbors;
+		CATCH(cudaMalloc((void** ) &d_nbrs, bytes));
+		CATCH(cudaMemcpy(d_nbrs, neighborhood, bytes,H2D));
+
+		setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs,
+				d_nbrs, nNeighbors);
+		CHECK();
+
+		CATCH(cudaFree(d_nbrs));
+	}
+//		else {
+//			// TODO phase II
+//		}
+//	}
 }
 
 void Dispatcher::exchangeBoundaryPlaces(int handle) {
-	//TODO issue call
+	//TODO issue call in Phase II
 }
 
 Agent** Dispatcher::refreshAgents(int handle) {

@@ -19,7 +19,7 @@ class Place;
  *  used as the parent class for any user-defined agents. Virtual functions may
  *  be overridden as necessary,
  */
-class Agent : public MObject {
+class Agent: public MObject {
 	friend class Place;
 
 public:
@@ -44,7 +44,6 @@ public:
 	 *  @param arguments the arguments for that function.
 	 */
 //	__device__ virtual void* callMethod(int functionId, void *arguments) = 0;
-
 	/**
 	 *  Is called from Agents.callAll. It invokes the function specified with
 	 *  functionId. Simply call callMethod(functionId, arguments) with
@@ -53,7 +52,6 @@ public:
 	 *  @param functionId the id of a user specified function.
 	 */
 //	__device__ virtual void* callMethod(int functionId) = 0;
-
 	/*******************************************************************************
 	 *  END ABSTRACT FUNCTIONS.
 	 *	The following functions may be overridden as desired, although it is not 

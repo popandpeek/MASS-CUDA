@@ -30,7 +30,7 @@ private:
 	int rank;
 //	bool loaded;
 
-	// handle to partition map. All partitions have the same rank.
+// handle to partition map. All partitions have the same rank.
 	std::map<int, PlacesPartition*> placesMap;
 	std::map<int, AgentsPartition*> agentsMap;
 };

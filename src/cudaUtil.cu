@@ -9,7 +9,8 @@ namespace mass {
 void __cudaCatch(cudaError err, const char *file, const int line) {
 #ifdef CERR
 	if (cudaSuccess != err) {
-		fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString( err ), file, line );
+		fprintf(stderr, "%s in %s at line %d\n", cudaGetErrorString(err), file,
+				line);
 		exit(EXIT_FAILURE);
 	}
 #endif

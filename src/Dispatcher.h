@@ -156,6 +156,8 @@ private:
 	DeviceConfig *getNextDevice();
 	void unloadDevice(DeviceConfig *device);
 
+	bool updateNeighborhood(int handle, std::vector<int*> *vec);
+
 	std::map<Partition*, DeviceConfig*> partToDevice;
 	std::map<DeviceConfig*, Partition*> deviceToPart;
 	std::vector<DeviceConfig> deviceInfo;
@@ -163,6 +165,9 @@ private:
 	int nextDevice; // tracks which device in deviceInfo is next to be used
 	DataModel *model;
 	bool initialized;
+
+	int* neighborhood; /**< The previous vector of neighbors.*/
+	int nNeighbors;
 
 };
 // end class
@@ -182,7 +187,8 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 		Partition *p = model->getPartition(i);
 
 		int objCount = p->getPlacesPartition(handle)->sizeWithGhosts();
-		d->instantiatePlaces<P, S>(handle, argument, argSize, objCount);
+		d->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+				objCount);
 		partToDevice[p] = d;
 		deviceToPart[d] = p;
 	}

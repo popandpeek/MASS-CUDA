@@ -28,7 +28,6 @@ class PlaceState;
  */
 class Place: public MObject {
 	friend class Agent;
-	friend class Places;
 
 public:
 	/**
@@ -55,12 +54,15 @@ public:
 	 * The most simple implementation is a single line of code:
 	 * return sizeof(ThisClass);
 	 *
-	 * Because sizeof is respoved at compile-time, the user must implement this
+	 * Because sizeof is resolved at compile-time, the user must implement this
 	 * function rather than inheriting it.
 	 *
 	 * @return an int >= 0;
 	 */
 	MASS_FUNCTION virtual int placeSize() = 0;
+
+	// TODO remove this call if not necessary
+	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
 
 	/**
 	 * Registers an agent with this place.
@@ -74,10 +76,6 @@ public:
 	 */
 	MASS_FUNCTION void removeAgent(Agent *agent);
 
-
-	// TODO remove this call if not necessary
-	MASS_FUNCTION virtual void callMethod( int functionId, void *arg = NULL) = 0;
-
 	MASS_FUNCTION virtual void setState(PlaceState *s);
 
 	MASS_FUNCTION virtual PlaceState* getState();
@@ -85,6 +83,8 @@ public:
 	MASS_FUNCTION int getIndex();
 
 	MASS_FUNCTION void setIndex(int index);
+
+	MASS_FUNCTION void setSize(int *dimensions, int nDims);
 
 protected:
 

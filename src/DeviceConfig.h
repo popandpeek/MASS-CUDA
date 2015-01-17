@@ -60,9 +60,11 @@ public:
 
 	Place** getDevPlaces(int handle);
 	void* getPlaceState(int handle);
+	int countDevPlaces(int handle);
 
 	void deletePlaces(int handle);
 	int getNumPlacePtrs(int handle);
+	int countDevAgents(int handle);
 
 	/*
 	 * Agent Mutators
@@ -70,7 +72,8 @@ public:
 	void* getAgentState(int handle);
 
 	template<typename P, typename S>
-	Place** instantiatePlaces(int handle, void *argument, int argSize, int qty);
+	Place** instantiatePlaces(int handle, void *argument, int argSize,
+			int dimensions, int size[], int qty);
 
 	DeviceConfig(const DeviceConfig& other); // copy constructor
 	DeviceConfig &operator=(const DeviceConfig &rhs); // assignment operator
@@ -89,7 +92,7 @@ private:
 
 template<typename PlaceType>
 __global__ void instantiatePlacesKernel(Place** places, void *state,
-		int stateBytes, void *arg, int qty) {
+		int stateBytes, void *arg, int *dims, int nDims, int qty) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if (idx < qty) {
@@ -98,12 +101,13 @@ __global__ void instantiatePlacesKernel(Place** places, void *state,
 
 		places[idx] = new PlaceType((PlaceState*) tmpPtr, arg);
 		places[idx]->setIndex(idx);
+		places[idx]->setSize(dims, nDims);
 	}
 }
 
 template<typename P, typename S>
 Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
-		int qty) {
+		int dimensions, int size[], int qty) {
 
 	if (devPlacesMap.count(handle) > 0) {
 		return NULL;
@@ -132,17 +136,24 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 		CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 	}
 
+	// load places dimensions
+	int *d_dims;
+	int dimBytes = sizeof(int) * dimensions;
+	CATCH(cudaMalloc((void** ) &d_dims, dimBytes));
+	CATCH(cudaMemcpy(d_dims, size, dimBytes, H2D));
+
 	// launch instantiation kernel
 	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
 	int threadDim = (qty - 1) / blockDim + 1;
 	instantiatePlacesKernel<P> <<<blockDim, threadDim>>>(p.devPtr, p.devState,
-			sizeof(S), d_arg, qty);
+			sizeof(S), d_arg, d_dims, dimensions, qty);
 	CHECK();
 
 	// clean up memory
 	if (NULL != argument) {
 		CATCH(cudaFree(d_arg));
 	}
+	CATCH(cudaFree(d_dims));
 
 	devPlacesMap[handle] = p;
 	return p.devPtr;

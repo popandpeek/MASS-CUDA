@@ -206,7 +206,7 @@ bool AllTests::runPlacesTests() {
 	// run callAll test with an arg
 	arg = 127;
 	Logger::info("Executing SET_TO_ARG test where arg = %d", arg);
-	p->callAll(TestPlace::SET_TO_ARG, &arg,sizeof(int));
+	p->callAll(TestPlace::SET_TO_ARG, &arg, sizeof(int));
 	myPlaces = p->getElements();
 	for (int i = 0; i < p->getNumPlaces(); ++i) {
 		int val = *((int*) myPlaces[i]->getMessage());

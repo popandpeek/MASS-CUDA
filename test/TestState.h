@@ -12,9 +12,7 @@
 
 namespace mass {
 
-
-class TestState
-		: public PlaceState {
+class TestState: public PlaceState {
 
 public:
 	int message;

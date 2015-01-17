@@ -5,7 +5,8 @@ using namespace std;
 
 namespace mass {
 
-PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty, int boundary_width) {
+PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty,
+		int boundary_width) {
 	this->handle = handle;
 	this->numElements = qty;
 	this->boundary_width = boundary_width;
@@ -14,7 +15,7 @@ PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty, int bo
 }
 
 PlacesModel::~PlacesModel() {
-	for(int i = 0; i < numElements; ++i){
+	for (int i = 0; i < numElements; ++i) {
 		delete places[i];
 	}
 	delete[] places;
@@ -48,7 +49,7 @@ int* PlacesModel::getDims() {
 unsigned PlacesModel::getNumElements() {
 	return numElements;
 }
-int PlacesModel::getGhostWidth(){
+int PlacesModel::getGhostWidth() {
 	return boundary_width;
 }
 
