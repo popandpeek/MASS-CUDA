@@ -7,284 +7,389 @@
  */
 
 #define COMPUTE_CAPABILITY_MAJOR 3
+#include <sstream>
+#include <algorithm>  // array compare
+#include <iterator>
 
-#include "Agents.h"
-#include "AgentsPartition.h"
-#include "Command.h"
-#include "cudaUtil.h"
 #include "Dispatcher.h"
-#include "Places.h"
+#include "cudaUtil.h"
+#include "Logger.h"
+
+#include "DeviceConfig.h"
+#include "AgentsPartition.h"
+#include "Agents.h"
+#include "Place.h"
 #include "PlacesPartition.h"
+#include "Places.h"
+#include "DataModel.h"
 
 using namespace std;
 
 namespace mass {
 
-Dispatcher::Dispatcher() {
-	// do nothing
+__global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
+		void *argPtr) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if (idx < nptrs) {
+		ptrs[idx]->callMethod(functionId, argPtr);
+	}
 }
 
-void Dispatcher::init(int ngpu) {
-    // adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
+/**
+ * neighbors is converted into a 1D offset of relative indexes before calling this function
+ */__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs,
+		int* neighbors, int nNeighbors) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
 
-    if ( 0 == ngpu ) { // use all available GPU resources
-        cudaGetDeviceCount ( &ngpu );
-    }
-    vector<int> devices;
-	for (int device = 0; device < ngpu; ++device) {
-		cudaDeviceProp deviceProp;
-		cudaGetDeviceProperties(&deviceProp, device);
-		printf("Device %d has compute capability %d.%d.\n", device,
-				deviceProp.major, deviceProp.minor);
-		if (COMPUTE_CAPABILITY_MAJOR == deviceProp.major) {
-			// use this GPU
-            devices.push_back ( device );
+	if (idx < nptrs) {
+		PlaceState *state = ptrs[idx]->getState();
+		int offset;
+		int skippedNeighbors = 0;
+		for (int i = 0; i < nNeighbors; ++i) {
+			offset = neighbors[i];
+			int j = idx + neighbors[i];
+			if (j >= 0 && j < nptrs) {
+				state->neighbors[i - skippedNeighbors] = ptrs[j];
+				state->inMessages[i- skippedNeighbors] = ptrs[j]->getMessage();
+			} else {
+				skippedNeighbors++;
+			}
 		}
 	}
+}
 
-    for ( int i = 0; i < devices.size ( ); i++ ) {
-        DeviceData d;
-        d.deviceNum = devices[i];
-        cudaSetDevice ( d.deviceNum );
-        cudaStreamCreate ( &d.inputStream );
-        cudaStreamCreate ( &d.outputStream );
-        cudaEventCreate ( &d.deviceEvent );
-        deviceInfo.push ( d );
-    }
+Dispatcher::Dispatcher() {
+	nextDevice = 0;
+	model = NULL;
+	initialized = false;
+	neighborhood = NULL;
+	nNeighbors = 0;
+}
+
+void Dispatcher::init(int &ngpu) {
+	// adapted from the Cuda Toolkit Documentation: http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html
+	if (!initialized) {
+		initialized = true;
+		Logger::debug(("Initializing Dispatcher"));
+		int gpuCount;
+		cudaGetDeviceCount(&gpuCount);
+
+		if (0 == ngpu || ngpu > gpuCount) { // use all available GPU resources
+			ngpu = gpuCount;
+		}
+
+		vector<int> devices;
+		for (int device = 0; device < ngpu; ++device) {
+			cudaDeviceProp deviceProp;
+			cudaGetDeviceProperties(&deviceProp, device);
+
+			Logger::debug("Device %d has compute capability %d.%d", device,
+					deviceProp.major, deviceProp.minor);
+
+			if (COMPUTE_CAPABILITY_MAJOR == deviceProp.major) {
+				// use this GPU
+				devices.push_back(device);
+			}
+		}
+
+		Logger::debug("Found %d device%s with compute capability %d.X",
+				devices.size(), devices.size() > 1 ? "s" : "",
+				COMPUTE_CAPABILITY_MAJOR);
+
+		for (int i = 0; i < devices.size(); i++) {
+			DeviceConfig d(devices[i]);
+			deviceInfo.push_back(d);
+		}
+
+		model = new DataModel(devices.size());
+	}
 }
 
 Dispatcher::~Dispatcher() {
-
-    while(deviceInfo.size()>0) {
-        DeviceData d = deviceInfo.front();
-        deviceInfo.pop();
-        cudaSetDevice ( d.deviceNum );
-        // destroy streams
-        cudaStreamDestroy ( d.inputStream );
-        cudaStreamDestroy ( d.outputStream );
-        // destroy events
-        cudaEventDestroy ( d.deviceEvent );
-    }
+	for (int i = 0; i < deviceInfo.size(); ++i) {
+		DeviceConfig &d = deviceInfo[i];
+		Logger::debug("Freeing deviceConfig %d", d.deviceNum);
+		d.freeDevice();
+	}
 }
 
-void Dispatcher::refreshPlaces(Places *places) {
-	// TODO get the unload the slices for this handle from the GPU without deleting
-    for ( int i = 0; i < places->getNumPartitions ( ); ++i ) {
-        PlacesPartition *part = places->getPartition ( i );
-        if ( part->isLoaded ( ) ) {
-            DeviceData d = loadedPlaces[ part ];
-            cudaSetDevice ( d.deviceNum );
-            part->retrieve ( d.outputStream, false ); // retreive via secondary stream without deleting
-        }
-    }
+Place** Dispatcher::refreshPlaces(int handle) {
+	if (initialized) {
+		Logger::debug("Entering Dispatcher::refreshPlaces");
+
+		int stateSize = model->getPlacesModel(handle)->getStateSize();
+
+		map<DeviceConfig*, Partition*>::iterator it = deviceToPart.begin();
+		while (it != deviceToPart.end()) {
+			PlacesPartition* p = it->second->getPlacesPartition(handle);
+			// gets the state belonging to this partition
+			void *devPtr = it->first->getPlaceState(handle);
+			int qty = p->sizeWithGhosts();
+			int bytes = stateSize * qty;
+			void *tmp = malloc(bytes);
+
+			// copy the state to the host
+			CATCH(cudaMemcpy(tmp, devPtr, bytes, D2H));
+
+			// copy just section results to model
+			char *src = (char*) tmp;
+			src += stateSize * p->getGhostWidth();
+			memcpy(p->getLeftBuffer()->getState(), src, p->size() * stateSize);
+
+			free(tmp);
+			++it;
+		}
+
+		Logger::debug("Exiting Dispatcher::refreshPlaces");
+	}
+
+	return model->getPlacesModel(handle)->getPlaceElements();
 }
 
-//__global__ void setPlacePointers ( Places** devPlaces, void* placeOjects, int numPointers, int numPlaces, int Tsize ) {
-//    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//
-//    if ( idx < numPointers ) {
-//        if ( idx < numPlaces ) {
-//            char* ptr = ( char* ) placeObjects;
-//            ptr += Tsize * idx;
-//            devPlaces[ idx ] = ( Places* ) ptr;
-//        } else {
-//            devPlaces[ idx ] = NULL;
-//        }
-//    }
-//}
-//
-//__global__ void callAllPlacesKernel ( Places** devPlaces, int funcID, void *devArg, int argSize ) {
-//
-//}
-
-void Dispatcher::callAllPlaces ( Places *places, int functionId, void *argument,
+void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 		int argSize) {
-    int placeHandle = places->getHandle ( );
-    // TODO execute call on currently loaded partitions
-    
-    int numRanks = places->getNumPartitions ( );
-    if ( 1 == numRanks ) {
-        DeviceData d = deviceInfo.front ( );
-        deviceInfo.pop ( );
+	if (initialized) {
+		Logger::debug("Calling all on places[%d]", placeHandle);
 
-        int rank = 0;
-        PlacesPartition *pPart = places->getPartition ( rank );
-        if ( !pPart->isLoaded ( ) ) {
-            loadPlacesPartition ( pPart, d );
-        }
+		if (1 == model->getNumPartitions()) {
 
-        // load all corresponding agents partitions of the same rank
-        for ( int handle = 0; handle < Mass::numAgentsInstances ( ); ++handle ) {
-            Agents *agents = Mass::getAgents ( handle );
+			int rank = 0;
+			Partition* partition = model->getPartition(rank);
 
-            // there may be more than a single places collection in this simulation
-            if ( agents->getPlacesHandle ( ) == placeHandle ) {
-                AgentsPartition* aPart = agents->getPartition ( rank );
-                if ( !aPart->isLoaded ( ) ) {
-                    loadAgentsPartition ( aPart, d );
-                }
-            }
-        }
+			DeviceConfig *d;
+			if (0 == partToDevice.count(partition)) { // this partition needs to be loaded
+				d = getNextDevice();
+				unloadDevice(d);
+				d->loadPartition(partition, placeHandle);
 
-        // execute the call on the partition
-        //Place** devPlaces = d.devPlaces[ placeHandle ]; // put this pointer in the partition
-        //callAllPlacesKernel <<<pPart->blockDim ( ), pPart->threadDim ( ), d.inputStream >>>( devPlaces, functionId, devArg, argSize);
-        __cudaCheckError ( __FILE__, __LINE__ );
+				partToDevice[partition] = d;
+				deviceToPart[d] = partition;
 
-    } else {
-        // TODO in phase 2
-    }
-	//// for each rank
- //   for ( int rank = 0; rank < numRanks; ++rank ) {
- //       DeviceData d = deviceInfo.front ( );
- //       deviceInfo.pop ( );
+				Logger::debug("Loaded partition[%d]", placeHandle);
+			} else {
+				d = partToDevice[partition];
+			}
 
- //       PlacesPartition *pPart = places->getPartition ( rank );
- //       if ( !pPart->isLoaded ( ) ) {
- //           loadPlacesPartition ( places->getPartition ( rank ), d );
- //       }
+			// load any necessary arguments
+			void *argPtr = NULL;
+			if (NULL != argument) {
+				d->load(argPtr, argument, argSize);
+			}
 
- //       // load all corresponding agents partitions of the same rank
- //       for ( int handle = 0; handle < Mass::numAgentsInstances ( ); ++handle ) {
- //           Agents *agents = Mass::getAgents ( handle );
+			Logger::debug("Calling callAllPlacesKernel");
+			d->setAsActiveDevice();
+			PlacesPartition *pPart = partition->getPlacesPartition(placeHandle);
+			callAllPlacesKernel<<<pPart->blockDim(), pPart->threadDim()>>>(
+					d->getDevPlaces(0), pPart->sizeWithGhosts(), functionId,
+					argPtr);
+			CHECK();
 
- //           // there may be more than a single places collection in this simulation
- //           if ( agents->getPlacesHandle ( ) == placeHandle ) {
- //               AgentsPartition* aPart = agents->getPartition ( rank );
- //               if ( !aPart->isLoaded ( ) ) {
- //                   loadAgentsPartition ( aPart, d );
- //               }
- //           }
- //       }
+			if (NULL != argPtr) {
+				Logger::debug("Freeing device args.");
+				cudaFree(argPtr);
+			}
 
- //       // execute the call on the partition
- //       Place** devPlaces = d.devPlaces[ placeHandle ];
- //       callAllPlacesKernel <<<pPart->blockDim ( ), pPart->threadDim ( ), d.inputStream >>>( devPlaces, functionId, devArg, argSize);
- //       __cudaCheckError ( __FILE__, __LINE__ );
- //   }
+		}
+//		else {
+//			// TODO in phase 2
+//			 execute call on currently loaded partitions
+//			 for each rank
+//			   for ( int rank = 0; rank < numRanks; ++rank ) {
+//			       DeviceConfig d = deviceInfo.front ( );
+//			       deviceInfo.pop ( );
+//
+//			       PlacesPartition *pPart = places->getPartition ( rank );
+//			       if ( !pPart->isLoaded ( ) ) {
+//			           loadPlacesPartition ( places->getPartition ( rank ), d );
+//			       }
+//
+//			       // load all corresponding agents partitions of the same rank
+//			       for ( int handle = 0; handle < Mass::numAgentsInstances ( ); ++handle ) {
+//			           Agents *agents = Mass::getAgents ( handle );
+//
+//			           // there may be more than a single places collection in this simulation
+//			           if ( agents->getPlacesHandle ( ) == placeHandle ) {
+//			               AgentsPartition* aPart = agents->getPartition ( rank );
+//			               if ( !aPart->isLoaded ( ) ) {
+//			                   loadAgentsPartition ( aPart, d );
+//			               }
+//			           }
+//			       }
+//
+//			       // execute the call on the partition
+//			       Place** devPlaces = d.devPlaces[ placeHandle ];
+//			       callAllPlacesKernel <<<pPart->blockDim ( ), pPart->threadDim ( ), d.inputStream >>>( devPlaces, functionId, devArg, argSize);
+//			       __cudaCheckError ( __FILE__, __LINE__ );
+//			   }
+//		}
+
+		Logger::debug("Exiting Dispatcher::callAllPlaces()");
+	}
 }
 
-void *Dispatcher::callAllPlaces(Places *places, int functionId, void *arguments[],
+void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
 		int argSize, int retSize) {
-	// TODO issue call
+	// perform call all
+	callAllPlaces(handle, functionId, arguments, argSize);
+	// get data from GPUs
+	refreshPlaces(handle);
+	// get necessary pointers and counts
+	int qty = model->getPlacesModel(handle)->getNumElements();
+	Place** places = model->getPlacesModel(handle)->getPlaceElements();
+	void *retVal = malloc(qty * retSize);
+	char *dest = (char*) retVal;
+
+	// TODO handle using OpenMP
+	for (int i = 0; i < qty; ++i) {
+		// copy messages to a return array
+		memcpy(dest, places[i]->getMessage(), retSize);
+		dest += retSize;
+	}
+	return retVal;
 }
 
-void Dispatcher::exchangeAllPlaces(Places *places, int functionId,
+bool compArr(int* a, int aLen, int *b, int bLen) {
+	if (aLen != bLen) {
+		return false;
+	}
+
+	for (int i = 0; i < aLen; ++i) {
+		if (a[i] != b[i])
+			return false;
+	}
+	return true;
+}
+
+bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
+	int *offsets = new int[vec->size()];
+	PlacesModel *p = model->getPlacesModel(handle);
+	int nDims = p->getNumDims();
+	int *dimensions = p->getDims();
+	int numElements = p->getNumElements();
+
+	// calculate an offset for each neighbor in vec
+	for (int j = 0; j < vec->size(); ++j) {
+		int *indices = (*vec)[j];
+		int offset = 0; // accumulater for row major offset
+		int multiplier = 1;
+
+		// a single X will pass over y*z elements,
+		// a single Y will pass over z elements, and a Z will pass over 1 element.
+		// each dimension will be removed from multiplier before calculating the
+		// size of each index's "step"
+		for (int i = 0; i < nDims; i++) {
+			// convert from raster to cartesian coordinates
+			if (1 == i) {
+				offset -= multiplier * indices[i];
+			} else {
+				offset += multiplier * indices[i];
+			}
+
+			multiplier *= dimensions[i]; // remove dimension from multiplier
+		}
+		offsets[j] = offset;
+	}
+
+	bool same = compArr(neighborhood, nNeighbors, offsets, vec->size());
+
+	if (!same) {
+		delete[] neighborhood;
+		neighborhood = offsets;
+		nNeighbors = vec->size();
+	} else {
+		delete[] offsets;
+	}
+
+	return same;
+}
+
+void Dispatcher::exchangeAllPlaces(int handle, int functionId,
 		std::vector<int*> *destinations) {
-	// TODO issue call
+
+	updateNeighborhood(handle, destinations);
+
+	// exchange places if necessary
+	if ( model->getNumPartitions() == 1) {
+		Place** ptrs = deviceInfo[0].getDevPlaces(handle);
+		int nptrs = deviceInfo[0].countDevPlaces(handle);
+		PlacesPartition *p = model->getPartition(0)->getPlacesPartition(handle);
+
+		// TODO move this to a global params object on GPU
+		int *d_nbrs = NULL;
+		size_t bytes = sizeof(int) * nNeighbors;
+		CATCH(cudaMalloc((void** ) &d_nbrs, bytes));
+		CATCH(cudaMemcpy(d_nbrs, neighborhood, bytes,H2D));
+
+		setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs,
+				d_nbrs, nNeighbors);
+		CHECK();
+
+		CATCH(cudaFree(d_nbrs));
+	}
+//		else {
+//			// TODO phase II
+//		}
+//	}
 }
 
-void Dispatcher::exchangeBoundaryPlaces(Places *places) {
-	//TODO issue call
+void Dispatcher::exchangeBoundaryPlaces(int handle) {
+	//TODO issue call in Phase II
 }
 
-void Dispatcher::refreshAgents(int handle) {
+Agent** Dispatcher::refreshAgents(int handle) {
 	// TODO get the unload the slices for this handle from the GPU without deleting
+	return NULL;
 }
 
-void Dispatcher::callAllAgents ( int handle, int functionId, void *argument, int argSize) {
+void Dispatcher::callAllAgents(int handle, int functionId, void *argument,
+		int argSize) {
 	//TODO issue call
 }
 
-void *Dispatcher::callAllAgents ( int handle, int functionId, void *arguments[ ],
+void *Dispatcher::callAllAgents(int handle, int functionId, void *arguments[],
 		int argSize, int retSize) {
 	//TODO issue call
 	return NULL;
 }
 
-void Dispatcher::manageAllAgents ( int handle ) {
+void Dispatcher::manageAllAgents(int handle) {
 	//TODO issue call
 }
 
-void Dispatcher::loadPlacesPartition ( PlacesPartition *part, DeviceData d ) {
-    cudaSetDevice ( d.deviceNum );
-    loadedPlaces[ part ] = d;
-
-    // load partition onto device
-    void* dPtr = part->devicePtr ( );
-
-    int numBytes = part->getPlaceBytes ( ) * part->sizePlusGhosts ( );
-    // there may be rare edge cases where memory is already allocated
-    if ( !part->isLoaded() || NULL == dPtr) {
-        cudaMalloc ( ( void** ) &dPtr, numBytes );
-
-        // update model state
-        part->setDevicePtr ( dPtr );
-        part->setLoaded ( true );
-    }
-    cudaMemcpyAsync ( dPtr, part->hostPtrPlusGhosts ( ), numBytes, cudaMemcpyHostToDevice, d.inputStream );
-
-    // TODO set pointer array on GPU
+DeviceConfig *Dispatcher::getNextDevice() {
+	DeviceConfig *d = &deviceInfo[nextDevice];
+	nextDevice = (nextDevice + 1) % deviceInfo.size();
+	return d;
 }
 
+void Dispatcher::unloadDevice(DeviceConfig *device) {
+	if (deviceToPart.count(device) > 0) {
+		Partition* p = deviceToPart[device];
 
-void Dispatcher::getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve ) {
-    DeviceData d = loadedPlaces[ part ];
-    cudaSetDevice ( d.deviceNum );
+		map<int, PlacesPartition*> places = p->getPlacesPartitions();
+		map<int, PlacesPartition*>::iterator itP = places.begin();
+		while (itP != places.end()) {
+			refreshPlaces(itP->first);
 
-    // get partition onto device
-    char* dPtr = ( char* ) part->devicePtr ( ); // again, use of char* to allow pointer arithmitic
-    dPtr += part->getPlaceBytes ( ) * part->getGhostWidth ( ); // we don't want to copy out bad ghost data
-    int numBytes = part->getPlaceBytes ( ) * part->size ( );
-    cudaMemcpyAsync ( part->hostPtr ( ), dPtr, numBytes, cudaMemcpyDeviceToHost, d.outputStream );
+			// get agents for this place
+			map<int, AgentsPartition*> agents = p->getAgentsPartitions(
+					itP->first);
+			map<int, AgentsPartition*>::iterator itA = agents.begin();
+			while (itA != agents.end()) {
+				refreshAgents(itA->first);
+			}
+		}
 
-    if ( freeOnRetrieve ) {
-        // update model state
-        part->setDevicePtr ( NULL );
-        part->setLoaded ( false );
-
-        cudaFree ( part->devicePtr ( ) );
-        loadedPlaces.erase( part );
-    }
-}
-
-
-void Dispatcher::loadAgentsPartition ( AgentsPartition *part, DeviceData d ) {
-    cudaSetDevice ( d.deviceNum );
-    loadedAgents[ part ] = d;
-
-    // load partition onto device
-    void* dPtr = part->devicePtr();
-    int numBytes = part->getPlaceBytes ( ) * part->sizePlusGhosts ( );
-
-    // there may be rare edge cases where memory is already allocated
-    if ( !part->isLoaded() || NULL == dPtr ) {
-        cudaMalloc ( ( void** ) &dPtr, numBytes );
-
-        // update model state
-        part->setDevicePtr ( dPtr );
-        part->setLoaded ( true );
-    }
-    cudaMemcpyAsync ( dPtr, part->hostPtrPlusGhosts ( ), numBytes, cudaMemcpyHostToDevice, d.inputStream );
-
-    // TODO set pointer array on GPU
-}
-
-
-void Dispatcher::getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve ) {
-    DeviceData d = loadedAgents[ part ];
-    cudaSetDevice ( d.deviceNum );
-
-    // get partition onto device
-    char* dPtr = (char*) part->devicePtr ( ); // again, use of char* to allow pointer arithmitic
-    dPtr += part->getPlaceBytes ( ) * part->getGhostWidth ( ); // we don't want to copy out bad ghost data
-    int numBytes = part->getPlaceBytes ( ) * part->size ( );
-    cudaMemcpyAsync ( part->hostPtr( ), dPtr, numBytes, cudaMemcpyDeviceToHost, d.outputStream );
-
-    if ( freeOnRetrieve ) {
-        // update model state
-        part->setDevicePtr ( NULL );
-        part->setLoaded ( false );
-
-        cudaFree ( part->devicePtr ( ) );
-        loadedAgents.erase ( part );
-    }
+		partToDevice.erase(p);
+		deviceToPart.erase(device);
+	}
 }
 
 //int ngpu;                   // number of GPUs in use
-//std::map<PlacesPartition *, DeviceData> loadedPlaces; // tracks which partition is loaded on which GPU
-//std::map<AgentsPartition*, DeviceData> loadedAgents; // tracks whicn partition is loaded on which GPU
-//std::map<int, DeviceData> deviceInfo;
+//std::map<PlacesPartition *, DeviceConfig> loadedPlaces; // tracks which partition is loaded on which GPU
+//std::map<AgentsPartition*, DeviceConfig> loadedAgents; // tracks whicn partition is loaded on which GPU
+//std::map<int, DeviceConfig> deviceInfo;
 
 }// namespace mass
 

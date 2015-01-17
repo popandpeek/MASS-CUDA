@@ -13,110 +13,155 @@
 #include <cuda_runtime.h>
 #include <string>
 #include <vector>
-#include "Mass.h"
+
 #include "Place.h"
-#include "Places.h"
 
 namespace mass {
 
-class Dispatcher;
-
 class PlacesPartition {
-    friend class Places;
+	friend class Places;
 
 public:
 
-    PlacesPartition ( int handle, int rank, int numElements, int ghostWidth,
-                      int n, int *dimensions );
+	/**
+	 * Constructor.
+	 * @param handle the handle of the places instance this partition belongs to
+	 * @param rank the rank of this place in range [0,n)
+	 * @param numElements the number of elements in this partition, not including ghost width
+	 * @param ghostWidth the number of x elements to exchange in ghost space
+	 * @param n the number of dimensions in this places instance
+	 * @param dimensions the size of the n dimensions
+	 */
+	PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
+			int n, int *dimensions);
+
 	/**
 	 *  Destructor
 	 */
-    ~PlacesPartition ( );
-
-	/**
-	 *  Returns the number of place elements in this partition.
-	 */
-    int size ( );
-
-	/**
-	 *  Returns the number of place elements and ghost elements.
-	 */
-    int sizePlusGhosts ( );
+	~PlacesPartition();
 
 	/**
 	 *  Gets the rank of this partition.
 	 */
-    int getRank ( );
+	int getRank();
 
 	/**
-	 *  Returns an array of the Place elements contained in this PlacesPartition object. This is an expensive
-	 *  operation since it requires memory transfer.
+	 *  Returns the number of place elements in this partition.
 	 */
-    void *hostPtr ( );
+	int size();
 
 	/**
-	 *  Returns a pointer to the first element, if this is rank 0, or the left ghost rank, if this rank > 0.
+	 *  Returns the number of place elements plus ghost elements.
 	 */
-    void *hostPtrPlusGhosts ( );
-
-	/**
-	 *  Returns the pointer to the GPU data. NULL if not on GPU.
-	 */
-    void *devicePtr ( );
-
-    void setDevicePtr ( void *places );
+	int sizeWithGhosts();
 
 	/**
 	 *  Returns the handle associated with this PlacesPartition object that was set at construction.
 	 */
-    int getHandle ( );
+	int getHandle();
 
 	/**
 	 *  Sets the start and number of places in this partition.
 	 */
-    void setSection ( void *start );
+	void setSection(Place **start);
 
-    void setQty ( int qty );
+	/**
+	 * Returns the number of elements in the ghost width.
+	 * @return
+	 */
+	int getGhostWidth();
 
-    bool isLoaded ( );
+	/**
+	 * Sets the ghost width to width X elements. Calculates the actual number
+	 * of elements using n and dimensions, then sets pointers accordingly.
+	 * @param width the number of rows in the X direction to exchange between turns.
+	 * @param n the number of dimensions
+	 * @param dimensions the size of each n dimensions
+	 */
+	void setGhostWidth(int width, int n, int *dimensions);
 
-    void setLoaded ( bool loaded );
+	/**************************************************************************
+	 * A block of a places element is laid out thusly:
+	 *
+	 * 1. Left ghost
+	 * 2. Left Buffer
+	 * 3. Right Buffer
+	 * 4. Right Ghost
+	 *
+	 *       |-------This rank's data-------|
+	 *   ----------------------------------------
+	 *   | 1 |/2/|//////////////////////|/3/| 4 |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   |   |///|//////////////////////|///|   |
+	 *   ----------------------------------------
+	 *
+	 * The block of memory on the GPU spans 1 - 4, but a rank should only copy
+	 * out data between 2 & 3. Ghost space is to allow a rank to "reach across"
+	 * the rank borders for shared computation. Rank 1's left buffer is rank 0's
+	 * right ghost space.
+	 */
 
-    void makeLoadable ( );
+	/**
+	 * Returns a pointer to the left buffer.
+	 */
+	Place *getLeftBuffer();
 
-    void load ( cudaStream_t stream );
+	/**
+	 * Returns a pointer to the right buffer.
+	 */
+	Place *getRightBuffer();
 
-    bool retrieve ( cudaStream_t stream, bool freeOnRetrieve );
+	/**
+	 * Returns a pointer to the start of the left ghost space.
+	 */
+	Place *getLeftGhost();
 
-    int getGhostWidth ( );
+	/**
+	 * Returns a pointer to the start of the right ghost space.
+	 */
+	Place *getRightGhost();
 
-    void setGhostWidth ( int width, int n, int *dimensions );
+	/**
+	 * Returns the ideal block dimension for this partition. Used for launching
+	 * kernel functions on this partition's data.
+	 *
+	 * @return
+	 */
+	dim3 blockDim();
 
-	void updateLeftGhost(void *ghost, cudaStream_t stream);
+	/**
+	 * Returns the ideal thread dimension for this partition. Used for launching
+	 * kernel functions on this partition's data.
+	 *
+	 * @return
+	 */
+	dim3 threadDim();
 
-    void updateRightGhost ( void *ghost, cudaStream_t stream );
-
-    void *getLeftBuffer ( );
-
-    void *getRightBuffer ( );
-
-    dim3 blockDim ( );
-
-    dim3 threadDim ( );
-
-    void setIdealDims ( );
-
-    int getPlaceBytes ( );
+	/**
+	 * Gets the number of bytes for a single state element in the Places instance
+	 * this partition belongs to.
+	 *
+	 * @return an int >= 0
+	 */
+	int getPlaceBytes();
 
 private:
-	void *hPtr; // this starts at the left ghost, and extends to the end of the right ghost
-	void *dPtr; // pointer to GPU data
+
+	/**
+	 * Refreshes the ideal dimensions for kernel launches. This should be called
+	 * only when the partition is created or ghost width changes.
+	 */
+	void setIdealDims();
+
+	Place **hPtr; // this starts at the left ghost
 	int handle;         // User-defined identifier for this PlacesPartition
 	int rank; // the rank of this partition
-	int numElements;    // the number of place elements in this PlacesPartition
-	int Tsize; // sizeof(agent)
-	bool isloaded;
-	bool loadable;
+	int numElements; // the number of place elements in this PlacesPartition from left ghost to right ghost
+	int Tsize; // TODO remove
 	int ghostWidth;
 	dim3 dims[2]; // 0 is blockdim, 1 is threaddim
 };

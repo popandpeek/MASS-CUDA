@@ -28,8 +28,7 @@ namespace mass {
  *  call init() afterwards.
  *
  *  @param [in] args Parameter_Description
- */
-__host__ __device__ Agent::Agent(void * args) {
+ */__host__ __device__ Agent::Agent(void * args) {
 	// abstract class does not store args
 }
 
@@ -63,8 +62,7 @@ __host__ __device__ int Agent::map(int initPopulation, int *size, int index) {
 /**
  *  Terminates the calling agent upon a next call to Agents.manageAll( ).
  *  More specifically, kill( ) sets the “alive” variable false.
- */
-__device__ void Agent::kill() {
+ */__device__ void Agent::kill() {
 	alive = 0;
 }
 
@@ -72,8 +70,7 @@ __device__ void Agent::kill() {
  *	Checks to see if this agent is alive
  *
  *	@return true if agent is alive
- */
-__device__ bool Agent::isAlive() {
+ */__device__ bool Agent::isAlive() {
 	return 0 != alive;
 }
 
@@ -81,10 +78,9 @@ __device__ bool Agent::isAlive() {
  *	Sets this Agent's place pointer to the provided pointer.
  *
  *	@param placePtr a pointer to the place where this agent resides.
- */
-__device__ void Agent::setPlace(Place *placePtr) {
+ */__device__ void Agent::setPlace(Place *placePtr) {
 	place = placePtr;
-	index = place->index;
+	index = place->getIndex();
 }
 
 /**
@@ -93,8 +89,7 @@ __device__ void Agent::setPlace(Place *placePtr) {
  *
  *   @param row-major index the destination Place of this migration.
  *   @return <code>true</code> if a migration will occur.
- */
-__device__ bool Agent::migrate(int index) {
+ */__device__ bool Agent::migrate(int index) {
 	destIndex = index;
 	return destIndex != this->index;
 }
@@ -107,8 +102,7 @@ __device__ bool Agent::migrate(int index) {
  *  @param numAgents the number of new agents to spawn.
  *  @param arguments the arguments used to create the spawned agents.
  *  @param argSize the number of arguments in the arguments array
- */
-__device__ void Agent::spawn(int numAgents, void* arguments, int argSize) {
+ */__device__ void Agent::spawn(int numAgents, void* arguments, int argSize) {
 	if (numAgents > 0) {
 		this->newChildren = numAgents;
 		this->arguments = arguments;

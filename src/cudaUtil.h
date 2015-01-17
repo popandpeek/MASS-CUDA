@@ -9,10 +9,16 @@
  *
  * define CERR to turn on error checking
  */
-#ifndef CUDAUTIL_H_
-#define CUDAUTIL_H_
+#pragma once
+#include <cuda_runtime.h>
 
 namespace mass {
+
+#define WARP_SIZE 32    // threads per warp
+#define BLOCK_SIZE 512  // max threads per block
+#define H2D cudaMemcpyHostToDevice
+#define D2H cudaMemcpyDeviceToHost
+#define CERR
 
 /*! If a cuda error occurs, terminates the program with a descriptive error message.
  */
@@ -49,5 +55,5 @@ int getAllDevices(int **devices);
  * Performed asynchronously.
  */
 cudaError_t cudaCallocAsync(void **devPtr, size_t size, cudaStream_t stream);
+
 } /* namespace mass */
-#endif //CUDAUTIL_H_

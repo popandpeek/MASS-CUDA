@@ -5,8 +5,7 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef MASSEXCEPTION_H_
-#define MASSEXCEPTION_H_
+#pragma once
 
 #include <exception>
 #include <string>
@@ -28,4 +27,3 @@ public:
 };
 
 } /* namespace mass */
-#endif /* MASSEXCEPTION_H_ */

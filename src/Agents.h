@@ -11,67 +11,50 @@
 #include <string>
 #include <vector>
 
-#include "Agent.h"
-#include "Places.h"
-#include "Dispatcher.h"
-
-// forward declarations
-//class Dispatcher;
-//class Places;
-class AgentsPartition;
-
 namespace mass {
 
+// forward declarations
+class Agent;
+class Dispatcher;
+class Places;
+
 class Agents {
-    friend class AgentsPartition;
-    friend class Dispatcher;
+	friend class Mass;
 
 public:
 
-    virtual ~Agents ( );
+	virtual ~Agents();
 
-    int getHandle ( );
+	int getHandle();
 
-    int getPlacesHandle ( );
+	int getPlacesHandle();
 
-    int nAgents ( );
+	Agent** getAgentElements();
 
-    void callAll ( int functionId );
+	int nAgents();
 
-    void callAll ( int functionId, void *argument, int argSize );
+	void callAll(int functionId);
 
-    void *callAll ( int functionId, void *arguments[ ], int argSize, int retSize );
+	void callAll(int functionId, void *argument, int argSize);
 
-    void manageAll ( );
+	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
-    int getNumPartitions ( );
-
+	void manageAll();
 
 protected:
 	// Agent creation is handled through Mass::createAgents(...) call
-    Agents ( int handle, void *argument, int argument_size, Places *places,
-             int initPopulation );
+	Agents(int handle, void *argument, int argument_size, Places *places,
+			int initPopulation);
 
-    
-    void addPartitions ( std::vector<AgentsPartition*> parts );
+	void setDispatcher(Dispatcher *d);
 
-    AgentsPartition *getPartition ( int rank );
-    
-    void setTsize ( int size );
+	Places *places; /**< The places used in this simulation. */
+	int handle; /**< Identifies the type of agent this is.*/
+	int numAgents; /**< Running count of living agents in system.*/
+	Dispatcher *dispatcher;
+	Agent **agentPtrs;
 
-    int getTsize ( );
-
-    Places *places; /**< The places used in this simulation. */
-    int handle; /**< Identifies the type of agent this is.*/
-    void *argument;
-    int argSize;
-    int numAgents; /**< Running count of living agents in system.*/
-    int newChildren; /**< Added to numAgents and reset to 0 each manageAll*/
-    int sequenceNum; /*!< The number of agents created overall. Used for agentId creation. */
-    Dispatcher *dispatcher;
-    int Tsize;
-    Agent **agentPtrs;
-	std::map<int, AgentsPartition*> partitions;
-};// end class
+};
+// end class
 
 }// mass namespace

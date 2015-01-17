@@ -1,3 +1,0 @@
-When agents migrate, have all migrations going one direction move at the same time.
-	All North migrations go first, then East, then South, then West.
-	This will prevent agents from simultaneously migrating into the same place

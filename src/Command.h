@@ -5,8 +5,7 @@
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef COMMAND_H_
-#define COMMAND_H_
+#pragma once
 
 namespace mass {
 /**
@@ -19,10 +18,9 @@ class Command {
 public:
 	virtual void *execute() = 0;
 	virtual bool forcesExcution() = 0;
+	virtual ~Command() = 0;
 
 };
 // end class
 
 }// end namespace
-
-#endif // COMMAND_H_

@@ -8,22 +8,19 @@
 #pragma once
 
 #include <iostream>
+#include <fstream> // ofstream
 #include <stddef.h>
 #include <map>
-#include "Agents.h"
+
 #include "Dispatcher.h"
-
-#define WARP_SIZE 32    // threads per warp
-#define BLOCK_SIZE 512  // max threads per block
-
+#include "Agents.h"
+#include "Places.h"
 
 namespace mass {
 
-class Places;
-
 class Mass {
-    friend class Agents;
-    friend class Places;
+	friend class Agents;
+	friend class Places;
 
 public:
 
@@ -32,14 +29,14 @@ public:
 	 *  @param args what do these do?
 	 *  @param ngpu the number of GPUs to use
 	 */
-	static void init(std::string args[], int ngpu);
+	static void init(std::string args[], int &ngpu);
 
 	/**
 	 *  Initializes the MASS environment using all available GPU resources. 
 	 *  Must be called prior to all other MASS methods.
 	 *  @param args what do these do?
 	 */
-	static void init(std::string args[]);
+	static void init(std::string args[] = NULL);
 
 	/**
 	 *  Shuts down the MASS environment, releasing all resources.
@@ -51,12 +48,12 @@ public:
 	 *  @param handle an int that corresponds to a places object.
 	 *  @return NULL if not found.
 	 */
-    static Places *getPlaces ( int handle );
+	static Places *getPlaces(int handle);
 
-    /**
-    *  Gets the number of Places collections in this simulation.
-    */
-    static int numPlacesInstances ( );
+	/**
+	 *  Gets the number of Places collections in this simulation.
+	 */
+	static int numPlacesInstances();
 
 	/**
 	 *  Gets the agents object for this handle.
@@ -65,58 +62,38 @@ public:
 	 */
 	static Agents *getAgents(int handle);
 
-    /**
-     *  Gets the number of Agents collections in this simulation.
-     */
-    static int numAgentsInstances ( );
-
+	/**
+	 *  Gets the number of Agents collections in this simulation.
+	 */
+	static int numAgentsInstances();
 
 	/**
-	 * Creates a Places object with the specified parameters.
-	 * @param handle the unique number that will identify this Places object.
-	 * @param argument an argument that will be passed to all Places upon creation
-	 * @param argSize the size in bytes of argument
-	 * @param dimensions the number of dimensions in the places matrix
-	 * (i.e. 1, 2, 3, etc...)
-	 * @param size the size of each dimension ordered {numRows, numCols,
-	 * numDeep, ...}. This must be dimensions elements long.
-	 * @return a pointer the the created places object
+	 * Creates a Places instance with the provided parameters.
 	 */
-	template<typename T>
-	static Places *createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[]) {
-		Places *places = Mass::dispatcher->createPlaces<T>(handle, argument,
-				argSize, dimensions, size);
-		if (NULL != places) {
-			placesMap[handle] = places;
-		}
-		return places;
-	}
-
-	/**
-	 * Creates an Agents object with the specified parameters.
-	 * @param handle the unique number that will identify this Agents object.
-	 * @param argument an argument that will be passed to all Agents upon creation
-	 * @param argSize the size in bytes of argument
-	 * @param places the Places object upon which this agents collection will operate.
-	 * @param initPopulation the starting number of agents to instantiate
-	 * @return
-	 */
-	template<typename T>
-	static Agents *createAgents(int handle, void *argument, int argSize,
-			Places *places, int initPopulation) {
-		Agents *agents = Mass::dispatcher->createAgents<T>(handle, argument,
-				argSize, places, initPopulation);
-		if (NULL != agents) {
-			agentsMap[handle] = agents;
-		}
-		return agents;
-	}
+	template<typename P, typename S>
+	static Places* createPlaces(int handle, void *argument, int argSize,
+			int dimensions, int size[], int boundary_width);
 
 private:
-    static std::map<int, Places*> placesMap;
-    static std::map<int, Agents*> agentsMap;
-	static Dispatcher *dispatcher;/**< The object that handles communication with the GPU(s). */
+
+	static std::map<int, Places*> placesMap;
+	static std::map<int, Agents*> agentsMap;
+	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
 };
+
+template<typename P, typename S>
+Places* Mass::createPlaces(int handle, void *argument, int argSize,
+		int dimensions, int size[], int boundary_width) {
+
+	// create an API object for this Places collection
+	Places *places = new Places(handle, dimensions, size, dispatcher);
+	placesMap[handle] = places;
+
+	// perform actual instantiation of user classes
+	dispatcher->instantiatePlaces<P, S>(handle, argument, argSize, dimensions,
+			size, places->numElements, boundary_width);
+
+	return places;
+}
 
 } /* namespace mass */

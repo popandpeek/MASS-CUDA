@@ -11,24 +11,14 @@
 #include <vector>
 #include <queue>
 
-#include "Agent.h"
-#include "Agents.h"
-#include "Place.h"
-#include "Places.h"
+#include "DeviceConfig.h"
+#include "DataModel.h"
 
 namespace mass {
 
 // forward declarations
 class AgentsPartition;
-class Command;
-
-
-struct DeviceData {
-    int deviceNum;
-    cudaStream_t inputStream;
-    cudaStream_t outputStream;
-    cudaEvent_t deviceEvent;
-};
+class PlacesPartition;
 
 class Dispatcher {
 
@@ -49,7 +39,7 @@ public:
 	 *  @param ngpu the number of GPUs to use in this simulation. 0 if all GPU resources are to be used.
 	 *  @param models the data model for this simulation
 	 */
-	void init(int ngpu);
+	void init(int &ngpu);
 
 	~Dispatcher();
 
@@ -59,29 +49,12 @@ public:
 	 **************************************************************************/
 
 	/**
-	 *  Creates a Places object.
-	 *
-	 *  @param handle the unique identifier of this places collections
-	 *  @param argument a continuous space of arguments used to initialize the places
-	 *  @param argSize the size in bytes of the argument array
-	 *  @param dimensions the number of dimensions in the places matrix (i.e. is it 1D, 2D, 3d?)
-	 *  @param size the size of each dimension. This MUST be dimensions elements long.
-	 *  @return the created Places collection
-	 */
-	template<typename T>
-	Places *createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[]) {
-		// TODO implement
-		return NULL;
-	}
-
-	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified places
 	 * collection.
 	 * @param handle the handle of the places object to refresh.
 	 */
-	void refreshPlaces(Places *places);
+	Place** refreshPlaces(int placeHandle);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -91,7 +64,8 @@ public:
 	 * @param argument the function argument. Can be NULL.
 	 * @param argSize the size of argument in bytes. If argument == NULL, argSize is not used.
 	 */
-	void callAllPlaces(Places *places, int functionId, void *argument, int argSize);
+	void callAllPlaces(int placeHandle, int functionId, void *argument,
+			int argSize);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -103,7 +77,7 @@ public:
 	 * @param retSize the size of the return value in bytes. If retSize == 0, NULL will be returned.
 	 * @return an array with one element of argSize per place. NULL if retSize == 0
 	 */
-	void *callAllPlaces(Places *places, int functionId, void *arguments[],
+	void *callAllPlaces(int placeHandle, int functionId, void *arguments[],
 			int argSize, int retSize);
 
 	/**
@@ -120,14 +94,14 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-	void exchangeAllPlaces(Places *places, int functionId,
+	void exchangeAllPlaces(int placeHandle, int functionId,
 			std::vector<int*> *destinations);
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes.
 	 *  @param handle the handle for which boundaries should be exchanged
 	 */
-	void exchangeBoundaryPlaces(Places *places);
+	void exchangeBoundaryPlaces(int placeHandle);
 
 	/**************************************************************************
 	 * These are the commands that will execute commands on agents objects on
@@ -135,72 +109,89 @@ public:
 	 **************************************************************************/
 
 	/**
-	 * Creates an Agents object with the specified parameters.
-	 * @param handle the unique number that will identify this Agents object.
-	 * @param argument an argument that will be passed to all Agents upon creation
-	 * @param argSize the size in bytes of argument
-	 * @param places the Places object upon which this agents collection will operate.
-	 * @param initPopulation the starting number of agents to instantiate
-	 * @return the created Agents collection
-	 */
-	template<typename T>
-	T *createAgents(int handle, void *argument, int argSize, Places *places, int initPopulation) {
-		T* dPtr = new T[initPopulation * 2];
-		delete[] dPtr;
-		return NULL;
-	}
-
-	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents
 	 * collection.
-	 * @param handle the handle of the agents object to refresh.
+	 * @param agents the agents object to refresh.
 	 */
-    void refreshAgents ( int handle );
+	Agent** refreshAgents(int handle);
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
 	 * as the function parameter.
-	 * @param handle the handle of the agents object to call all on
+	 * @param agents the agents object to call all on
 	 * @param functionId the user specified function ID
 	 * @param argument the argument for the function
 	 * @param argSize the size in bytes of the argument
 	 */
-    void callAllAgents ( int handle, int functionId, void *argument, int argSize );
+	void callAllAgents(int handle, int functionId, void *argument, int argSize);
 
 	/**
 	 * Calls the specified function on the specified agents group with argument
 	 * as the function parameter. Returns a void* with an element of retSize for
 	 * every agent in the group.
 	 *
-	 * @param handle the handle of the agents object to call all on
+	 * @param agents the agents object to call all on
 	 * @param functionId the user specified function ID
 	 * @param arguments one void* argument per agent
 	 * @param argSize the size in bytes of each argument
 	 * @param retSize the size in bytes of the return value
 	 * @return a void* with an element of retSize for every agent in the group.
 	 */
-    void *callAllAgents ( int handle, int functionId, void *arguments[ ],
+	void *callAllAgents(int handle, int functionId, void *arguments[],
 			int argSize, int retSize);
 
 	/**
 	 * Calls manage on all agents of the specified group.
-	 * @param handle the handle of the agents to manage.
+	 * @param agents the agents to manage.
 	 */
-    void manageAllAgents ( int handle );
+	void manageAllAgents(int handle);
+
+	template<typename P, typename S>
+	void instantiatePlaces(int handle, void *argument, int argSize,
+			int dimensions, int size[], int qty, int boundary_width);
 
 private:
 
-    void loadPlacesPartition ( PlacesPartition *part, DeviceData d );
-    void getPlacesPartition ( PlacesPartition *part, bool freeOnRetrieve = true );
+	DeviceConfig *getNextDevice();
+	void unloadDevice(DeviceConfig *device);
 
-    void loadAgentsPartition ( AgentsPartition *part, DeviceData d );
-    void getAgentsPartition ( AgentsPartition *part, bool freeOnRetrieve = true );
+	bool updateNeighborhood(int handle, std::vector<int*> *vec);
 
+	std::map<Partition*, DeviceConfig*> partToDevice;
+	std::map<DeviceConfig*, Partition*> deviceToPart;
+	std::vector<DeviceConfig> deviceInfo;
 
-    std::map<PlacesPartition *, DeviceData> loadedPlaces; // tracks which partition is loaded on which GPU
-    std::map<AgentsPartition*, DeviceData> loadedAgents; // tracks whicn partition is loaded on which GPU
-    std::queue<DeviceData> deviceInfo;
+	int nextDevice; // tracks which device in deviceInfo is next to be used
+	DataModel *model;
+	bool initialized;
+
+	int* neighborhood; /**< The previous vector of neighbors.*/
+	int nNeighbors;
+
 };
 // end class
-}// namespace mass
+
+template<typename P, typename S>
+void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
+		int dimensions, int size[], int qty, int boundary_width) {
+
+	// modify host-side data model
+	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+			qty, boundary_width);
+
+	// TODO this does not yet handle multiple places reliably
+	// TODO this does not yet handle more partitions than GPUs
+	for (int i = 0; i < deviceInfo.size(); ++i) {
+		DeviceConfig *d = getNextDevice();
+		Partition *p = model->getPartition(i);
+
+		int objCount = p->getPlacesPartition(handle)->sizeWithGhosts();
+		d->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+				objCount);
+		partToDevice[p] = d;
+		deviceToPart[d] = p;
+	}
+}
+
+} // namespace mass

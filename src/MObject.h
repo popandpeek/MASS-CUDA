@@ -1,54 +1,41 @@
 /**
  *  @file MObject.h
- *  @author Nate Hart
+ *  @author Prof. Fukuda, modified by Nate Hart
  *
  *  @section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
-#ifndef MOBJECT_H_
-#define MOBJECT_H_
+#pragma once
+#include <cuda_runtime.h>
+// easier for end users to understand than the __host__ __device__ meaning.
+#define MASS_FUNCTION __host__ __device__
 
 namespace mass {
 
 /**
- * This is the base object for all objects in the MASS library. Much of the base
- * functionality of objects is defined here and inherited for ease of use.
+ * This is the base object for all user-defined objects in the MASS library.
+ * Much of the base functionality of objects is defined here and inherited for
+ * ease of use. It also serves to define the dllClass creation and destruction
+ * functions.
  */
 class MObject {
 public:
+
 	/**
 	 * Default constructor.
 	 */
-	__host__ __device__ MObject();
+	MASS_FUNCTION MObject() {
+	}
 
 	/**
 	 * Default destructor.
 	 */
-	virtual ~MObject();
-
-	/**
-	 * Compares two MObjects to see if they are equal. In the basic
-	 * implementation, the pointer values are compared to see if the two
-	 * objects being compared are the SAME object. 
-	 *
-	 * @param rhs the other MObject to which this object shall be compared
-	 * @return <code>true</code> if objects are equal
-	 */
-	__host__ __device__ virtual bool operator==(const MObject &rhs);
-
-	/**
-	 * Compares two MObjects to see if they are not equal. In the basic
-	 * implementation, the pointer values are compared to see if the two
-	 * objects being compared are the SAME object. This simply returns
-	 * ! (*this) == rhs. Thus overriding operator== will also change the
-	 * behavior of this function as well.
-	 *
-	 * @param rhs the other MObject to which this object shall be compared
-	 * @return <code>true</code> if objects are not equal
-	 */
-	__host__ __device__ bool operator!=(const MObject &rhs);
+	MASS_FUNCTION virtual ~MObject() {
+	}
 
 };
 
+typedef MObject *instantiate_t(void *argument);
+typedef void destroy_t(MObject *);
+
 } /* namespace mass */
-#endif /* MOBJECT_H_ */
