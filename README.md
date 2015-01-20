@@ -11,8 +11,8 @@ TODO add lots of detail.
 ### How do I get set up? ###
 
 * Summary of set up
-Get ahold of the[ Nsight Eclipse IDE](http://www.nvidia.com/object/nsight.html), available from NVidia.
 
+    1. Get ahold of the[ Nsight Eclipse IDE](http://www.nvidia.com/object/nsight.html), available from NVidia.
     1. Create an empty CUDA / C++ project. 
     2. Select "Empty Project" under the "shared" folder when given an option. Name this project "mass_cuda"
     3. Select "Separate compilation" as the Device linker mode
@@ -25,9 +25,12 @@ Get ahold of the[ Nsight Eclipse IDE](http://www.nvidia.com/object/nsight.html),
 * Dependencies
 * Database configuration
 * How to run tests
-Tests are currently in the /test directory of the project. No files in the /src folder should take any dependencies on the files in /test.
+
+    Tests are currently in the /test directory of the project. No files in the /src folder should take any dependencies on the files in /test.
+
 * Deployment instructions
-Compile for release and run the main function.
+
+    Compile for release and run the main function.
 
 ### Contribution guidelines ###
 
