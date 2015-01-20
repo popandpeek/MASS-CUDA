@@ -12,6 +12,7 @@ TODO add lots of detail.
 
 * Summary of set up
 Get ahold of the[ Nsight Eclipse IDE](http://www.nvidia.com/object/nsight.html), available from NVidia.
+
 1. Create an empty CUDA / C++ project. 
 2. Select "Empty Project" under the "shared" folder when given an option. Name this project "mass_cuda"
 3. Select "Separate compilation" as the Device linker mode
@@ -19,6 +20,7 @@ Get ahold of the[ Nsight Eclipse IDE](http://www.nvidia.com/object/nsight.html),
 5. Check the '3.0' and '3.5' box for GPU code
 6. Finish project creation
 7. Clone this repo to the directory for the new project
+
 * Configuration
 * Dependencies
 * Database configuration
