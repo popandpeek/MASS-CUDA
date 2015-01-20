@@ -26,7 +26,10 @@ TODO add lots of detail.
 * Database configuration
 * How to run tests
 
-    Tests are currently in the /test directory of the project. No files in the /src folder should take any dependencies on the files in /test.
+    This project uses the [Boost Unit Testing Framework](http://www.boost.org/doc/libs/1_57_0/more/getting_started/unix-variants.html) for unit tests.
+    1. Right click on the project, select 'Properties'
+    2. Under Build > Settings > Tool Settings > NVCC Compiler > Includes, add 'path/to/boost_1_57_0/boost'
+    3. Click OK. You can now include boost header files.
 
 * Deployment instructions
 
