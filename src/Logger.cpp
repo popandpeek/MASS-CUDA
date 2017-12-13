@@ -6,9 +6,10 @@
  */
 
 #include "Logger.h"
-#define DEBUG
 
 namespace mass {
+
+const std::string Logger::DEFAULT_LOG_FILE = "mass_log.txt";
 
 // static initialization
 FILE *Logger::pFile = NULL; /**< The output file.*/
@@ -34,7 +35,7 @@ void Logger::close() {
 
 void Logger::info(std::string fmt, ...) {
 	if (!isOpen) {
-		setLogFile("mass_log.txt");
+		setLogFile(DEFAULT_LOG_FILE);
 	}
 
 	fprintf(pFile, "%s [INFO]    ", Logger::getLocalTime());
@@ -48,20 +49,19 @@ void Logger::info(std::string fmt, ...) {
 
 void Logger::print(std::string fmt, ...) {
 	if (!isOpen) {
-		setLogFile("mass_log.txt");
+		setLogFile(DEFAULT_LOG_FILE);
 	}
 
 	va_list args;
 	va_start(args, fmt);
 	vfprintf(pFile, fmt.c_str(), args);
-	fprintf(pFile, "\n");
 	va_end(args);
-	fflush (pFile); // make sure all logs make it out in event of a crash
+	fflush(pFile); // make sure all logs make it out in event of a crash
 }
 
 void Logger::warn(std::string fmt, ...) {
 	if (!isOpen) {
-		setLogFile("mass_log.txt");
+		setLogFile(DEFAULT_LOG_FILE);
 	}
 
 	fprintf(pFile, "%s [WARNING] ", Logger::getLocalTime());
@@ -75,7 +75,7 @@ void Logger::warn(std::string fmt, ...) {
 
 void Logger::error(std::string fmt, ...) {
 	if (!isOpen) {
-		setLogFile("mass_log.txt");
+		setLogFile(DEFAULT_LOG_FILE);
 	}
 
 	fprintf(pFile, "%s [ERROR]   ", Logger::getLocalTime());
@@ -90,7 +90,7 @@ void Logger::error(std::string fmt, ...) {
 void Logger::debug(std::string fmt, ...) {
 #ifdef DEBUG // gives ability to turn off this logging functionality from a single place
 	if (!isOpen) {
-		setLogFile("mass_log.txt");
+		setLogFile(DEFAULT_LOG_FILE);
 	}
 
 	fprintf(pFile, "%s [DEBUG]   ", Logger::getLocalTime());
@@ -109,11 +109,23 @@ void Logger::setLogFile(std::string filename) {
 	ptm = localtime(&rawtime);
 
 	if (isOpen) {
-		debug("Log file switched to %s.", filename.c_str());
+		info("Log file switched to %s.", filename.c_str());
 		fclose(pFile);
 	}
 
 	pFile = fopen(filename.c_str(), "a");
+	strftime(buf, BUFSIZE, "%a %Y/%m/%d %H:%M:%S ", ptm); // get detailed time
+	fprintf(pFile, "\n\n%s [INFO] Logger initialized.\n", buf);
+	fflush(pFile);
+	isOpen = true;
+}
+void Logger::truncateLogfile(std::string filename) {
+	close();
+	// get local time
+	time(&rawtime);
+	ptm = localtime(&rawtime);
+
+	pFile = fopen(filename.c_str(), "w");
 	strftime(buf, BUFSIZE, "%a %Y/%m/%d %H:%M:%S ", ptm); // get detailed time
 	fprintf(pFile, "\n\n%s [INFO] Logger initialized.\n", buf);
 	fflush(pFile);

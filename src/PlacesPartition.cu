@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 #include "Dispatcher.h"
-//#include "DllClass.h"
 #include "Places.h"
 #include "PlacesPartition.h"
 #include "Logger.h"
@@ -27,12 +26,14 @@ inline void *shiftPtr(void *origin, int qty, int Tsize) {
 
 PlacesPartition::PlacesPartition(int handle, int rank, int numElements,
 		int ghostWidth, int n, int *dimensions) {
-	Logger::debug("Entering PlacesPartition constructor.");
+	Logger::print("Inside PlacesPartition constructor.");
 	this->hPtr = NULL;
 	this->handle = handle;
 	this->rank = rank;
 	this->numElements = numElements;
+	Logger::print("copied all ards into class members");
 	setGhostWidth(ghostWidth, n, dimensions);
+	Logger::print("after setGhostWidth");
 	setIdealDims();
 }
 
@@ -70,21 +71,10 @@ int PlacesPartition::sizeWithGhosts() {
 }
 
 /**
- *  Gets the rank of this partition.
- */
-int PlacesPartition::getRank() {
-	return rank;
-}
-
-/**
  *  Returns the handle associated with this PlacesPartition object that was set at construction.
  */
 int PlacesPartition::getHandle() {
 	return handle;
-}
-
-int PlacesPartition::getGhostWidth() {
-	return ghostWidth;
 }
 
 void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
@@ -100,18 +90,6 @@ void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
 		ghostWidth = numElements;
 	}
 
-	// set pointer
-//	Places *places = 1;//Mass::getPlaces(handle);
-//	if(NULL == places){
-//		Logger::debug("Places not found under this handle.");
-//	}
-//	if (0 == rank) {
-//		Logger::debug("Setting rank 0's hPtr.");
-//		hPtr = places->dllClass->placeElements;
-//	} else {
-//		Logger::debug("Setting rank %d's hPtr.", getRank());
-//		hPtr = shiftPtr(places->dllClass->placeElements, rank * numElements - ghostWidth, Tsize);
-//	}
 	Logger::debug("Done setting ghost width in partition.");
 }
 
@@ -131,13 +109,6 @@ Place *PlacesPartition::getLeftGhost() {
 	return hPtr[0]; // this is where hPtr starts
 }
 
-Place *PlacesPartition::getRightGhost() {
-	if (0 == rank) {
-		// no left ghost width to skip
-		return hPtr[numElements];
-	}
-	return hPtr[numElements + ghostWidth];
-}
 
 dim3 PlacesPartition::blockDim() {
 	return dims[0];

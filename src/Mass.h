@@ -13,26 +13,16 @@
 #include <map>
 
 #include "Dispatcher.h"
-#include "Agents.h"
 #include "Places.h"
 
 namespace mass {
 
 class Mass {
-	friend class Agents;
 	friend class Places;
 
 public:
-
 	/**
-	 *  Initializes the MASS environment. Must be called prior to all other MASS methods.
-	 *  @param args what do these do?
-	 *  @param ngpu the number of GPUs to use
-	 */
-	static void init(std::string args[], int &ngpu);
-
-	/**
-	 *  Initializes the MASS environment using all available GPU resources. 
+	 *  Initializes the MASS environment using default GPU resource. 
 	 *  Must be called prior to all other MASS methods.
 	 *  @param args what do these do?
 	 */
@@ -56,28 +46,16 @@ public:
 	static int numPlacesInstances();
 
 	/**
-	 *  Gets the agents object for this handle.
-	 *  @param handle an int that corresponds to an agents object.
-	 *  @return NULL if not found.
-	 */
-	static Agents *getAgents(int handle);
-
-	/**
-	 *  Gets the number of Agents collections in this simulation.
-	 */
-	static int numAgentsInstances();
-
-	/**
 	 * Creates a Places instance with the provided parameters.
 	 */
 	template<typename P, typename S>
 	static Places* createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[], int boundary_width);
 
+
 private:
 
 	static std::map<int, Places*> placesMap;
-	static std::map<int, Agents*> agentsMap;
 	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
 };
 
@@ -85,6 +63,7 @@ template<typename P, typename S>
 Places* Mass::createPlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int boundary_width) {
 
+	Logger::debug("Entering Mass::createPlaces\n");
 	// create an API object for this Places collection
 	Places *places = new Places(handle, dimensions, size, dispatcher);
 	placesMap[handle] = places;
@@ -92,8 +71,10 @@ Places* Mass::createPlaces(int handle, void *argument, int argSize,
 	// perform actual instantiation of user classes
 	dispatcher->instantiatePlaces<P, S>(handle, argument, argSize, dimensions,
 			size, places->numElements, boundary_width);
+	Logger::debug("Exiting Mass::createPlaces\n");
 
 	return places;
 }
+
 
 } /* namespace mass */

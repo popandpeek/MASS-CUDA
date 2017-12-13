@@ -39,18 +39,19 @@ int PlacesModel::getHandle() {
 }
 
 int PlacesModel::getNumDims() {
+	Logger::print("inside PlacesModel::getNumDims()");
 	return numDims;
 }
 
 int* PlacesModel::getDims() {
+	Logger::print("inside PlacesModel::getDims()");
+	Logger::print("dimensions value: %d", *dimensions);
 	return dimensions;
 }
 
 unsigned PlacesModel::getNumElements() {
+	Logger::print("inside PlacesModel::getNumElements()");
 	return numElements;
-}
-int PlacesModel::getGhostWidth() {
-	return boundary_width;
 }
 
 } // end namespace

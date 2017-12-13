@@ -20,6 +20,8 @@ public:
 	const static int GET_VALS = 1;
 	const static int EXCHANGE = 2;
 	const static int EULER_METHOD = 3;
+	const static int SET_BORDERS = 4;
+	const static int NEXT_PHASE = 5;
 
 	MASS_FUNCTION Metal(mass::PlaceState *state, void *argument);MASS_FUNCTION ~Metal();
 
@@ -38,19 +40,24 @@ public:
 	 *
 	 * @return an int >= 0;
 	 */
-	MASS_FUNCTION virtual int placeSize();
+	//MASS_FUNCTION virtual int placeSize();
 
 	// TODO remove this call if not necessary
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
+
+	MASS_FUNCTION void nextPhase();
 
 private:
 
 	MetalState* myState;
 
-	MASS_FUNCTION void applyHeat();MASS_FUNCTION void *getVals();MASS_FUNCTION void *exchange(
-			void *arg);MASS_FUNCTION void eulerMethod();
+	MASS_FUNCTION void applyHeat();
+	MASS_FUNCTION void *getVals();
+	MASS_FUNCTION void *exchange(void *arg);
+	MASS_FUNCTION void eulerMethod();
 
-	MASS_FUNCTION void setBorders(int phase);MASS_FUNCTION inline bool isBorderCell();
+	MASS_FUNCTION void setBorders(int phase);
+	MASS_FUNCTION inline bool isBorderCell();
 };
 
 #endif /* METAL_H_ */

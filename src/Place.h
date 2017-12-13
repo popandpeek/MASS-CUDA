@@ -11,23 +11,21 @@
 #define MAX_AGENTS 4
 #define MAX_NEIGHBORS 8
 #define MAX_DIMS 6
+ // easier for end users to understand than the __host__ __device__ meaning.
+#define MASS_FUNCTION __host__ __device__
 
 #include<cuda_runtime.h>
-
-#include "MObject.h"
 
 namespace mass {
 
 // forward declaration
-class Agent;
 class PlaceState;
 
 /**
  *  The Place class defines the default functions for acheiving GPU parallelism between place objects.
  *  It also defines the interface necessary for end users to implement.
  */
-class Place: public MObject {
-	friend class Agent;
+class Place {
 
 public:
 	/**
@@ -59,24 +57,12 @@ public:
 	 *
 	 * @return an int >= 0;
 	 */
-	MASS_FUNCTION virtual int placeSize() = 0;
+	//MASS_FUNCTION virtual int placeSize() = 0;
 
 	// TODO remove this call if not necessary
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
 
-	/**
-	 * Registers an agent with this place.
-	 * @param agent the agent that is self-registering.
-	 */
-	MASS_FUNCTION void addAgent(Agent *agent);
-
-	/**
-	 * Unregisters an agent with this place.
-	 * @param agent the agent that is self-unregistering.
-	 */
-	MASS_FUNCTION void removeAgent(Agent *agent);
-
-	MASS_FUNCTION virtual void setState(PlaceState *s);
+	//MASS_FUNCTION virtual void setState(PlaceState *s);
 
 	MASS_FUNCTION virtual PlaceState* getState();
 
@@ -86,17 +72,7 @@ public:
 
 	MASS_FUNCTION void setSize(int *dimensions, int nDims);
 
-protected:
 
-//	int size[MAX_DIMS];   // the size of the Places matrix
-//	char numDims;
-//	int index;            // the row-major index of this place
-//	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
-//	Agent *agents[MAX_AGENTS];
-//	unsigned agentPop; // the population of agents on this place
-//	// void* outMessage;        // out message needs to be declared in the derived class statically
-//	int message_size;  // the number of bytes in a message
-//	void *inMessages[MAX_NEIGHBORS]; // holds a pointer to each neighbor's outmessage.
 	PlaceState *state;
 
 };

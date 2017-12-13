@@ -41,11 +41,6 @@ public:
 	~PlacesPartition();
 
 	/**
-	 *  Gets the rank of this partition.
-	 */
-	int getRank();
-
-	/**
 	 *  Returns the number of place elements in this partition.
 	 */
 	int size();
@@ -64,12 +59,6 @@ public:
 	 *  Sets the start and number of places in this partition.
 	 */
 	void setSection(Place **start);
-
-	/**
-	 * Returns the number of elements in the ghost width.
-	 * @return
-	 */
-	int getGhostWidth();
 
 	/**
 	 * Sets the ghost width to width X elements. Calculates the actual number
@@ -123,7 +112,7 @@ public:
 	/**
 	 * Returns a pointer to the start of the right ghost space.
 	 */
-	Place *getRightGhost();
+	//Place *getRightGhost();
 
 	/**
 	 * Returns the ideal block dimension for this partition. Used for launching

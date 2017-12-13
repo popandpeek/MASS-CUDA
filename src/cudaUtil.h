@@ -11,6 +11,8 @@
  */
 #pragma once
 #include <cuda_runtime.h>
+#include <curand.h>
+#include <curand_kernel.h>
 
 namespace mass {
 
@@ -29,9 +31,16 @@ namespace mass {
  */
 #define CHECK() __cudaCheckError( __FILE__, __LINE__ )
 
+/*!
+ * Tests if a random number generation error has occurred and terminates the program with a descriptive error.
+ */
+#define CURAND_CATCH(err) __curandCatch(err, __FILE__, __LINE__)
+
 /*! Terminates the program with a descriptive error message if a cuda error occurs.
  */
 void __cudaCatch(cudaError err, const char *file, const int line);
+
+void __curandCatch(curandStatus_t err, const char *file, const int line);
 
 /*! Tests whether a cuda error has occured and terminates the program with a descriptive error
  * message if so.
@@ -41,19 +50,42 @@ void __cudaCheckError(const char *file, const int line);
 /*! More careful checking. However, this will affect performance.*/
 void __cudaCheckSync(const char *file, const int line);
 
-/*! Provides a synchronization barrier for all devices identified by the given device ids.
- */
-void syncDevices(int *devices, int ngpu);
-
-/*! Get all CUDA devices on the system regardless of their characteristics.
- * devices: a pointer to an array of device indices that will be filled by this method.
- * returns: the count of cuda-enabled GPUs on this system.
- */
-int getAllDevices(int **devices);
-
 /*! A combination of calloc() and cudaMalloc(). Allocates device memory and sets the memory to zero.
  * Performed asynchronously.
  */
 cudaError_t cudaCallocAsync(void **devPtr, size_t size, cudaStream_t stream);
+
+/******************************************************************************
+ * These global indexing helper functions were created and published by Martin
+ * Peniak. See http://www.martinpeniak.com/index.php?option=com_
+ * content&view=article&catid=17:updates&id=288:cuda-thread-indexing-explained
+ * for the original functions.
+ *****************************************************************************/
+// 1D grid of 1D blocks
+__device__ int getGlobalIdx_1D_1D();
+
+// 1D grid of 2D blocks
+__device__ int getGlobalIdx_1D_2D();
+
+// 1D grid of 3D blocks
+__device__ int getGlobalIdx_1D_3D();
+
+// 2D grid of 1D blocks
+__device__ int getGlobalIdx_2D_1D();
+
+// 2D grid of 2D blocks
+__device__ int getGlobalIdx_2D_2D();
+
+// 2D grid of 3D blocks
+__device__ int getGlobalIdx_2D_3D();
+
+// 3D grid of 1D blocks
+__device__ int getGlobalIdx_3D_1D();
+
+// 3D grid of 2D blocks
+__device__ int getGlobalIdx_3D_2D();
+
+// 3D grid of 3D blocks
+__device__ int getGlobalIdx_3D_3D();
 
 } /* namespace mass */

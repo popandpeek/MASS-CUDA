@@ -12,24 +12,13 @@
 
 namespace mass {
 
-Partition::Partition(int rank) :
-		rank(rank) {
-}
+Partition::Partition() {}
 
 Partition::~Partition() {
 	for (int i = 0; i < placesMap.size(); ++i) {
 		delete placesMap[i];
 	}
 	placesMap.clear();
-
-	//	for (int i = 0; i < agentsMap.size(); ++i) {
-	//		delete agentsMap[i];
-	//	}
-	//	agentsMap.clear();
-}
-
-int Partition::getRank() {
-	return rank;
 }
 
 PlacesPartition* Partition::getPlacesPartition(int handle) {
@@ -46,17 +35,8 @@ std::map<int, PlacesPartition*> Partition::getPlacesPartitions() {
 	return placesMap;
 }
 
-std::map<int, AgentsPartition*> Partition::getAgentsPartitions(
-		int placesHandle) {
-	return agentsMap;
-}
-
 void Partition::addPlacesPartition(PlacesPartition* places) {
 	placesMap[places->getHandle()] = places;
-}
-
-void Partition::addAgentsPartition(AgentsPartition* agents) {
-	agentsMap[agents->getHandle()] = agents;
 }
 
 } /* namespace mass */

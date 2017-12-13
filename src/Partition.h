@@ -9,30 +9,21 @@
 #include <map>
 
 #include "PlacesPartition.h"
-#include "AgentsPartition.h"
 
 namespace mass {
 
 class Partition {
 public:
-	Partition(int rank);
+	Partition();
 	virtual ~Partition();
-	int getRank();
-//	bool isLoaded();
 	PlacesPartition* getPlacesPartition(int handle);
 	std::map<int, PlacesPartition*> getPlacesPartitions();
-	std::map<int, AgentsPartition*> getAgentsPartitions(int placesHandle);
 
 	void addPlacesPartition(PlacesPartition* places);
-	void addAgentsPartition(AgentsPartition* agents);
 
 private:
-	int rank;
-//	bool loaded;
-
-// handle to partition map. All partitions have the same rank.
-	std::map<int, PlacesPartition*> placesMap;
-	std::map<int, AgentsPartition*> agentsMap;
+    
+	std::map<int, PlacesPartition*> placesMap;  // handle to partition map. 
 };
 
 } /* namespace mass */

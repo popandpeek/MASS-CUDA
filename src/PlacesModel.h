@@ -15,12 +15,9 @@
 #include "MassException.h"
 #include "PlaceState.h"
 #include "PlacesModel.h"
+ #include "Logger.h"
 
 namespace mass {
-
-// forward declarations
-class DeviceConfig;
-class AgentsModel;
 
 class PlacesModel {
 
@@ -36,7 +33,6 @@ public:
 	int getNumDims();
 	int* getDims();
 	unsigned getNumElements();
-	int getGhostWidth();
 
 	template<typename P, typename S>
 	static PlacesModel* createPlaces(int handle, void *argument, int argSize,

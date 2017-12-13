@@ -6,7 +6,6 @@
 #include "../src/Mass.h"
 #include "../src/Logger.h"
 
-#include "AllTests.h"
 #include "Heat2d.h"
 
 using namespace std;
@@ -14,65 +13,28 @@ using namespace mass;
 
 int main() {
 	// test logging
-	Logger::setLogFile("test_results.txt");
+	Logger::setLogFile("perf_test_results.txt");
 
-//
-//	AllTests tests;
-//	stringstream ss;
-//
-//
-//	int ngpu = 1;
-//	Mass::init(NULL, ngpu);
-//
-//	Logger::info("Mass::init() successful.");
-//
-////	if(!tests.proofOfConcept()){
-////		ss << "\tProof Of Concept Tests\n";
-////	}
-//
-//	if (!tests.runMassTests()) {
-//		ss << "\tMass Tests\n";
-//	}
-//
-//	if (!tests.runPlacesTests()) {
-//		ss << "\tPlaces Tests\n";
-//	}
-//
-////
-////	if (!tests.runDispatcherTests()) {
-////		ss << "\tDispatcher Tests\n";
-////	}
-////
-////	if (!tests.runPlacesPartitionTests()) {
-////		ss << "\tPlacesPartition Tests\n";
-////	}
-////
-////	if (!tests.runAgentsPartitionTests()) {
-////		ss << "\tAgentsPartition Tests\n";
-////	}
-////
-////	if (!tests.runAgentsTests()) {
-////		ss << "\tAgents Tests\n";
-////	}
-////
-//	Logger::info("Calling Mass::finish()");
-//	Mass::finish();
-////
-//	Logger::info("Mass::finish() passed.");
-//
-////	cout << "All Tests finished. The following tests failed:\n" << ss.str()
-////			<< "\n" << "End failed tests." << endl;
-//	char buf[500];
-//	strcpy(buf, ss.str().c_str());
-//	if (tests.failedTests > 0) {
-//		Logger::info("Tests finished. The following tests failed:\n%s\n", buf);
-//	} else {
-//		Logger::info("All tests passed.");
-//	}
-
-	Logger::info("Running Heat 2D");
+	const int nRuns = 3; // number of times to run each test
+	const int nSizes = 4;
+	int size[nSizes] = { 125, 250, 500, 1000};
+	int max_time = 3000;
+	int heat_time = 2700;
+	int interval = 0;
+	Logger::print("Size,CPU,GPU,MASS\n");
 	Heat2d heat;
-	heat.runMain();
+	for (int i = 0; i < nSizes; ++i) {
+		Logger::info(
+			"Running Heat 2D with params:\n\tsize = %d\n\ttime = %d\n\theat_time = %d\n\tinterval = %d",
+			size[i], max_time, heat_time, interval);
+
+		for (int run = 0; run < nRuns; ++run) {
+			Logger::print("%d,",size[i]);
+			heat.runHostSim(size[i], max_time, heat_time, interval);
+			heat.runDeviceSim(size[i], max_time, heat_time, interval);
+			heat.runMassSim(size[i], max_time, heat_time, interval);
+		}
+	}
 
 	return 0;
 }

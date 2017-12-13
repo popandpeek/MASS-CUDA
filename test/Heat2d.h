@@ -18,7 +18,9 @@ public:
 	Heat2d();
 	virtual ~Heat2d();
 
-	void runMain();
+	void runMassSim(int size, int max_time, int heat_time, int interval);
+	void runDeviceSim(int size, int max_time, int heat_time, int interval);
+	void runHostSim(int size, int max_time, int heat_time, int interval);
 	void displayResults(mass::Places *places, int time, int *placesSize);
 
 };

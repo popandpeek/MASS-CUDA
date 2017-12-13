@@ -11,6 +11,8 @@
 #include <string>
 #include <vector>
 
+#include "Logger.h"
+
 namespace mass {
 
 // forward declarations
@@ -100,12 +102,12 @@ public:
 	 *    int south[2] = {0, -1}; destinations.push_back( south );
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
-	void exchangeAll(int functionId, std::vector<int*> *destinations);
+	void exchangeAll(std::vector<int*> *destinations);
 
 	/**
 	 *  Exchanges the boundary places with the left and right neighboring nodes. 
 	 */
-	void exchangeBoundary();
+	//void exchangeBoundary();
 
 	/**
 	 *  Returns an array of pointers to the Place elements contained in this
@@ -132,6 +134,16 @@ public:
 	int getRowMajorIdx(std::vector<int> indices);
 
 	/**
+	 * Accepts multiple ints and converts them to a row-major index. There MUST be the same
+	 * number of arguments as dimensions in this place. Otherwise, an exception will
+	 * be thrown.
+	 *
+	 * @param varargs one int per dimension in this collection
+	 * @return a single int converted into row major index
+	 */
+	int getRowMajorIdx(...);
+
+	/**
 	 * This function will take a valid (in bounds) row-major index for this
 	 * places object and return a vector that contains the row, col, z, etc...
 	 * indices for the place element at the given row major index.
@@ -145,7 +157,9 @@ public:
 	 */
 	std::vector<int> getIndexVector(int rowMajorIdx);
 
+#ifndef TEST
 private:
+#endif
 	/**
 	 *  Creates a Places object. Only accessible from the dispatcher.
 	 *

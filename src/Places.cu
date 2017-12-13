@@ -6,6 +6,8 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 
+#include <stdarg.h>
+
 #include "Places.h"
 #include "Place.h"
 #include "Dispatcher.h"
@@ -53,13 +55,10 @@ void *Places::callAll(int functionId, void *arguments[], int argSize,
 			retSize);
 }
 
-void Places::exchangeAll(int functionId, std::vector<int*> *destinations) {
-	dispatcher->exchangeAllPlaces(handle, functionId, destinations);
+void Places::exchangeAll(std::vector<int*> *destinations) {
+	dispatcher->exchangeAllPlaces(handle, destinations);
 }
 
-void Places::exchangeBoundary() {
-	dispatcher->exchangeBoundaryPlaces(handle);
-}
 
 Place** Places::getElements() {
 	// TODO can I avoid refresh every time?
@@ -91,10 +90,23 @@ int Places::getRowMajorIdx(vector<int> indices) {
 	return getRowMajorIdx(&indices[0]);
 }
 
+int Places::getRowMajorIdx(...) {
+	int *indices = new int[numDims];
+	va_list args;
+	va_start(args, numDims);
+	for ( int i = 0; i < numDims; i++ ){ // Loop until all numbers are added
+	    indices[i] = va_arg ( args, int );
+	}
+	va_end(args);
+	int rmi = getRowMajorIdx(indices);
+	delete[] indices;
+	return rmi;
+}
+
 vector<int> Places::getIndexVector(int rowMajorIdx) {
 	vector<int> indices; // return value
 
-	for (int i = numDims - 1; i > 0; --i) {
+	for (int i = numDims - 1; i >= 0; --i) {
 		int idx = rowMajorIdx % dimensions[i];
 		rowMajorIdx /= dimensions[i];
 		indices.insert(indices.begin(), idx);

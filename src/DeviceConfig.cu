@@ -6,12 +6,14 @@
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
 
+#include <curand.h>
+
 #include "DeviceConfig.h"
-#include "Agent.h"
 #include "Place.h"
 #include "cudaUtil.h"
 #include "Logger.h"
 #include "MassException.h"
+#include "string.h"
 
 using namespace std;
 
@@ -19,6 +21,9 @@ namespace mass {
 
 DeviceConfig::DeviceConfig() :
 		deviceNum(-1) {
+	d_glob = NULL;
+	freeMem = 0;
+	allMem = 0;
 	Logger::warn("DeviceConfig::NoParam constructor");
 }
 
@@ -26,30 +31,18 @@ DeviceConfig::DeviceConfig(int device) :
 		deviceNum(device) {
 	Logger::debug("DeviceConfig(int) constructor");
 	CATCH(cudaSetDevice(deviceNum));
-//	CATCH(cudaStreamCreate(&inputStream));
-//	CATCH(cudaStreamCreate(&outputStream));
-//	CATCH(cudaEventCreate(&deviceEvent));
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, allMem * 3 / 4));
+	d_glob = NULL;
+	devPlacesMap = map<int, PlaceArray>{};
 }
 
 DeviceConfig::~DeviceConfig() {
 	Logger::debug("deviceConfig destructor ");
 }
 
-void DeviceConfig::setAsActiveDevice() {
-	Logger::debug("Active device is now %d", deviceNum);
-	CATCH(cudaSetDevice(deviceNum));
-}
-
 void DeviceConfig::freeDevice() {
 	Logger::debug("deviceConfig free ");
-	setAsActiveDevice();
-
-	// TODO there is a bug here that crashes the program.
-	// destroy streams
-//	CATCH(cudaStreamDestroy(inputStream));
-//	CATCH(cudaStreamDestroy(outputStream));
-//	// destroy events
-//	CATCH(cudaEventDestroy(deviceEvent));
 
 	std::map<int, PlaceArray>::iterator it = devPlacesMap.begin();
 	while (it != devPlacesMap.end()) {
@@ -57,8 +50,10 @@ void DeviceConfig::freeDevice() {
 		++it;
 	}
 	devPlacesMap.clear();
-	CATCH(cudaDeviceReset());
 
+	CATCH(cudaFree(d_glob));
+
+	CATCH(cudaDeviceReset());
 	Logger::debug("Done with deviceConfig freeDevice().");
 }
 
@@ -73,40 +68,19 @@ void DeviceConfig::loadPartition(Partition* partition, int placeHandle) {
 		CATCH(cudaMalloc((void** ) &dest, sz));
 	}
 	CATCH(cudaMemcpy(dest, src, sz, H2D));
-
-//	// load all corresponding agents partitions of the same rank
-//	map<int, AgentsPartition*> agents = partition->getAgentsPartitions(placeHandle);
-//
-//	map<int, AgentsPartition*>::iterator it = agents.begin();
-//	while (it != agents.end()) {
-//		AgentsPartition *aPart = it->second;
-//		if (!aPart->isLoaded()) {
-//			Logger::debug("Loading agents rank %d", handle);
-//			d->loadAgentsPartition(aPart);
-//			loadedAgents[aPart] = d;
-//		}
-//		++it;
-//	}
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 }
 
 void DeviceConfig::load(void*& destination, const void* source, size_t bytes) {
 	CATCH(cudaMalloc((void** ) &destination, bytes));
 	CATCH(cudaMemcpy(destination, source, bytes, H2D));
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 }
 
 void DeviceConfig::unload(void* destination, void* source, size_t bytes) {
 	CATCH(cudaMemcpy(destination, source, bytes, D2H));
 	CATCH(cudaFree(source));
-}
-
-DeviceConfig::DeviceConfig(const DeviceConfig& other) {
-	Logger::debug("DeviceConfig copy constructor.");
-	deviceNum = other.deviceNum;
-//	inputStream = other.inputStream;
-//	outputStream = other.outputStream;
-//	deviceEvent = other.deviceEvent;
-	devPlacesMap = other.devPlacesMap;
-	devAgents = other.devAgents;
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 }
 
 int DeviceConfig::countDevPlaces(int handle) {
@@ -116,27 +90,6 @@ int DeviceConfig::countDevPlaces(int handle) {
 	return devPlacesMap[handle].qty;
 }
 
-int DeviceConfig::countDevAgents(int handle) {
-	if (devAgents.count(handle) != 1) {
-		throw MassException("Handle not found.");
-	}
-	return devAgents[handle].qty;
-}
-
-DeviceConfig &DeviceConfig::operator=(const DeviceConfig &rhs) {
-	Logger::debug("DeviceConfig assignment operator.");
-	if (this != &rhs) {
-
-		deviceNum = rhs.deviceNum;
-//		inputStream = rhs.inputStream;
-//		outputStream = rhs.outputStream;
-//		deviceEvent = rhs.deviceEvent;
-		devPlacesMap = rhs.devPlacesMap;
-		devAgents = rhs.devAgents;
-	}
-	return *this;
-}
-
 Place** DeviceConfig::getDevPlaces(int handle) {
 	return devPlacesMap[handle].devPtr;
 }
@@ -144,13 +97,26 @@ Place** DeviceConfig::getDevPlaces(int handle) {
 void* DeviceConfig::getPlaceState(int handle) {
 	return devPlacesMap[handle].devState;
 }
-void* DeviceConfig::getAgentState(int handle) {
-	return devAgents[handle].devState;
-}
 
 int DeviceConfig::getNumPlacePtrs(int handle) {
 	return devPlacesMap[handle].qty;
 }
+
+GlobalConsts DeviceConfig::getGlobalConstants() {
+	return glob;
+}
+
+void DeviceConfig::updateConstants(GlobalConsts consts) {
+	glob = consts;
+	if (NULL == d_glob) {
+		CATCH(cudaMalloc((void** ) &d_glob, sizeof(GlobalConsts)));
+	}
+	CATCH(cudaMemcpy(d_glob, &glob, sizeof(GlobalConsts), H2D));
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	Logger::debug("Device %d successfully updated global constants.",
+			this->deviceNum);
+}
+
 
 __global__ void destroyPlacesKernel(Place **places, int qty) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;

@@ -12,6 +12,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string>
+#include "string.h"
+
+//#define DEBUG = true;
+#undef DEBUG
+#define TEST
+
 
 namespace mass {
 
@@ -21,6 +27,12 @@ namespace mass {
 class Logger {
 
 public:
+
+	/**
+	 * This is the name of the default log file to be used if none is
+	 * specified by the user.
+	 */
+	const static std::string DEFAULT_LOG_FILE;
 
 	/**
 	 * Closes the logger. This is called by default in the destructor.
@@ -70,6 +82,13 @@ public:
 	 * stored or created.
 	 */
 	static void setLogFile(std::string filename);
+
+	/**
+	 * Similar to calling setLogFile, but it erases any existing logs in the
+	 * given file. Any further calls to logger are logged in this new, truncated
+	 * file.
+	 */
+	static void truncateLogfile(std:: string filename);
 
 private:
 
