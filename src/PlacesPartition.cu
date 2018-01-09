@@ -26,14 +26,12 @@ inline void *shiftPtr(void *origin, int qty, int Tsize) {
 
 PlacesPartition::PlacesPartition(int handle, int rank, int numElements,
 		int ghostWidth, int n, int *dimensions) {
-	Logger::print("Inside PlacesPartition constructor.");
+	Logger::debug("Inside PlacesPartition constructor.");
 	this->hPtr = NULL;
 	this->handle = handle;
 	this->rank = rank;
 	this->numElements = numElements;
-	Logger::print("copied all ards into class members");
 	setGhostWidth(ghostWidth, n, dimensions);
-	Logger::print("after setGhostWidth");
 	setIdealDims();
 }
 

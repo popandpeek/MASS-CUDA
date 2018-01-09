@@ -12,8 +12,8 @@
 #include <queue>
 
 #include "DataModel.h"
-
 #include "DeviceConfig.h"
+
 
 namespace mass {
 
@@ -112,7 +112,7 @@ private:
 template<typename P, typename S>
 void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int qty, int boundary_width) {
-	Logger::print("Inside Dispatcher::instantiatePlaces\n");
+	Logger::debug("Inside Dispatcher::instantiatePlaces\n");
 
 	// modify host-side data model
 	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,

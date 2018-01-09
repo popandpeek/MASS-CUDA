@@ -9,6 +9,7 @@
 #include <sstream>
 #include <algorithm>  // array compare
 #include <iterator>
+#include <stdio.h>
 
 #include "Dispatcher.h"
 #include "cudaUtil.h"
@@ -19,6 +20,11 @@
 #include "PlacesPartition.h"
 #include "Places.h"
 #include "DataModel.h"
+
+// caching for optimizing performance of setNeighborPlacesKernel():
+__constant__ int offsets_device[MAX_NEIGHBORS]; 
+__constant__ int nNeighbors_device; 
+
 
 using namespace std;
 
@@ -36,27 +42,22 @@ __global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
 /**
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
- __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, GlobalConsts *glob) {
+__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
 	int idx = getGlobalIdx_1D_1D();
 
-	if (idx < nptrs) {
-		int nNeighbors = glob->nNeighbors;
-
-		__shared__ int offsets[4];
-		memcpy(offsets,glob->offsets,sizeof(int) * nNeighbors);
-
-		PlaceState *state = ptrs[idx]->getState();
-		int nSkipped = 0;
-		for (int i = 0; i < nNeighbors; ++i) {
-			int j = idx + offsets[i];
-			if (j >= 0 && j < nptrs) {
-				state->neighbors[i - nSkipped] = ptrs[j];
-				state->inMessages[i - nSkipped] = ptrs[j]->getMessage();
-			} else {
-				nSkipped++;
-			}
-		}
-	}
+    if (idx < nptrs) {
+        PlaceState *state = ptrs[idx]->getState();
+        int nSkipped = 0;
+        for (int i = 0; i < nNeighbors_device; ++i) {
+            int j = idx + offsets_device[i];
+            if (j >= 0 && j < nptrs) {
+                state->neighbors[i - nSkipped] = ptrs[j];
+                state->inMessages[i - nSkipped] = ptrs[j]->getMessage();
+            } else {
+                nSkipped++;
+            }
+        }
+    }
 }
 
 Dispatcher::Dispatcher() {
@@ -112,6 +113,7 @@ Dispatcher::~Dispatcher() {
 	deviceInfo -> freeDevice();
 }
 
+// Updates the Places stored on CPU
 Place** Dispatcher::refreshPlaces(int handle) {
 	if (initialized) {
 		Logger::debug("Entering Dispatcher::refreshPlaces");
@@ -133,7 +135,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
 void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 		int argSize) {
 	if (initialized) {
-		Logger::debug("Calling all on places[%d]", placeHandle);
+		Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", placeHandle, functionId);
 
 		Partition* partition = model->getPartition();
 
@@ -141,17 +143,17 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 			deviceInfo->loadPartition(partition, placeHandle);
 			partInfo = partition;
 
-			Logger::debug("Loaded partition[%d]", placeHandle);
+			Logger::debug("Dispatcher::callAllPlaces: Loaded partition[%d]", placeHandle);
 		} 
 
 		// load any necessary arguments
 		void *argPtr = NULL;
 		if (argument != NULL) {
 			deviceInfo->load(argPtr, argument, argSize);
-			Logger::debug("Loaded device\n");
+			Logger::debug("Dispatcher::callAllPlaces: Loaded device\n");
 		}
 
-		Logger::debug("Calling callAllPlacesKernel");
+		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
 		PlacesPartition *pPart = partition->getPlacesPartition(placeHandle);
 		callAllPlacesKernel<<<pPart->blockDim(), pPart->threadDim()>>>(
 				deviceInfo->getDevPlaces(placeHandle), pPart->sizeWithGhosts(),
@@ -159,7 +161,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 		CHECK();
 
 		if (argPtr != NULL) {
-			Logger::debug("Freeing device args.");
+			Logger::debug("Dispatcher::callAllPlaces: Freeing device args.");
 			cudaFree(argPtr);
 		}
 
@@ -200,76 +202,76 @@ bool compArr(int* a, int aLen, int *b, int bLen) {
 }
 
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
+	Logger::debug("Inside Dispatcher::updateNeighborhood");
 	if (vec == neighborhood) { //no need to update
-		return false;
-	}
+        return false;
+    }
 
-	neighborhood = vec;
-	int nNeighbors = vec->size();
+    neighborhood = vec;
+    int nNeighbors = vec->size();
 
-	int *offsets = new int[nNeighbors];
-	PlacesModel *p = model->getPlacesModel(handle);
-	int nDims = p->getNumDims();
-	int *dimensions = p->getDims();
-	int numElements = p->getNumElements();
+    int *offsets = new int[nNeighbors]; 
 
-	// calculate an offset for each neighbor in vec
-	for (int j = 0; j < vec->size(); ++j) {
-		int *indices = (*vec)[j];
-		int offset = 0; // accumulater for row major offset
-		int multiplier = 1;
+    PlacesModel *p = model->getPlacesModel(handle);
+    int nDims = p->getNumDims();
+    int *dimensions = p->getDims();
 
-		// a single X will pass over y*z elements,
-		// a single Y will pass over z elements, and a Z will pass over 1 element.
-		// each dimension will be removed from multiplier before calculating the
-		// size of each index's "step"
-		for (int i = 0; i < nDims; i++) {
-			// convert from raster to cartesian coordinates
-			if (1 == i) {
-				offset -= multiplier * indices[i];
-			} else {
-				offset += multiplier * indices[i];
-			}
+    // calculate an offset for each neighbor in vec
+    for (int j = 0; j < vec->size(); ++j) {
+        int *indices = (*vec)[j];
+        int offset = 0; // accumulater for row major offset
+        int multiplier = 1;
 
-			multiplier *= dimensions[i]; // remove dimension from multiplier
-		}
-		offsets[j] = offset;
-	}
+        // a single X will pass over y*z elements,
+        // a single Y will pass over z elements, and a Z will pass over 1 element.
+        // each dimension will be removed from multiplier before calculating the
+        // size of each index's "step"
+        for (int i = 0; i < nDims; i++) {
+            // convert from raster to cartesian coordinates
+            if (1 == i) {
+                offset -= multiplier * indices[i];
+            } else {
+                offset += multiplier * indices[i];
+            }
 
-	GlobalConsts c = deviceInfo->getGlobalConstants();
-	memcpy(c.offsets, offsets, nNeighbors * sizeof(int));
-	c.nNeighbors = nNeighbors;
-	deviceInfo->updateConstants(c);
+            multiplier *= dimensions[i]; // remove dimension from multiplier
+        }
+        offsets[j] = offset;
+    }
+    
+    // Now copy offsets to the GPU:
+    cudaMemcpyToSymbol(offsets_device, offsets, sizeof(int) * nNeighbors);
+    CHECK();
+    cudaMemcpyToSymbol(nNeighbors_device, &nNeighbors, sizeof(int));
+    CHECK();
 
-	delete [] offsets;
-	return true;
+    delete [] offsets;
+    Logger::debug("Exiting Dispatcher::updateNeighborhood");
+    return true;
 }
 
 void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) {
-
+	Logger::debug("Inside Dispatcher::exchangeAllPlaces");
 	updateNeighborhood(handle, destinations);
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
 	PlacesPartition *p = model->getPartition()->getPlacesPartition(handle);
 
-	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs,
-			deviceInfo->d_glob);
+	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
+	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);
 	CHECK();
+	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
 }
 
 void Dispatcher::unloadDevice(DeviceConfig *device) {
-	Logger::print("Inside Dispatcher::unloadDevice\n");
+	Logger::debug("Inside Dispatcher::unloadDevice\n");
 	if (partInfo != NULL) {
-		Logger::print("device != NULL\n");
 		Partition* p = partInfo;
 		map<int, PlacesPartition*> places = p->getPlacesPartitions();  //place partitions by handle
-
-		Logger::print("p->getPlacesPartitions() finished\n");
 		map<int, PlacesPartition*>::iterator itP = places.begin();
 		while (itP != places.end()) {
 			refreshPlaces(itP->first);
-			Logger::print("refreshed places\n");
 		}
 
 		deviceInfo = NULL;

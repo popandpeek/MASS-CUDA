@@ -35,10 +35,11 @@ Heat2d::~Heat2d() {
 }
 
 void Heat2d::displayResults(Places *places, int time, int *placesSize) {
+	Logger::debug("Entering Heat2d::displayResults");
 	ostringstream ss;
 
 	ss << "time = " << time << "\n";
-	Place ** retVals = places->getElements();
+	Place ** retVals = places->getElements(); //refreshes places here
 	int indices[2];
 	for (int row = 0; row < placesSize[0]; row++) {
 		indices[0] = row;
@@ -167,8 +168,10 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 	Mass::init(arguments);
 	Logger::print("Finished Mass::init\n");
 
-	// distribute places over computing nodes
+	// initialization parameters
 	double r = a * dt / (dd * dd);
+
+	// initialize places
 	Places *places = Mass::createPlaces<Metal, MetalState>(0, &r,
 			sizeof(double), nDims, placesSize, 0);
 	Logger::print("Finished Mass::createPlaces\n");
@@ -188,7 +191,6 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 	Timer timer;
 	timer.start();
 
-	// simulate heat diffusion in parallel
 	int time = 0;
 	for (; time < max_time; time++) {
 
@@ -196,20 +198,21 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 			places->callAll(Metal::APPLY_HEAT);
 		}
 
+		Logger::print("After callAll(APPLY_HEAT) at t= %d: \n",time);
 		// display intermediate results
 		if (interval != 0 && (time % interval == 0 || time == max_time - 1)) {
 			displayResults(places, time, placesSize);
 		}
 
 		places->exchangeAll(&neighbors);
+		Logger::print("After exchangeAll() at t= %d: \n",time);
+		displayResults(places, time, placesSize); //delete after debugging!!!
+
 		places->callAll(Metal::EULER_METHOD);
-//		places->callAll(Metal::NEXT_PHASE);
+		Logger::print("After callAll(EULER_METHOD) at t= %d: \n",time);
+		displayResults(places, time, placesSize); //delete after debugging!!!
 	}
 
-	// finish the timer
-//	cout << "Elapsed time = " << timer.lap() / 10000 / 100.0 << " seconds." << endl;
-//	Logger::info("Elapsed time with MASS = %.2f seconds.",
-//			timer.lap() / 10000 / 100.0);
 	Logger::print("MASS time %d\n",timer.lap());
 
 	if (placesSize[0] < 80) {

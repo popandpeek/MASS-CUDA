@@ -14,14 +14,11 @@
 namespace mass {
 
 struct GlobalConsts {
-	int offsets[MAX_NEIGHBORS];
-	int nNeighbors;
 	int globalDims[MAX_DIMS];
 	int localDims[MAX_DIMS];
 
 
-	GlobalConsts() : nNeighbors(0) {
-		memset(offsets, 0, sizeof(int) * MAX_NEIGHBORS);
+	GlobalConsts() {
 		memset(globalDims, 0, sizeof(int) * MAX_DIMS);
 		memset(localDims, 0, sizeof(int) * MAX_DIMS);
 	}

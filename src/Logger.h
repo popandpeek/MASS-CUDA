@@ -14,7 +14,7 @@
 #include <string>
 #include "string.h"
 
-//#define DEBUG = true;
+//#define DEBUG = false;
 #undef DEBUG
 #define TEST
 

@@ -16,8 +16,8 @@ void __cudaCatch(cudaError err, const char *file, const int line) {
 				cudaGetErrorString(err), file, line);
 		Logger::error("MASS Cuda Util: %s in %s at line %d\n",
 				cudaGetErrorString(err), file, line);
-		Mass::finish();
-		throw MassException("An error occured ");
+		//Mass::finish();
+		throw MassException("An fatal error occured, the program must terminate");
 	}
 #endif
 }
@@ -27,8 +27,8 @@ void __curandCatch(curandStatus_t err, const char *file, const int line) {
 	if (err != CURAND_STATUS_SUCCESS) {
 		fprintf(stderr, "MASS Cuda Util: cuRand error in %s at line %d\n", file, line);
 		Logger::error("MASS Cuda Util: cuRand error in %s at line %d\n", file, line);
-		Mass::finish();
-		throw MassException("An error occured ");
+		//Mass::finish();
+		throw MassException("An fatal error occured, the program must terminate");
 	}
 #endif
 }

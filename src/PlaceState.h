@@ -8,8 +8,6 @@
 #ifndef PLACESTATE_H_
 #define PLACESTATE_H_
 
-//#include "Agent.h"
-
 #define MAX_AGENTS 4
 #define MAX_NEIGHBORS 8
 #define MAX_DIMS 6
