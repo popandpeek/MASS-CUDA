@@ -25,13 +25,12 @@ inline void *shiftPtr(void *origin, int qty, int Tsize) {
 }
 
 PlacesPartition::PlacesPartition(int handle, int rank, int numElements,
-		int ghostWidth, int n, int *dimensions) {
+		int n, int *dimensions) {
 	Logger::debug("Inside PlacesPartition constructor.");
 	this->hPtr = NULL;
 	this->handle = handle;
 	this->rank = rank;
 	this->numElements = numElements;
-	setGhostWidth(ghostWidth, n, dimensions);
 	setIdealDims();
 }
 
@@ -49,57 +48,17 @@ int PlacesPartition::size() {
 }
 
 /**
- *  Returns the number of place elements and ghost elements.
- */
-int PlacesPartition::sizeWithGhosts() {
-	int numRanks = 1; //Mass::getPlaces(handle)->getNumPartitions();
-	if (1 == numRanks) {
-		return numElements;
-	}
-
-	int retVal = numElements;
-	if (0 == rank || numRanks - 1 == rank) {
-		// there is only one ghost width on an edge rank
-		retVal += ghostWidth;
-	} else {
-		retVal += 2 * ghostWidth;
-	}
-
-	return retVal;
-}
-
-/**
  *  Returns the handle associated with this PlacesPartition object that was set at construction.
  */
 int PlacesPartition::getHandle() {
 	return handle;
 }
 
-void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
-	ghostWidth = width;
-	Logger::debug("Setting ghost width in partition.");
-	// start at 1 because we never want to factor in x step
-	for (int i = 1; i < n; ++i) {
-		ghostWidth *= dimensions[i];
-	}
-
-	// prevent indexing out of bounds on thin sections with wide ghosts
-	if (ghostWidth > numElements) {
-		ghostWidth = numElements;
-	}
-
-	Logger::debug("Done setting ghost width in partition.");
-}
-
 Place *PlacesPartition::getLeftBuffer() {
-	return hPtr[ghostWidth];
+	return hPtr[0];
 }
 
 Place *PlacesPartition::getRightBuffer() {
-	if (0 == rank) {
-		// there is no left ghost width, shift a negative direction
-		return hPtr[numElements - ghostWidth];
-	}
 	return hPtr[numElements];
 }
 

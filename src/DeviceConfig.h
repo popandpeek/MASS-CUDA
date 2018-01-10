@@ -23,10 +23,12 @@ namespace mass {
 // forward declarations
 class Place;
 
+// TODO: describe what this struct is needed for
+// and what data members mean
 struct PlaceArray {
 	Place** devPtr;
 	void *devState;
-	int qty;
+	int qty;  //size with ghosts
 };
 
 /**
@@ -106,7 +108,7 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 
 	// create places tracking
 	PlaceArray p;
-	p.qty = qty;
+	p.qty = qty; //size with ghosts
 
 	// create state array on device
 	S* d_state = NULL;

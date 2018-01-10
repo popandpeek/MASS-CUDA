@@ -9,7 +9,6 @@
 #include <sstream>
 #include <algorithm>  // array compare
 #include <iterator>
-#include <stdio.h>
 
 #include "Dispatcher.h"
 #include "cudaUtil.h"
@@ -122,7 +121,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
 
 		PlacesPartition* p = partInfo->getPlacesPartition(handle);
 		void *devPtr = deviceInfo->getPlaceState(handle); // gets the state belonging to this partition
-		int qty = p->sizeWithGhosts();
+		int qty = p->size();
 		int bytes = stateSize * qty;
 		CATCH(cudaMemcpy(p->getLeftBuffer()->getState(), devPtr, bytes, D2H));
 
@@ -156,7 +155,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
 		PlacesPartition *pPart = partition->getPlacesPartition(placeHandle);
 		callAllPlacesKernel<<<pPart->blockDim(), pPart->threadDim()>>>(
-				deviceInfo->getDevPlaces(placeHandle), pPart->sizeWithGhosts(),
+				deviceInfo->getDevPlaces(placeHandle), pPart->size(),
 				functionId, argPtr);
 		CHECK();
 

@@ -63,7 +63,7 @@ void DeviceConfig::loadPartition(Partition* partition, int placeHandle) {
 
 	void*& dest = devPlacesMap[placeHandle].devState;
 	void* src = ((Place*) pPart->getLeftGhost())->getState();
-	size_t sz = pPart->getPlaceBytes() * pPart->sizeWithGhosts();
+	size_t sz = pPart->getPlaceBytes() * pPart->size();
 	if (NULL == dest) {
 		CATCH(cudaMalloc((void** ) &dest, sz));
 	}

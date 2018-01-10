@@ -14,7 +14,7 @@
 namespace mass {
 
 struct GlobalConsts {
-	int globalDims[MAX_DIMS];
+	int globalDims[MAX_DIMS]; // size[] array
 	int localDims[MAX_DIMS];
 
 

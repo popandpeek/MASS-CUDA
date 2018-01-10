@@ -105,11 +105,6 @@ public:
 	void exchangeAll(std::vector<int*> *destinations);
 
 	/**
-	 *  Exchanges the boundary places with the left and right neighboring nodes. 
-	 */
-	//void exchangeBoundary();
-
-	/**
 	 *  Returns an array of pointers to the Place elements contained in this
 	 *  Places object. This is an expensive operation since it requires memory
 	 *  transfer. This array should NOT be deleted.
@@ -161,7 +156,7 @@ public:
 private:
 #endif
 	/**
-	 *  Creates a Places object. Only accessible from the dispatcher.
+	 *  Creates a Places object.
 	 *
 	 *  @param handle the unique identifier of this places collections
 	 */

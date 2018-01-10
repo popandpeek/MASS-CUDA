@@ -120,7 +120,7 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 
 	Partition *p = model->getPartition();
 
-	int objCount = p->getPlacesPartition(handle)->sizeWithGhosts();
+	int objCount = p->getPlacesPartition(handle)->size();
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			objCount);
 }

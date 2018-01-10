@@ -7,6 +7,7 @@
  */
 
 #include <ctime> // clock_t,
+#include <stdio.h> //remove after debugging
 #include "Metal.h"
 
 using namespace std;
@@ -102,7 +103,9 @@ MASS_FUNCTION void Metal::eulerMethod() { // EULER_METHOD
 		double curTemp = myState->temp[p];
 		myState->temp[p2] = curTemp + myState->r * (east - 2 * curTemp + west)
 				+ myState->r * (south - 2 * curTemp + north);
+		//printf("eulerMethod() kernel, thread is not a border cell, neighbors: north=%d, east=%d, south=%d, west=%d. Curent temp = %d, New temp = %d\n", north, east, south, west, curTemp, myState->temp[p2]);
 	} else {
+		//printf("eulerMethod() kernel, thread IS a border cell. Curent temp = %d\n", myState->temp[p]);
 		setBorders (p);
 	}
 

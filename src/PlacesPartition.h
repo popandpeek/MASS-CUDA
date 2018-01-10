@@ -28,12 +28,10 @@ public:
 	 * @param handle the handle of the places instance this partition belongs to
 	 * @param rank the rank of this place in range [0,n)
 	 * @param numElements the number of elements in this partition, not including ghost width
-	 * @param ghostWidth the number of x elements to exchange in ghost space
 	 * @param n the number of dimensions in this places instance
 	 * @param dimensions the size of the n dimensions
 	 */
-	PlacesPartition(int handle, int rank, int numElements, int ghostWidth,
-			int n, int *dimensions);
+	PlacesPartition(int handle, int rank, int numElements, int n, int *dimensions);
 
 	/**
 	 *  Destructor
@@ -46,11 +44,6 @@ public:
 	int size();
 
 	/**
-	 *  Returns the number of place elements plus ghost elements.
-	 */
-	int sizeWithGhosts();
-
-	/**
 	 *  Returns the handle associated with this PlacesPartition object that was set at construction.
 	 */
 	int getHandle();
@@ -59,15 +52,6 @@ public:
 	 *  Sets the start and number of places in this partition.
 	 */
 	void setSection(Place **start);
-
-	/**
-	 * Sets the ghost width to width X elements. Calculates the actual number
-	 * of elements using n and dimensions, then sets pointers accordingly.
-	 * @param width the number of rows in the X direction to exchange between turns.
-	 * @param n the number of dimensions
-	 * @param dimensions the size of each n dimensions
-	 */
-	void setGhostWidth(int width, int n, int *dimensions);
 
 	/**************************************************************************
 	 * A block of a places element is laid out thusly:
@@ -149,9 +133,8 @@ private:
 	Place **hPtr; // this starts at the left ghost
 	int handle;         // User-defined identifier for this PlacesPartition
 	int rank; // the rank of this partition
-	int numElements; // the number of place elements in this PlacesPartition from left ghost to right ghost
+	int numElements; // the number of place elements in this PlacesPartition
 	int Tsize; // TODO remove
-	int ghostWidth;
 	dim3 dims[2]; // 0 is blockdim, 1 is threaddim
 };
 

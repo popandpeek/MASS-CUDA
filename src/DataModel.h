@@ -37,7 +37,6 @@ private:
 	void addPlacesModel(PlacesModel *places);
 
 	void partitionPlaces(PlacesModel *places);
-	int ghostWidth = 0; /**< The width of the boundary.*/
 	Partition* partition; //replaces the map of partitions
 
 	/**

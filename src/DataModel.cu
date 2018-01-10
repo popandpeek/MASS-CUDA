@@ -14,7 +14,6 @@ namespace mass {
 DataModel::DataModel() {
 	Logger::debug("DataModel constructor running\n");
 	partition = new Partition();
-	ghostWidth = 0;  //Todo: remove notion of ghostWidth everywhere in the libary
 }
 
 DataModel::~DataModel() {
@@ -47,7 +46,7 @@ void DataModel::partitionPlaces(PlacesModel *places) {
 	Place **elems = places->getPlaceElements();
 	
 	PlacesPartition* p = new PlacesPartition(places->getHandle(), 0 /*rank*/,
-			places->getNumElements(), ghostWidth, places->getNumDims(), places->getDims());
+			places->getNumElements(), places->getNumDims(), places->getDims());
 
 	p->setSection(elems);
 	partition->addPlacesPartition(p);
