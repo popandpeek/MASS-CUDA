@@ -20,7 +20,8 @@ public:
 
 	PlacesModel* getPlacesModel(int handle);
 
-	Partition* getPartition();
+	PlacesPartition* getPartition(int handle);
+	std::map<int, PlacesPartition*> getAllPlacesPartitions();
 
 	template<typename P, typename S>
 	PlacesModel* instantiatePlaces(int handle, void *argument, int argSize,
@@ -30,7 +31,8 @@ private:
 	void addPlacesModel(PlacesModel *places);
 
 	void partitionPlaces(PlacesModel *places);
-	Partition* partition; //replaces the map of partitions
+	// Partition* partition;
+	std::map<int, PlacesPartition*> placesPartitionsByHandle;  // handle to partition map. 
 
 	/**
 	 * Maps a places handle to a collection.

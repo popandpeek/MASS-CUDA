@@ -92,7 +92,8 @@ private:
 	void unloadDevice(DeviceConfig *device);
 
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
-	Partition* partInfo; //replaces the map of partitions
+	//Partition* partInfo; 
+	PlacesPartition* partInfo;
 	DeviceConfig* deviceInfo;
 
 	DataModel *model;
@@ -112,9 +113,7 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
 
-	Partition *p = model->getPartition();
-
-	int objCount = p->getPlacesPartition(handle)->size();
+	int objCount = model->getPartition(handle)->size();
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			objCount);
 }

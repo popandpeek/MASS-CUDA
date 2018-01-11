@@ -112,11 +112,10 @@ Place** Dispatcher::refreshPlaces(int handle) {
 
 		int stateSize = model->getPlacesModel(handle)->getStateSize();
 
-		PlacesPartition* p = partInfo->getPlacesPartition(handle);
 		void *devPtr = deviceInfo->getPlaceState(handle); // gets the state belonging to this partition
-		int qty = p->size();
+		int qty = partInfo->size();
 		int bytes = stateSize * qty;
-		CATCH(cudaMemcpy(p->getPlacePartStart()->getState(), devPtr, bytes, D2H));
+		CATCH(cudaMemcpy(partInfo->getPlacePartStart()->getState(), devPtr, bytes, D2H));
 
 		Logger::debug("Exiting Dispatcher::refreshPlaces");
 	}
@@ -129,11 +128,11 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 	if (initialized) {
 		Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", placeHandle, functionId);
 
-		Partition* partition = model->getPartition();
+		// Partition* partition = model->getPartition();
 
 		if (partInfo == NULL) { // the partition needs to be loaded
-			deviceInfo->loadPartition(partition, placeHandle);
-			partInfo = partition;
+			deviceInfo->loadPartition(model, placeHandle);
+			partInfo = model->getPartition(placeHandle);
 
 			Logger::debug("Dispatcher::callAllPlaces: Loaded partition[%d]", placeHandle);
 		} 
@@ -146,7 +145,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 		}
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
-		PlacesPartition *pPart = partition->getPlacesPartition(placeHandle);
+		PlacesPartition *pPart = model->getPartition(placeHandle);
 		callAllPlacesKernel<<<pPart->blockDim(), pPart->threadDim()>>>(
 				deviceInfo->getDevPlaces(placeHandle), pPart->size(),
 				functionId, argPtr);
@@ -250,7 +249,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
-	PlacesPartition *p = model->getPartition()->getPlacesPartition(handle); //only for getting blockDim and threadDim
+	PlacesPartition *p = model->getPartition(handle); //only for getting blockDim and threadDim
 
 	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
 	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);
@@ -260,11 +259,10 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 void Dispatcher::unloadDevice(DeviceConfig *device) {
 	Logger::debug("Inside Dispatcher::unloadDevice\n");
-	if (partInfo != NULL) {
-		Partition* p = partInfo;
-		map<int, PlacesPartition*> places = p->getPlacesPartitions();  //place partitions by handle
-		map<int, PlacesPartition*>::iterator itP = places.begin();
-		while (itP != places.end()) {
+    std::map<int, PlacesPartition*> partitions = model -> getAllPlacesPartitions();
+	if (!partitions.empty()) {
+		map<int, PlacesPartition*>::iterator itP = partitions.begin();
+		while (itP != partitions.end()) {
 			refreshPlaces(itP->first);
 		}
 

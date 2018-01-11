@@ -50,9 +50,8 @@ void DeviceConfig::freeDevice() {
 	Logger::debug("Done with deviceConfig freeDevice().");
 }
 
-void DeviceConfig::loadPartition(Partition* partition, int placeHandle) {
-	map<int, PlacesPartition*> parts = partition->getPlacesPartitions();
-	PlacesPartition *pPart = parts[placeHandle];
+void DeviceConfig::loadPartition(DataModel* model, int placeHandle) {
+	PlacesPartition *pPart = model -> getPartition(placeHandle);
 
 	void*& dest = devPlacesMap[placeHandle].devState;
 	void* src = ((Place*) pPart->getPlacePartStart())->getState();

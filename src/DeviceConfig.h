@@ -8,7 +8,7 @@
 #include "cudaUtil.h"
 #include "Logger.h"
 //#include "PlaceState.h"
-#include "Partition.h"
+#include "DataModel.h"
 #include "GlobalConsts.h"
 
 namespace mass {
@@ -21,7 +21,7 @@ class Place;
 struct PlaceArray {
 	Place** devPtr;
 	void *devState;
-	int qty;  //size with ghosts
+	int qty;  //size
 };
 
 /**
@@ -42,7 +42,7 @@ public:
 	void load(void*& destination, const void* source, size_t bytes);
 	void unload(void* destination, void* source, size_t bytes);
 
-	void loadPartition(Partition* partition, int placeHandle);
+	void loadPartition(DataModel *model, int placeHandle);
 
 	/*
 	 * Place Mutators

@@ -7,15 +7,18 @@ namespace mass {
 
 DataModel::DataModel() {
 	Logger::debug("DataModel constructor running\n");
-	partition = new Partition();
 }
 
 DataModel::~DataModel() {
-	delete partition;
 	for (int i = 0; i < placesMap.size(); ++i) {
 		delete placesMap[i];
 	}
 	placesMap.clear();
+
+	for (int i = 0; i < placesPartitionsByHandle.size(); ++i) {
+		delete placesPartitionsByHandle[i];
+	}
+	placesPartitionsByHandle.clear();
 }
 
 void DataModel::addPlacesModel(PlacesModel *places) {
@@ -43,15 +46,23 @@ void DataModel::partitionPlaces(PlacesModel *places) {
 			places->getNumElements(), places->getNumDims(), places->getDims());
 
 	p->setSection(elems);
-	partition->addPlacesPartition(p);
+	placesPartitionsByHandle[p->getHandle()] = p;
 }
 
 PlacesModel* DataModel::getPlacesModel(int handle) {
 	return placesMap[handle];
 }
 
-Partition* DataModel::getPartition() {
-	return partition;
+PlacesPartition* DataModel::getPartition(int handle) {
+	if (placesPartitionsByHandle.count(handle) == 0) {
+		Logger::error("There is no handle %d in placesPartitionsByHandle", handle);
+		throw MassException("Missing handle");
+	}
+	return placesPartitionsByHandle[handle];
+}
+
+std::map<int, PlacesPartition*> DataModel::getAllPlacesPartitions() {
+	return placesPartitionsByHandle;
 }
 
 } // end namespace
