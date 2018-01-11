@@ -1,10 +1,3 @@
-/**
- *  @file Dispatcher.cu
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
 
 #include <sstream>
 #include <algorithm>  // array compare
@@ -123,7 +116,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
 		void *devPtr = deviceInfo->getPlaceState(handle); // gets the state belonging to this partition
 		int qty = p->size();
 		int bytes = stateSize * qty;
-		CATCH(cudaMemcpy(p->getLeftBuffer()->getState(), devPtr, bytes, D2H));
+		CATCH(cudaMemcpy(p->getPlacePartStart()->getState(), devPtr, bytes, D2H));
 
 		Logger::debug("Exiting Dispatcher::refreshPlaces");
 	}
@@ -203,9 +196,11 @@ bool compArr(int* a, int aLen, int *b, int bLen) {
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
 	if (vec == neighborhood) { //no need to update
+		Logger::print("Dispatcher::updateNeighborhood: Skipped the update, as neighborhood is up to date\n");
         return false;
     }
 
+    Logger::print("Dispatcher::updateNeighborhood: Updating the neighborhood as it is new/changed\n");
     neighborhood = vec;
     int nNeighbors = vec->size();
 
@@ -255,7 +250,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
-	PlacesPartition *p = model->getPartition()->getPlacesPartition(handle);
+	PlacesPartition *p = model->getPartition()->getPlacesPartition(handle); //only for getting blockDim and threadDim
 
 	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
 	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);

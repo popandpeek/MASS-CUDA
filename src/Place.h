@@ -1,10 +1,4 @@
-/**
- *  @file Place.h
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
+
 #pragma once
 
 // change either of these numbers to optomize for a particular simulation's needs

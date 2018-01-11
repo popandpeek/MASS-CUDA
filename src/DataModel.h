@@ -1,10 +1,3 @@
-/*
- *  @file DataModel.h
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
 
 #ifndef DATAMODEL_H_
 #define DATAMODEL_H_
@@ -31,7 +24,7 @@ public:
 
 	template<typename P, typename S>
 	PlacesModel* instantiatePlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int qty, int boundary_width);
+			int dimensions, int size[], int qty);
 
 private:
 	void addPlacesModel(PlacesModel *places);
@@ -48,15 +41,15 @@ private:
 
 template<typename P, typename S>
 PlacesModel* DataModel::instantiatePlaces(int handle, void *argument,
-		int argSize, int dimensions, int size[], int qty, int boundary_width) {
+		int argSize, int dimensions, int size[], int qty) {
 	Logger::debug("Entering DataModel::instantiatePlaces\n");
 	if (placesMap.count(handle) > 0) {
-		Logger::debug("placesMap.count(handle) > 0\n");
+		Logger::debug("placesMap.count(handle) > 0\n");  //TODO: replace with warning
 		return placesMap[handle];
 	}
 
 	PlacesModel *p = PlacesModel::createPlaces<P, S>(handle, argument, argSize,
-			dimensions, size, qty, boundary_width);
+			dimensions, size, qty);
 	addPlacesModel(p);
 	return p;
 }

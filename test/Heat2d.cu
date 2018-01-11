@@ -1,7 +1,6 @@
 /*
  *  @file Heat2d.cpp
- *  @author Nate Hart
- *	
+ 	
  *	@section LICENSE
  *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
  */
@@ -173,7 +172,7 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 
 	// initialize places
 	Places *places = Mass::createPlaces<Metal, MetalState>(0, &r,
-			sizeof(double), nDims, placesSize, 0);
+			sizeof(double), nDims, placesSize);
 	Logger::print("Finished Mass::createPlaces\n");
 
 	// create neighborhood

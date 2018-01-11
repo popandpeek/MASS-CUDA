@@ -1,10 +1,4 @@
-/**
- *  @file PlacesPartition.h
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
+
 #ifndef PLACESPARTITION_H_
 #define PLACESPARTITION_H_
 
@@ -79,24 +73,9 @@ public:
 	 */
 
 	/**
-	 * Returns a pointer to the left buffer.
+	 * Returns a pointer to the start of PlacePartition.
 	 */
-	Place *getLeftBuffer();
-
-	/**
-	 * Returns a pointer to the right buffer.
-	 */
-	Place *getRightBuffer();
-
-	/**
-	 * Returns a pointer to the start of the left ghost space.
-	 */
-	Place *getLeftGhost();
-
-	/**
-	 * Returns a pointer to the start of the right ghost space.
-	 */
-	//Place *getRightGhost();
+	Place *getPlacePartStart();
 
 	/**
 	 * Returns the ideal block dimension for this partition. Used for launching
@@ -134,7 +113,7 @@ private:
 	int handle;         // User-defined identifier for this PlacesPartition
 	int rank; // the rank of this partition
 	int numElements; // the number of place elements in this PlacesPartition
-	int Tsize; // TODO remove
+	int Tsize; // TODO: set proper calculation of Place* size
 	dim3 dims[2]; // 0 is blockdim, 1 is threaddim
 };
 

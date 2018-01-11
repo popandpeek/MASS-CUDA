@@ -1,10 +1,3 @@
-/**
- *  @file PlacesPartition.cpp
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
 
 #define THREADS_PER_BLOCK 512
 
@@ -17,12 +10,6 @@
 #include "Logger.h"
 
 namespace mass {
-
-inline void *shiftPtr(void *origin, int qty, int Tsize) {
-	char *retVal = (char*) origin;
-	retVal += Tsize * qty;
-	return retVal;
-}
 
 PlacesPartition::PlacesPartition(int handle, int rank, int numElements,
 		int n, int *dimensions) {
@@ -54,18 +41,9 @@ int PlacesPartition::getHandle() {
 	return handle;
 }
 
-Place *PlacesPartition::getLeftBuffer() {
+Place *PlacesPartition::getPlacePartStart() {
 	return hPtr[0];
 }
-
-Place *PlacesPartition::getRightBuffer() {
-	return hPtr[numElements];
-}
-
-Place *PlacesPartition::getLeftGhost() {
-	return hPtr[0]; // this is where hPtr starts
-}
-
 
 dim3 PlacesPartition::blockDim() {
 	return dims[0];

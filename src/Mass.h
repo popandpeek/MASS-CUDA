@@ -1,10 +1,4 @@
-/**
- *  @file Mass.h
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
+
 #pragma once
 
 #include <iostream>
@@ -50,7 +44,7 @@ public:
 	 */
 	template<typename P, typename S>
 	static Places* createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int boundary_width);
+			int dimensions, int size[]);
 
 
 private:
@@ -61,7 +55,7 @@ private:
 
 template<typename P, typename S>
 Places* Mass::createPlaces(int handle, void *argument, int argSize,
-		int dimensions, int size[], int boundary_width) {
+		int dimensions, int size[]) {
 
 	Logger::debug("Entering Mass::createPlaces\n");
 	// create an API object for this Places collection
@@ -70,7 +64,7 @@ Places* Mass::createPlaces(int handle, void *argument, int argSize,
 
 	// perform actual instantiation of user classes
 	dispatcher->instantiatePlaces<P, S>(handle, argument, argSize, dimensions,
-			size, places->numElements, boundary_width);
+			size, places->numElements);
 	Logger::debug("Exiting Mass::createPlaces\n");
 
 	return places;

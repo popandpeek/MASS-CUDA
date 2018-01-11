@@ -1,9 +1,3 @@
-/**
- * PlaceState.h
- *
- *  Author: Nate Hart
- *  Created on: Nov 18, 2014
- */
 
 #ifndef PLACESTATE_H_
 #define PLACESTATE_H_

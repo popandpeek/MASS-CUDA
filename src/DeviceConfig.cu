@@ -1,10 +1,3 @@
-/**
- *  @file DeviceConfig.cu
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
 
 #include <curand.h>
 
@@ -62,7 +55,7 @@ void DeviceConfig::loadPartition(Partition* partition, int placeHandle) {
 	PlacesPartition *pPart = parts[placeHandle];
 
 	void*& dest = devPlacesMap[placeHandle].devState;
-	void* src = ((Place*) pPart->getLeftGhost())->getState();
+	void* src = ((Place*) pPart->getPlacePartStart())->getState();
 	size_t sz = pPart->getPlaceBytes() * pPart->size();
 	if (NULL == dest) {
 		CATCH(cudaMalloc((void** ) &dest, sz));

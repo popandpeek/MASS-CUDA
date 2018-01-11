@@ -1,10 +1,4 @@
-/**
- *  @file Dispatcher.h
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
+
 #pragma once
 
 #include <cuda_runtime.h>
@@ -92,7 +86,7 @@ public:
 
 	template<typename P, typename S>
 	void instantiatePlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int qty, int boundary_width);
+			int dimensions, int size[], int qty);
 
 private:
 	void unloadDevice(DeviceConfig *device);
@@ -111,12 +105,12 @@ private:
 
 template<typename P, typename S>
 void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
-		int dimensions, int size[], int qty, int boundary_width) {
+		int dimensions, int size[], int qty) {
 	Logger::debug("Inside Dispatcher::instantiatePlaces\n");
 
 	// modify host-side data model
 	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
-			qty, boundary_width);
+			qty);
 
 	Partition *p = model->getPartition();
 

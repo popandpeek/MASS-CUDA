@@ -5,11 +5,9 @@ using namespace std;
 
 namespace mass {
 
-PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty,
-		int boundary_width) {
+PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty) {
 	this->handle = handle;
 	this->numElements = qty;
-	this->boundary_width = boundary_width;
 	this->numDims = dimensions;
 	this->dimensions = size;
 }

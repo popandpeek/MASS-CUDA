@@ -1,10 +1,4 @@
-/*
- *  @file Partition.cpp
- *  @author Nate Hart
- *	
- *	@section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
+
 
 #include "Partition.h"
 #include "Logger.h"

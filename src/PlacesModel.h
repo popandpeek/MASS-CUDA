@@ -1,10 +1,3 @@
-/*
- *  @file PlacesModel.h
- *  @author Nate Hart
- *
- *  @section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
 
 #ifndef PLACESMODEL_H_
 #define PLACESMODEL_H_
@@ -36,12 +29,11 @@ public:
 
 	template<typename P, typename S>
 	static PlacesModel* createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int qty, int boundary_width);
+			int dimensions, int size[], int qty);
 
 private:
 
-	PlacesModel(int handle, int dimensions, int size[], int qty,
-			int boundary_width);
+	PlacesModel(int handle, int dimensions, int size[], int qty);
 
 	// initialized in creatPlaces function
 	Place** places;
@@ -52,16 +44,14 @@ private:
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	unsigned numElements;
-	int boundary_width;
 };
 
 template<typename P, typename S>
 PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
-		int dimensions, int size[], int qty, int boundary_width) {
+		int dimensions, int size[], int qty) {
 
 	// TODO potential gap if state is not instantiated on the GPU as well. Would not use the argument.
-	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty,
-			boundary_width);
+	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
 	S* tmpPtr = new S[qty];
 	p->state = tmpPtr;
 	p->stateBytes = sizeof(S);
