@@ -50,13 +50,14 @@ void DeviceConfig::freeDevice() {
 	Logger::debug("Done with deviceConfig freeDevice().");
 }
 
-void DeviceConfig::loadPartition(DataModel* model, int placeHandle) {
-	PlacesPartition *pPart = model -> getPartition(placeHandle);
+void DeviceConfig::loadPlacesModel(DataModel *model, int placeHandle) {
+	PlacesModel *placesModel = model->getPlacesModel(placeHandle);
 
 	void*& dest = devPlacesMap[placeHandle].devState;
-	void* src = ((Place*) pPart->getPlacePartStart())->getState();
-	size_t sz = pPart->getPlaceBytes() * pPart->size();
-	if (NULL == dest) {
+	void* src = ((Place*) placesModel->getPlaceElements())->getState();
+
+	size_t sz = placesModel->getStateSize() * placesModel->getNumElements();
+	if (dest == NULL) {
 		CATCH(cudaMalloc((void** ) &dest, sz));
 	}
 	CATCH(cudaMemcpy(dest, src, sz, H2D));

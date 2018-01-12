@@ -300,6 +300,7 @@ __global__ void euler(double *dest, double *src, int size, int t, int heat_time,
 }
 
 void Heat2d::runDeviceSim(int size, int max_time, int heat_time, int interval) {
+	Logger::print("Starting MASS CUDA simulation\n");
 	double r = a * dt / (dd * dd);
 
 	// create a space

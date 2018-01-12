@@ -1,6 +1,4 @@
 #include "PlacesModel.h"
-//#include <string>
-
 using namespace std;
 
 namespace mass {
@@ -10,6 +8,7 @@ PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty) {
 	this->numElements = qty;
 	this->numDims = dimensions;
 	this->dimensions = size;
+	setIdealDims();
 }
 
 PlacesModel::~PlacesModel() {
@@ -46,6 +45,25 @@ int* PlacesModel::getDims() {
 
 unsigned PlacesModel::getNumElements() {
 	return numElements;
+}
+
+dim3 PlacesModel::blockDim() {
+	return dims[0];
+}
+
+dim3 PlacesModel::threadDim() {
+	return dims[1];
+}
+
+void PlacesModel::setIdealDims() {
+	int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
+	dim3 blockDim(numBlocks);
+
+	int nThr = (numElements - 1) / numBlocks + 1;
+	dim3 threadDim(nThr);
+
+	dims[0] = blockDim;
+	dims[1] = threadDim;
 }
 
 } // end namespace

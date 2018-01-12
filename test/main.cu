@@ -38,8 +38,8 @@ int main() {
 
 		for (int run = 0; run < nRuns; ++run) {
 			Logger::print("%d,",size[i]);
-			// heat.runHostSim(size[i], max_time, heat_time, interval);
-			heat.runDeviceSim(size[i], max_time, heat_time, interval);
+			heat.runHostSim(size[i], max_time, heat_time, interval);
+			//heat.runDeviceSim(size[i], max_time, heat_time, interval);
 			heat.runMassSim(size[i], max_time, heat_time, interval);
 		}
 	}

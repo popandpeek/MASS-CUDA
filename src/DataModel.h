@@ -7,10 +7,9 @@
 
 #include "PlacesModel.h"
 #include "Partition.h"
- #include "Logger.h"
+#include "Logger.h"
 
 namespace mass {
-//class AgentsModel;
 
 class DataModel {
 
@@ -19,9 +18,7 @@ public:
 	~DataModel();
 
 	PlacesModel* getPlacesModel(int handle);
-
-	PlacesPartition* getPartition(int handle);
-	std::map<int, PlacesPartition*> getAllPlacesPartitions();
+	std::map<int, PlacesModel*> getAllPlacesModels();
 
 	template<typename P, typename S>
 	PlacesModel* instantiatePlaces(int handle, void *argument, int argSize,
@@ -29,11 +26,7 @@ public:
 
 private:
 	void addPlacesModel(PlacesModel *places);
-
-	void partitionPlaces(PlacesModel *places);
-	// Partition* partition;
-	std::map<int, PlacesPartition*> placesPartitionsByHandle;  // handle to partition map. 
-
+	
 	/**
 	 * Maps a places handle to a collection.
 	 */

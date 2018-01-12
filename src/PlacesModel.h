@@ -2,13 +2,14 @@
 #ifndef PLACESMODEL_H_
 #define PLACESMODEL_H_
 
+#define THREADS_PER_BLOCK 512
+
 #include <map>
 
-#include "PlacesPartition.h"
 #include "MassException.h"
+#include "Place.h"
 #include "PlaceState.h"
-#include "PlacesModel.h"
- #include "Logger.h"
+#include "Logger.h"
 
 namespace mass {
 
@@ -27,6 +28,22 @@ public:
 	int* getDims();
 	unsigned getNumElements();
 
+	/**
+	 * Returns the ideal block dimension for this PlacesModel. Used for launching
+	 * kernel functions on this PlacesModel's data.
+	 *
+	 * @return
+	 */
+	dim3 blockDim();
+
+	/**
+	 * Returns the ideal thread dimension for this PlacesModel. Used for launching
+	 * kernel functions on this PlacesModel's data.
+	 *
+	 * @return
+	 */
+	dim3 threadDim();
+
 	template<typename P, typename S>
 	static PlacesModel* createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[], int qty);
@@ -34,6 +51,12 @@ public:
 private:
 
 	PlacesModel(int handle, int dimensions, int size[], int qty);
+
+	/**
+	 * Refreshes the ideal dimensions for kernel launches. This should be called
+	 * only when the PlacesModel is created.
+	 */
+	void setIdealDims();
 
 	// initialized in creatPlaces function
 	Place** places;
@@ -44,6 +67,12 @@ private:
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	unsigned numElements;
+
+	/*
+	 * Dimentions of blocks and threads for GPU
+	 * 0 is blockdim, 1 is threaddim
+	 */
+	dim3 dims[2];
 };
 
 template<typename P, typename S>

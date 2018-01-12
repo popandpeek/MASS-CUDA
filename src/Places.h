@@ -12,7 +12,6 @@ namespace mass {
 // forward declarations
 class Dispatcher;
 class Place;
-class PlacesPartition;
 
 class Places {
 	friend class Mass;

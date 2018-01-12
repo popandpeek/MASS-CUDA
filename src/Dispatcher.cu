@@ -9,7 +9,7 @@
 
 #include "DeviceConfig.h"
 #include "Place.h"
-#include "PlacesPartition.h"
+#include "PlacesModel.h"
 #include "Places.h"
 #include "DataModel.h"
 
@@ -107,35 +107,31 @@ Dispatcher::~Dispatcher() {
 
 // Updates the Places stored on CPU
 Place** Dispatcher::refreshPlaces(int handle) {
-	if (initialized) {
-		Logger::debug("Entering Dispatcher::refreshPlaces");
+    Logger::debug("Entering Dispatcher::refreshPlaces");
+    PlacesModel *placesModel = model->getPlacesModel(handle);
+	
+    if (initialized) {
+		void *devPtr = deviceInfo->getPlaceState(handle);
 
-		int stateSize = model->getPlacesModel(handle)->getStateSize();
-
-		void *devPtr = deviceInfo->getPlaceState(handle); // gets the state belonging to this partition
-		int qty = partInfo->size();
+        int stateSize = placesModel->getStateSize();
+		int qty = placesModel->getNumElements();
 		int bytes = stateSize * qty;
-		CATCH(cudaMemcpy(partInfo->getPlacePartStart()->getState(), devPtr, bytes, D2H));
+		CATCH(cudaMemcpy(((Place*) placesModel->getPlaceElements())->getState(), devPtr, bytes, D2H));
+
 
 		Logger::debug("Exiting Dispatcher::refreshPlaces");
 	}
 
-	return model->getPlacesModel(handle)->getPlaceElements();
+	return placesModel->getPlaceElements();
 }
 
-void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
-		int argSize) {
+void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, int argSize) {
 	if (initialized) {
 		Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", placeHandle, functionId);
 
-		// Partition* partition = model->getPartition();
-
-		if (partInfo == NULL) { // the partition needs to be loaded
-			deviceInfo->loadPartition(model, placeHandle);
-			partInfo = model->getPartition(placeHandle);
-
-			Logger::debug("Dispatcher::callAllPlaces: Loaded partition[%d]", placeHandle);
-		} 
+		// if (partInfo == NULL) { // the partition needs to be loaded
+		// 	deviceInfo->loadPlacesModel(model->getPlacesModel(placeHandle));
+		// } 
 
 		// load any necessary arguments
 		void *argPtr = NULL;
@@ -145,9 +141,9 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument,
 		}
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
-		PlacesPartition *pPart = model->getPartition(placeHandle);
-		callAllPlacesKernel<<<pPart->blockDim(), pPart->threadDim()>>>(
-				deviceInfo->getDevPlaces(placeHandle), pPart->size(),
+		PlacesModel *pModel = model->getPlacesModel(placeHandle);
+		callAllPlacesKernel<<<pModel->blockDim(), pModel->threadDim()>>>(
+				deviceInfo->getDevPlaces(placeHandle), pModel->getNumElements(),
 				functionId, argPtr);
 		CHECK();
 
@@ -249,7 +245,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
-	PlacesPartition *p = model->getPartition(handle); //only for getting blockDim and threadDim
+	PlacesModel *p = model->getPlacesModel(handle); //only for getting blockDim and threadDim
 
 	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
 	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);
@@ -259,15 +255,14 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 void Dispatcher::unloadDevice(DeviceConfig *device) {
 	Logger::debug("Inside Dispatcher::unloadDevice\n");
-    std::map<int, PlacesPartition*> partitions = model -> getAllPlacesPartitions();
-	if (!partitions.empty()) {
-		map<int, PlacesPartition*>::iterator itP = partitions.begin();
-		while (itP != partitions.end()) {
-			refreshPlaces(itP->first);
+    std::map<int, PlacesModel*> placesModels = model -> getAllPlacesModels();
+	if (!placesModels.empty()) {
+		map<int, PlacesModel*>::iterator itP = placesModels.begin();
+		while (itP != placesModels.end()) {
+			refreshPlaces(itP->first); //copy all stuff from GPU to CPU to PlaceState*
 		}
 
 		deviceInfo = NULL;
-		partInfo = NULL;
 	}
 }
 

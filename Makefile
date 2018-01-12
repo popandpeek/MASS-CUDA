@@ -16,11 +16,9 @@ objlib:
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/DeviceConfig.cu -o obj/lib/DeviceConfig.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES -D__STRICT_ANSI__ -c src/Dispatcher.cu -o obj/lib/Dispatcher.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Mass.cu -o obj/lib/Mass.o
-	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Partition.cu -o obj/lib/Partition.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Place.cu -o obj/lib/Place.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Places.cu -o obj/lib/Places.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/PlacesModel.cu -o obj/lib/PlacesModel.o
-	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/PlacesPartition.cu -o obj/lib/PlacesPartition.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/cudaUtil.cu -o obj/lib/cudaUtil.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Logger.cpp -o obj/lib/Logger.o
 	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/MassException.cpp -o obj/lib/MassException.o

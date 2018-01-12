@@ -42,7 +42,7 @@ public:
 	void load(void*& destination, const void* source, size_t bytes);
 	void unload(void* destination, void* source, size_t bytes);
 
-	void loadPartition(DataModel *model, int placeHandle);
+	void loadPlacesModel(DataModel *model, int placeHandle);
 
 	/*
 	 * Place Mutators

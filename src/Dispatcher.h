@@ -92,12 +92,11 @@ private:
 	void unloadDevice(DeviceConfig *device);
 
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
-	//Partition* partInfo; 
-	PlacesPartition* partInfo;
 	DeviceConfig* deviceInfo;
 
 	DataModel *model;
 	bool initialized;
+	bool deviceLoaded;
 
 	std::vector<int*> *neighborhood; /**< The previous vector of neighbors.*/
 
@@ -113,9 +112,10 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
 
-	int objCount = model->getPartition(handle)->size();
+	int objCount = model->getPlacesModel(handle)->getNumElements();
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			objCount);
+	deviceInfo->loadPlacesModel(model, handle);
 }
 
 } // namespace mass
