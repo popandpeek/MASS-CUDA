@@ -41,8 +41,6 @@ public:
 	void load(void*& destination, const void* source, size_t bytes);
 	void unload(void* destination, void* source, size_t bytes);
 
-	void loadPlacesModel(DataModel *model, int placeHandle);
-
 	/*
 	 * Place Mutators
 	 */
@@ -81,7 +79,6 @@ __global__ void instantiatePlacesKernel(Place** places, StateType *state,
 		places[idx] = new PlaceType(&(state[idx]), arg);
 		places[idx]->setIndex(idx);
 		places[idx]->setSize(dims, nDims);
-		printf("instantiatePlacesKernel for idx=%d. places[idx]->getIndex() = %d, arg = %d\n", idx, places[idx]->getIndex(), (int)&arg);
 	}
 }
 
@@ -132,12 +129,10 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
 	int threadDim = (qty - 1) / blockDim + 1;
 	Logger::debug("Launching instantiation kernel");
-	printf("\nLaunching instantiation kernel\n");
 	instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtr, d_state,
 			d_arg, d_dims, dimensions, qty);
 	CHECK();
 	Logger::debug("Finished instantiation kernel");
-	printf("\nFinished instantiation kernel\n");
 	
 	// clean up memory
 	if (NULL != argument) {

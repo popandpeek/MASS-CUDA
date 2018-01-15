@@ -60,6 +60,7 @@ void Heat2d::displayResults(Places *places, int time, int *placesSize) {
 }
 
 void Heat2d::runHostSim(int size, int max_time, int heat_time, int interval) {
+	Logger::print("Starting CPU simulation\n");
 	double r = a * dt / (dd * dd);
 
 	// create a space
@@ -121,9 +122,7 @@ void Heat2d::runHostSim(int size, int max_time, int heat_time, int interval) {
 			for (int y = 1; y < size - 1; y++)
 				z[p2][x][y] = z[p][x][y]
 						+ r * (z[p][x + 1][y] - 2 * z[p][x][y] + z[p][x - 1][y])
-						+ r
-								* (z[p][x][y + 1] - 2 * z[p][x][y]
-										+ z[p][x][y - 1]);
+						+ r * (z[p][x][y + 1] - 2 * z[p][x][y] + z[p][x][y - 1]);
 
 	} // end of simulation
 
@@ -192,24 +191,19 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 
 	int time = 0;
 	for (; time < max_time; time++) {
-
+		
 		if (time < heat_time) {
 			places->callAll(Metal::APPLY_HEAT);
 		}
 
-		Logger::print("After callAll(APPLY_HEAT) at t= %d: \n",time);
 		// display intermediate results
 		if (interval != 0 && (time % interval == 0 || time == max_time - 1)) {
 			displayResults(places, time, placesSize);
 		}
 
 		places->exchangeAll(&neighbors);
-		Logger::print("After exchangeAll() at t= %d: \n",time);
-		displayResults(places, time, placesSize); //delete after debugging!!!
 
 		places->callAll(Metal::EULER_METHOD);
-		Logger::print("After callAll(EULER_METHOD) at t= %d: \n",time);
-		displayResults(places, time, placesSize); //delete after debugging!!!
 	}
 
 	Logger::print("MASS time %d\n",timer.lap());
@@ -300,7 +294,7 @@ __global__ void euler(double *dest, double *src, int size, int t, int heat_time,
 }
 
 void Heat2d::runDeviceSim(int size, int max_time, int heat_time, int interval) {
-	Logger::print("Starting MASS CUDA simulation\n");
+	Logger::print("Starting GPU simulation\n");
 	double r = a * dt / (dd * dd);
 
 	// create a space
@@ -356,7 +350,7 @@ void Heat2d::runDeviceSim(int size, int max_time, int heat_time, int interval) {
 	Logger::print("GPU time: %d\n",time.lap());
 
 	if (size < 80) {
-		CATCH(cudaMemcpy(z, src, nBytes, D2H));
+		CATCH(cudaMemcpy(z, dest, nBytes, D2H));
 		ostringstream ss;
 		ss << "time = " << t << "\n";
 		for (int y = 0; y < size; y++) {

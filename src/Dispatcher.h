@@ -116,8 +116,6 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			objCount);
-	printf("Dispatcher::instantiatePlaces: instantiated model and instantiated deviceInfo\n");
-	deviceInfo->loadPlacesModel(model, handle);
 }
 
 } // namespace mass

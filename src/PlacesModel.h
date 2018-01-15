@@ -83,7 +83,6 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 	// TODO potential gap if state is not instantiated on the GPU as well. Would not use the argument.
 	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
 	S* tmpPtr = new S[qty];
-	printf("PlacesModel::createPlaces: created S*\n");
 	p->state = tmpPtr;
 	p->stateBytes = sizeof(S);
 
@@ -91,7 +90,6 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 	for (int i = 0; i < qty; ++i) {
 		Place *pl = new P((PlaceState*) &(tmpPtr[i]), argument);
 		p->places[i] = pl;
-		printf("PlacesModel::createPlaces: created Place* pointers \n");
 	}
 	return p;
 }

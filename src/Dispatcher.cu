@@ -39,16 +39,16 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
-        int nSkipped = 0;
 
         #pragma unroll
         for (int i = 0; i < nNeighbors_device; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
-                state->neighbors[i - nSkipped] = ptrs[j];
-                state->inMessages[i - nSkipped] = ptrs[j]->getMessage();
+                state->neighbors[i] = ptrs[j];
+                state->inMessages[i] = ptrs[j]->getMessage();
             } else {
-                nSkipped++;
+                state->neighbors[i] = NULL;
+                state->inMessages[i] = NULL;
             }
         }
     }
@@ -118,7 +118,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
         int stateSize = placesModel->getStateSize();
 		int qty = placesModel->getNumElements();
 		int bytes = stateSize * qty;
-		CATCH(cudaMemcpy((placesModel->getPlaceElements()[0])->getState(), devPtr, bytes, D2H));
+		CATCH(cudaMemcpy(placesModel->getStatePtr(), devPtr, bytes, D2H));
 	}
 
     Logger::debug("Exiting Dispatcher::refreshPlaces");

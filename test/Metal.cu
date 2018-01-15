@@ -22,7 +22,6 @@ MASS_FUNCTION Metal::Metal(PlaceState* state, void *argument) :
 	myState->temp[1] = 0.0;
 
 	myState->p = 0;
-	printf("Constructor for Metal. r=%d, p= %d\n", myState->r, myState->p);
 } // end constructor
 
 MASS_FUNCTION Metal::~Metal() {
@@ -59,7 +58,7 @@ MASS_FUNCTION void Metal::callMethod(int functionId, void *argument) {
 	// case EXCHANGE:
 	// 	exchange(argument);
 	case SET_BORDERS:
-		setBorders((myState->p)); //+ 1) % 2);
+		setBorders((myState->p));
 	case EULER_METHOD:
 		eulerMethod();
 		break;
@@ -80,7 +79,6 @@ MASS_FUNCTION void Metal::applyHeat() { // APPLY_HEAT
 		if (x >= (width / 3) && x < (width / 3 * 2))
 			myState->temp[myState->p] = 19.0;
 	}
-	printf("Running applyHeat kernel. width = %d, x = %d, temp after heating = %d\n", width, x, myState->temp[myState->p]);
 } // end applyHeat
 
 MASS_FUNCTION void *Metal::getVals() { //GET_VALS
@@ -93,9 +91,8 @@ MASS_FUNCTION void *Metal::getVals() { //GET_VALS
 
 MASS_FUNCTION void Metal::eulerMethod() { // EULER_METHOD
 	int p = myState->p;
+	int p2 = (p + 1) % 2;
 	if (!isBorderCell()) {
-		int p2 = (p + 1) % 2;
-
 		double north = *((double*) myState->inMessages[0]);
 		double east = *((double*) myState->inMessages[1]);
 		double south = *((double*) myState->inMessages[2]);
@@ -104,10 +101,8 @@ MASS_FUNCTION void Metal::eulerMethod() { // EULER_METHOD
 		double curTemp = myState->temp[p];
 		myState->temp[p2] = curTemp + myState->r * (east - 2 * curTemp + west)
 				+ myState->r * (south - 2 * curTemp + north);
-		//printf("eulerMethod() kernel, thread is not a border cell, neighbors: north=%d, east=%d, south=%d, west=%d. Curent temp = %d, New temp = %d\n", north, east, south, west, curTemp, myState->temp[p2]);
 	} else {
-		//printf("eulerMethod() kernel, thread IS a border cell. Curent temp = %d\n", myState->temp[p]);
-		setBorders (p);
+		setBorders (p2);
 	}
 
 	nextPhase();
@@ -120,13 +115,21 @@ MASS_FUNCTION void Metal::nextPhase() {
 MASS_FUNCTION void Metal::setBorders(int phase) {
 	int x = myState->index;
 	int size = myState->size[0];
-	int idx = 1; // used for top and left borders
+	int idx;
 
-	if (x >= size * size - size) {  // this is a bottom border
-		idx = 0; // use north value
+	if (x<size) { // top border
+		idx = 2; // south neighbor value
+	} 
 
-	} else if (x % size == size - 1) {  // this is a right border
-		idx = 2; // no east, so west is 3rd element
+	if (x >= size * size - size) {  // bottom border
+		idx = 0; // north neighbor value
+
+	}
+	if (x % size == 0) { // left border
+		idx = 1;  // east neighbor value
+	}
+ 	else if (x % size == size - 1) {  // right border
+		idx = 3; // west neighbor value
 	}
 
 	myState->temp[phase] = *((double*) myState->inMessages[idx]);
