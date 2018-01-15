@@ -16,8 +16,7 @@ namespace mass {
 // forward declarations
 class Place;
 
-// TODO: describe what this struct is needed for
-// and what data members mean
+// PlaceArray stores place pointers and state pointers on GPU
 struct PlaceArray {
 	Place** devPtr;
 	void *devState;
@@ -82,6 +81,7 @@ __global__ void instantiatePlacesKernel(Place** places, StateType *state,
 		places[idx] = new PlaceType(&(state[idx]), arg);
 		places[idx]->setIndex(idx);
 		places[idx]->setSize(dims, nDims);
+		printf("instantiatePlacesKernel for idx=%d. places[idx]->getIndex() = %d, arg = %d\n", idx, places[idx]->getIndex(), (int)&arg);
 	}
 }
 
@@ -101,7 +101,7 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 
 	// create places tracking
 	PlaceArray p;
-	p.qty = qty; //size with ghosts
+	p.qty = qty; //size
 
 	// create state array on device
 	S* d_state = NULL;
@@ -132,10 +132,13 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
 	int threadDim = (qty - 1) / blockDim + 1;
 	Logger::debug("Launching instantiation kernel");
-	instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(tmpPlaces, d_state,
+	printf("\nLaunching instantiation kernel\n");
+	instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtr, d_state,
 			d_arg, d_dims, dimensions, qty);
 	CHECK();
-
+	Logger::debug("Finished instantiation kernel");
+	printf("\nFinished instantiation kernel\n");
+	
 	// clean up memory
 	if (NULL != argument) {
 		CATCH(cudaFree(d_arg));
@@ -144,6 +147,7 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 
 	devPlacesMap[handle] = p;
+	Logger::debug("Finished DeviceConfig::instantiatePlaces");
 	return p.devPtr;
 }
 

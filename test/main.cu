@@ -20,12 +20,12 @@ int main() {
 	// int size[nSizes] = { 125, 250, 500, 1000};
 	const int nRuns = 1; // number of times to run each test
 	const int nSizes = 1;
-	int size[nSizes] = {5};
+	int size[nSizes] = {3};
 
 	// int max_time = 3000;
 	// int heat_time = 2700;
-	int max_time = 10;
-	int heat_time = 8;
+	int max_time = 5;
+	int heat_time = 4;
 
 	// int interval = 0;
 	int interval = 1;
@@ -38,7 +38,7 @@ int main() {
 
 		for (int run = 0; run < nRuns; ++run) {
 			Logger::print("%d,",size[i]);
-			heat.runHostSim(size[i], max_time, heat_time, interval);
+			//heat.runHostSim(size[i], max_time, heat_time, interval);
 			//heat.runDeviceSim(size[i], max_time, heat_time, interval);
 			heat.runMassSim(size[i], max_time, heat_time, interval);
 		}

@@ -1,6 +1,7 @@
 
 #include "Place.h"	
 #include "PlaceState.h"
+#include <stdio.h>
 
 namespace mass {
 
@@ -14,6 +15,7 @@ namespace mass {
 	memset(this->state->neighbors, 0, MAX_NEIGHBORS);
 	memset(this->state->inMessages, 0, MAX_NEIGHBORS);
 	memset(this->state->size, 0, MAX_DIMS);
+	printf("Constructor for Place. index=%d\n", this->state->index);
 }
 
 

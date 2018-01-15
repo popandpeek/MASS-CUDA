@@ -22,6 +22,7 @@ MASS_FUNCTION Metal::Metal(PlaceState* state, void *argument) :
 	myState->temp[1] = 0.0;
 
 	myState->p = 0;
+	printf("Constructor for Metal. r=%d, p= %d\n", myState->r, myState->p);
 } // end constructor
 
 MASS_FUNCTION Metal::~Metal() {
@@ -79,6 +80,7 @@ MASS_FUNCTION void Metal::applyHeat() { // APPLY_HEAT
 		if (x >= (width / 3) && x < (width / 3 * 2))
 			myState->temp[myState->p] = 19.0;
 	}
+	printf("Running applyHeat kernel. width = %d, x = %d, temp after heating = %d\n", width, x, myState->temp[myState->p]);
 } // end applyHeat
 
 MASS_FUNCTION void *Metal::getVals() { //GET_VALS

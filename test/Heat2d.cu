@@ -171,7 +171,7 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 	double r = a * dt / (dd * dd);
 
 	// initialize places
-	Places *places = Mass::createPlaces<Metal, MetalState>(0, &r,
+	Places *places = Mass::createPlaces<Metal, MetalState>(0 /*handle*/, &r,
 			sizeof(double), nDims, placesSize);
 	Logger::print("Finished Mass::createPlaces\n");
 
@@ -197,19 +197,19 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 			places->callAll(Metal::APPLY_HEAT);
 		}
 
-		//Logger::print("After callAll(APPLY_HEAT) at t= %d: \n",time);
+		Logger::print("After callAll(APPLY_HEAT) at t= %d: \n",time);
 		// display intermediate results
 		if (interval != 0 && (time % interval == 0 || time == max_time - 1)) {
 			displayResults(places, time, placesSize);
 		}
 
 		places->exchangeAll(&neighbors);
-		//Logger::print("After exchangeAll() at t= %d: \n",time);
-		//displayResults(places, time, placesSize); //delete after debugging!!!
+		Logger::print("After exchangeAll() at t= %d: \n",time);
+		displayResults(places, time, placesSize); //delete after debugging!!!
 
 		places->callAll(Metal::EULER_METHOD);
-		//Logger::print("After callAll(EULER_METHOD) at t= %d: \n",time);
-		//displayResults(places, time, placesSize); //delete after debugging!!!
+		Logger::print("After callAll(EULER_METHOD) at t= %d: \n",time);
+		displayResults(places, time, placesSize); //delete after debugging!!!
 	}
 
 	Logger::print("MASS time %d\n",timer.lap());

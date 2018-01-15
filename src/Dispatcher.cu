@@ -40,6 +40,8 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
         int nSkipped = 0;
+
+        #pragma unroll
         for (int i = 0; i < nNeighbors_device; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
@@ -116,22 +118,16 @@ Place** Dispatcher::refreshPlaces(int handle) {
         int stateSize = placesModel->getStateSize();
 		int qty = placesModel->getNumElements();
 		int bytes = stateSize * qty;
-		CATCH(cudaMemcpy(((Place*) placesModel->getPlaceElements())->getState(), devPtr, bytes, D2H));
-
-
-		Logger::debug("Exiting Dispatcher::refreshPlaces");
+		CATCH(cudaMemcpy((placesModel->getPlaceElements()[0])->getState(), devPtr, bytes, D2H));
 	}
 
+    Logger::debug("Exiting Dispatcher::refreshPlaces");
 	return placesModel->getPlaceElements();
 }
 
 void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, int argSize) {
 	if (initialized) {
 		Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", placeHandle, functionId);
-
-		// if (partInfo == NULL) { // the partition needs to be loaded
-		// 	deviceInfo->loadPlacesModel(model->getPlacesModel(placeHandle));
-		// } 
 
 		// load any necessary arguments
 		void *argPtr = NULL;
@@ -191,11 +187,11 @@ bool compArr(int* a, int aLen, int *b, int bLen) {
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
 	if (vec == neighborhood) { //no need to update
-		Logger::print("Dispatcher::updateNeighborhood: Skipped the update, as neighborhood is up to date\n");
+		Logger::debug("Dispatcher::updateNeighborhood: Skipped the update, as neighborhood is up to date\n");
         return false;
     }
 
-    Logger::print("Dispatcher::updateNeighborhood: Updating the neighborhood as it is new/changed\n");
+    Logger::debug("Dispatcher::updateNeighborhood: Updating the neighborhood as it is new/changed\n");
     neighborhood = vec;
     int nNeighbors = vec->size();
 
@@ -241,11 +237,11 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 
 void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) {
 	Logger::debug("Inside Dispatcher::exchangeAllPlaces");
-	updateNeighborhood(handle, destinations);
+	updateNeighborhood(handle, destinations);  //executed only when exchangeAllPlaces called for the first time or destinations vector changes
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
-	PlacesModel *p = model->getPlacesModel(handle); //only for getting blockDim and threadDim
+	PlacesModel *p = model->getPlacesModel(handle);
 
 	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
 	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);

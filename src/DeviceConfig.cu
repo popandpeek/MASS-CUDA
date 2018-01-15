@@ -51,17 +51,20 @@ void DeviceConfig::freeDevice() {
 }
 
 void DeviceConfig::loadPlacesModel(DataModel *model, int placeHandle) {
+	Logger::debug("Entering DeviceConfig::loadPlacesModel");
 	PlacesModel *placesModel = model->getPlacesModel(placeHandle);
 
-	void*& dest = devPlacesMap[placeHandle].devState;
-	void* src = ((Place*) placesModel->getPlaceElements())->getState();
+	// PlaceState objects
+	void* dest = devPlacesMap[placeHandle].devState;
+	void* src = (placesModel->getPlaceElements()[0])->getState();
 
 	size_t sz = placesModel->getStateSize() * placesModel->getNumElements();
 	if (dest == NULL) {
-		CATCH(cudaMalloc((void** ) &dest, sz));
+		throw MassException("DeviceConfig::loadPlacesModel called before allocating memory on GPU");
 	}
 	CATCH(cudaMemcpy(dest, src, sz, H2D));
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	Logger::debug("Finishing DeviceConfig::loadPlacesModel");
 }
 
 void DeviceConfig::load(void*& destination, const void* source, size_t bytes) {
