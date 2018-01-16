@@ -155,7 +155,7 @@ void Heat2d::runHostSim(int size, int max_time, int heat_time, int interval) {
 }
 
 void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
-	Logger::print("Starting MASS CUDA simulation\n");
+	Logger::debug("Starting MASS CUDA simulation\n");
 
 	string *arguments = NULL;
 	int nDims = 2;
@@ -163,7 +163,7 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 
 	// start a process at each computing node
 	Mass::init(arguments);
-	Logger::print("Finished Mass::init\n");
+	Logger::debug("Finished Mass::init\n");
 
 	// initialization parameters
 	double r = a * dt / (dd * dd);
@@ -171,7 +171,7 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 	// initialize places
 	Places *places = Mass::createPlaces<Metal, MetalState>(0 /*handle*/, &r,
 			sizeof(double), nDims, placesSize);
-	Logger::print("Finished Mass::createPlaces\n");
+	Logger::debug("Finished Mass::createPlaces\n");
 
 	// create neighborhood
 	vector<int*> neighbors;
