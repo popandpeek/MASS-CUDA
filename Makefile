@@ -1,4 +1,4 @@
-all: dirs app
+all: dirs app test
 
 dirs:
 	mkdir -p obj/lib
@@ -7,8 +7,10 @@ dirs:
 	mkdir -p lib
 
 app: objlib objtest
-	nvcc -arch=sm_20 -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/*.o lib/mass_cuda.a -o bin/app
-	#chmod +x bin/app
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test/main.o lib/mass_cuda.a -o bin/app
+
+test: objlib objtest
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test/test.o lib/mass_cuda.a -o bin/test
 
 objlib:
 	# Flag -c only compiles files but not links them
@@ -32,6 +34,7 @@ objtest:
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/Metal.cu -o obj/test/Metal.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/MetalState.cu -o obj/test/MetalState.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/main.cu -o obj/test/main.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/test.cu -o obj/test/test.o
 
 clean:
 	rm -rf obj

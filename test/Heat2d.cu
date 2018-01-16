@@ -13,7 +13,6 @@
 #include <vector>
 
 #include "../src/Mass.h"
-#include "../src/Places.h"
 #include "../src/Logger.h"
 #include "Metal.h"
 #include "Timer.h"
@@ -191,7 +190,7 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 
 	int time = 0;
 	for (; time < max_time; time++) {
-		
+
 		if (time < heat_time) {
 			places->callAll(Metal::APPLY_HEAT);
 		}
