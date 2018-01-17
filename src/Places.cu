@@ -53,6 +53,9 @@ void Places::exchangeAll(std::vector<int*> *destinations) {
 	dispatcher->exchangeAllPlaces(handle, destinations);
 }
 
+void Places::exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize) {
+	dispatcher->exchangeAllPlaces(handle, destinations, functionId, argument, argSize);
+}
 
 Place** Places::getElements() {
 	// TODO can I avoid refresh every time?

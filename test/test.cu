@@ -12,7 +12,7 @@
 using namespace std;
 using namespace mass;
 
-void checkResults(Places *places, int time, int *placesSize) {
+bool checkResults(Places *places, int time, int *placesSize) {
     bool correctResult = true;
     ostringstream ss;
     
@@ -55,7 +55,7 @@ void checkResults(Places *places, int time, int *placesSize) {
     if (!correctResult) {
         throw MassException("Incorrect simulation results: \n" + ss.str());
     } else {
-        Logger::print("Intergation test successful!\n");
+        return true;
     }
 }
 
@@ -101,7 +101,56 @@ void runMassSimTest(int size, int max_time, int heat_time) {
         places->callAll(Metal::EULER_METHOD);
     }
 
-    checkResults(places, time, placesSize);
+    if (checkResults(places, time, placesSize)) {
+        Logger::print("Intergation test successful!\n");
+    }
+    Mass::finish();
+}
+
+void runMassSimTestImproved(int size, int max_time, int heat_time) {
+
+    string *arguments = NULL;
+    int nDims = 2;
+    int placesSize[] = { size, size };
+
+    Mass::init(arguments);
+
+    // initialization parameters
+    double a = 1.0;  // heat speed
+    double dt = 1.0; // time quantum
+    double dd = 2.0; // change in system
+    double r = a * dt / (dd * dd);
+
+    // initialize places
+    Places *places = Mass::createPlaces<Metal, MetalState>(0 /*handle*/, &r,
+            sizeof(double), nDims, placesSize);
+
+    // create neighborhood
+    vector<int*> neighbors;
+    int north[2] = { 0, 1 };
+    neighbors.push_back(north);
+    int east[2] = { 1, 0 };
+    neighbors.push_back(east);
+    int south[2] = { 0, -1 };
+    neighbors.push_back(south);
+    int west[2] = { -1, 0 };
+    neighbors.push_back(west);
+
+    // start a timer
+    Timer timer;
+    timer.start();
+
+    int time = 0;
+    for (; time < max_time; time++) {
+        if (time < heat_time) {
+            places->callAll(Metal::APPLY_HEAT);
+        }
+        places->exchangeAll(&neighbors, Metal::EULER_METHOD, NULL /*argument*/, 0 /*argSize*/);
+    }
+
+    if (checkResults(places, time, placesSize)) {
+        Logger::print("Intergation test for improved library successful!\n");
+    }
     Mass::finish();
 }
 
@@ -115,6 +164,7 @@ int main() {
     Logger::print("Running intergation test using Heat2D program\n");
 
     runMassSimTest(size, max_time, heat_time);
+    runMassSimTestImproved(size, max_time, heat_time);
 
     return 0;
 }

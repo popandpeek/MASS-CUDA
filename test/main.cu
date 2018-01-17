@@ -23,6 +23,14 @@ int main() {
 	int heat_time = 2700;
 
 	int interval = 0;
+
+	// const int nRuns = 1; // number of times to run each test
+	// const int nSizes = 1;
+	// int size[nSizes] = { 10};
+	// int max_time = 10;
+	// int heat_time = 8;
+	// int interval = 1;
+
 	Logger::print("Size,CPU,GPU,MASS\n");
 	Heat2d heat;
 	for (int i = 0; i < nSizes; ++i) {
