@@ -97,6 +97,8 @@ public:
 	 */
 	void exchangeAll(std::vector<int*> *destinations);
 
+	void exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize);
+
 	/**
 	 *  Returns an array of pointers to the Place elements contained in this
 	 *  Places object. This is an expensive operation since it requires memory

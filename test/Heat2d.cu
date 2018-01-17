@@ -200,9 +200,7 @@ void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 			displayResults(places, time, placesSize);
 		}
 
-		places->exchangeAll(&neighbors);
-
-		places->callAll(Metal::EULER_METHOD);
+		places->exchangeAll(&neighbors, Metal::EULER_METHOD, NULL /*argument*/, 0 /*argSize*/);
 	}
 
 	Logger::print("MASS time %d\n",timer.lap());

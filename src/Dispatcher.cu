@@ -54,6 +54,29 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
     }
 }
 
+__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
+        void *argPtr) {
+    int idx = getGlobalIdx_1D_1D();
+
+    if (idx < nptrs) {
+        PlaceState *state = ptrs[idx]->getState();
+        
+        #pragma unroll
+        for (int i = 0; i < nNeighbors_device; ++i) {
+            int j = idx + offsets_device[i];
+            if (j >= 0 && j < nptrs) {
+                state->neighbors[i] = ptrs[j];
+                state->inMessages[i] = ptrs[j]->getMessage();
+            } else {
+                state->neighbors[i] = NULL;
+                state->inMessages[i] = NULL;
+            }
+        }
+
+        ptrs[idx]->callMethod(functionId, argPtr);
+    }
+}
+
 Dispatcher::Dispatcher() {
 	model = NULL;
 	initialized = false;
@@ -133,7 +156,6 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 		void *argPtr = NULL;
 		if (argument != NULL) {
 			deviceInfo->load(argPtr, argument, argSize);
-			Logger::debug("Dispatcher::callAllPlaces: Loaded device\n");
 		}
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
@@ -186,12 +208,7 @@ bool compArr(int* a, int aLen, int *b, int bLen) {
 
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
-	if (vec == neighborhood) { //no need to update
-		Logger::debug("Dispatcher::updateNeighborhood: Skipped the update, as neighborhood is up to date\n");
-        return false;
-    }
 
-    Logger::debug("Dispatcher::updateNeighborhood: Updating the neighborhood as it is new/changed\n");
     neighborhood = vec;
     int nNeighbors = vec->size();
 
@@ -237,7 +254,10 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 
 void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) {
 	Logger::debug("Inside Dispatcher::exchangeAllPlaces");
-	updateNeighborhood(handle, destinations);  //executed only when exchangeAllPlaces called for the first time or destinations vector changes
+	
+    if (destinations != neighborhood) {
+        updateNeighborhood(handle, destinations);
+    }
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
@@ -247,6 +267,29 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);
 	CHECK();
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
+}
+
+/* Collects data from neighbors and executes the 
+ * specified functon on each of the places
+ */
+void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, int functionId, 
+        void *argument, int argSize) {
+    if (destinations != neighborhood) {
+        updateNeighborhood(handle, destinations);
+    }
+
+    // load any necessary arguments
+    void *argPtr = NULL;
+    if (argument != NULL) {
+        deviceInfo->load(argPtr, argument, argSize);
+    }
+
+    Place** ptrs = deviceInfo->getDevPlaces(handle);
+    int nptrs = deviceInfo->countDevPlaces(handle);
+    PlacesModel *p = model->getPlacesModel(handle);
+
+    setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, functionId, argPtr);
+    CHECK();
 }
 
 void Dispatcher::unloadDevice(DeviceConfig *device) {

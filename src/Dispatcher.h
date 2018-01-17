@@ -82,6 +82,9 @@ public:
 	 *    int west[2] = {-1, 0}; destinations.push_back( west );
 	 */
 	void exchangeAllPlaces(int placeHandle, std::vector<int*> *destinations);
+	
+	void exchangeAllPlaces(int handle, std::vector<int*> *destinations, int functionId, 
+		void *argument, int argSize);
 
 
 	template<typename P, typename S>
