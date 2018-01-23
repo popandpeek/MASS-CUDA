@@ -69,6 +69,8 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 			sizeof(double), nDims, placesSize);
 	Logger::debug("Finished Mass::createPlaces\n");
 
+	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
+
 	// // create neighborhood
 	// vector<int*> neighbors;
 	// int north[2] = { 0, 1 };
@@ -88,7 +90,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	for (; time < max_time; time++) {
 
 	// 	if (time < heat_time) {
-	// 		places->callAll(Metal::APPLY_HEAT);
+	// 		places->callAll(SugarPlace::APPLY_HEAT);
 	// 	}
 
 	// 	// display intermediate results
@@ -96,7 +98,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	// 		displaySugar(places, time, placesSize);
 	// 	}
 
-	// 	places->exchangeAll(&neighbors, Metal::EULER_METHOD, NULL /*argument*/, 0 /*argSize*/);
+	// 	places->exchangeAll(&neighbors, SugarPlace::EULER_METHOD, NULL /*argument*/, 0 /*argSize*/);
 	}
 
 	Logger::print("MASS time %d\n",timer.lap());

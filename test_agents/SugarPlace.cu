@@ -31,7 +31,6 @@ MASS_FUNCTION SugarPlace::SugarPlace(PlaceState* state, void *argument) :
 }
 
 MASS_FUNCTION void SugarPlace::setSugar() {
-	printf("Inside setSugar\n");
 	int mtCoord[2];
     int size = myState->size[0];
 
@@ -46,7 +45,6 @@ MASS_FUNCTION void SugarPlace::setSugar() {
 }
 
 MASS_FUNCTION int SugarPlace::initSugarAmount(int idx, int size, int mtPeakX, int mtPeakY, int maxMtSug) {
-	printf("Inside initSugarAmount\n");
     int x_coord = idx % size;
     int y_coord = idx / size;  //division by 0
     
