@@ -91,6 +91,7 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 		Place *pl = new P((PlaceState*) &(tmpPtr[i]), argument);
 		p->places[i] = pl;
 	}
+	Logger::debug("Finished PlacesModel::createPlaces");
 	return p;
 }
 

@@ -114,11 +114,9 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	// modify host-side data model
 	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
-
-	int objCount = model->getPlacesModel(handle)->getNumElements();
 	
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
-			objCount);
+			qty);
 }
 
 } // namespace mass
