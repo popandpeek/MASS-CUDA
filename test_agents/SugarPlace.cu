@@ -61,6 +61,76 @@ MASS_FUNCTION int SugarPlace::initSugarAmount(int idx, int size, int mtPeakX, in
         return 0;
 }
 
+MASS_FUNCTION void SugarPlace::incSugarAndPollution() {
+    if ( myState->curSugar < myState->maxSugar )
+    {
+        myState->curSugar++;
+    }
+    myState->pollution += 1.0;
+}
+
+// Calculates average pollution between 4 neighbors
+MASS_FUNCTION void SugarPlace::avePollutions() { 
+    
+    int idx = myState -> index;
+    int size = myState -> size[0];
+
+    double top, right, bottom, left;
+
+    if (idx - size >= 0) { //top
+    	if (myState->inMessages[0] == NULL) {
+    		printf("top neighbor is NULL !!!!!!!!!!!!!!! idx = %d\n", idx);
+    	}
+    	top = *((double*) myState->inMessages[0]);
+    } else {
+    	top = 0.0;
+    }
+	
+	if ((idx +1) % size != 0) { //right
+    	if (myState->inMessages[1] == NULL) {
+    		printf("right neighbor is NULL !!!!!!!!!!!!!!!idx = %d\n", idx);
+    	}
+    	right = *((double*) myState->inMessages[1]);
+    } else {
+    	right = 0.0;
+    }
+
+    if (idx + size < size*size) { //bottom
+    	if (myState->inMessages[2] == NULL) {
+    		printf("bottom neighbor is NULL !!!!!!!!!!!!!!!idx = %d\n", idx);
+    	}
+    	bottom = *((double*) myState->inMessages[2]);
+    } else {
+    	bottom = 0.0;
+    }
+
+    if (idx % size != 0) { //left
+    	if (myState->inMessages[3] == NULL) {
+    		printf("left neighbor is NULL !!!!!!!!!!!!!!!idx = %d\n", idx);
+    	}
+    	left = *((double*) myState->inMessages[3]);
+    } else {
+    	left = 0.0;
+    }
+
+    // idx + size < size*size ? top = *((double*) myState->inMessagesinMessages[0]) : 0.0;
+    // idx - size >= 0 ? bottom = *((double*) myState->inMessages[2]) : 0.0;
+    // (idx +1) % size != 0 ? right = *((double*) myState->inMessages[1]) : 0.0;
+    // (idx - 1) % size != size-2 ? left = *((double*) myState->inMessages[3]) : 0.0;
+
+    // printf("idx = [%d], top = %f, bottom = %f, left = %f, right = %f\n", idx, top, bottom, left, right);
+    // printf("average pollution for idx[%d]: %f\n", idx, ( top + bottom + left + right ) / 4.0);
+
+    myState->avePollution = ( top + bottom + left + right ) / 4.0;
+}
+
+MASS_FUNCTION void SugarPlace::updatePollutionWithAverage() {
+	//printf("Inside updatePollutionWithAverage() for idx = %d. old pollution = %f, new pollution = %f\n", myState -> index, myState->pollution, myState->avePollution);
+    myState->pollution = myState->avePollution;
+    myState->avePollution = 0.0;
+}
+
+
 MASS_FUNCTION SugarPlace::~SugarPlace() {
 	// nothing to delete
 }
@@ -68,8 +138,12 @@ MASS_FUNCTION SugarPlace::~SugarPlace() {
 /**
  *  Gets a pointer to this place's out message.
  */
- MASS_FUNCTION void *SugarPlace::getMessage() {
-	return &(myState->curSugar);
+MASS_FUNCTION void *SugarPlace::getMessage() {
+	return &(myState->pollution);
+}
+
+MASS_FUNCTION int SugarPlace::getCurSugar() {
+	return myState->curSugar;
 }
 
 MASS_FUNCTION void SugarPlace::callMethod(int functionId, void *argument) {
@@ -77,19 +151,15 @@ MASS_FUNCTION void SugarPlace::callMethod(int functionId, void *argument) {
 		case SET_SUGAR:
 			setSugar();
 			break;
-	// case APPLY_HEAT:
-	// 	applyHeat();
-	// 	break;
-	// case GET_VALS:
-	// 	getVals();
-	// case SET_BORDERS:
-	// 	setBorders((myState->p));
-	// case EULER_METHOD:
-	// 	eulerMethod();
-	// 	break;
-	// case NEXT_PHASE:
-	// 	nextPhase();
-	// 	break;
+		case INC_SUGAR_AND_POLLUTION:
+			incSugarAndPollution();
+			break;
+		case AVE_POLLUTIONS:
+			avePollutions();
+			break;
+		case UPDATE_POLLUTION_WITH_AVERAGE:
+			updatePollutionWithAverage();
+			break;
 		default:
 			break;
 	}

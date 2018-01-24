@@ -66,10 +66,12 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
-                state->inMessages[i] = ptrs[j]->getMessage();
+                state->inMessages[i] = ptrs[j]->getMessage();   
+                //printf("inside setNeighborPlacesKernel. idx = %d, i=%d, j=%d. setting value\n", idx, i, j);
             } else {
                 state->neighbors[i] = NULL;
                 state->inMessages[i] = NULL;
+                //printf("inside setNeighborPlacesKernel. idx = %d, i=%d, j=%d. setting NULL\n", idx, i, j);
             }
         }
 
@@ -274,6 +276,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
  */
 void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, int functionId, 
         void *argument, int argSize) {
+    Logger::debug("Inside Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
     if (destinations != neighborhood) {
         updateNeighborhood(handle, destinations);
     }
@@ -290,6 +293,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
 
     setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, functionId, argPtr);
     CHECK();
+    Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 }
 
 void Dispatcher::unloadDevice(DeviceConfig *device) {

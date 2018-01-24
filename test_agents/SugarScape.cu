@@ -37,7 +37,7 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 				Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
 						row, col, rmi);
 			}
-			int curSugar = *((int*) retVals[rmi]->getMessage());
+			int curSugar = ((SugarPlace*)retVals[rmi])->getCurSugar();
 			ss << curSugar << " ";
 		}
 
@@ -71,40 +71,43 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
 
-	// // create neighborhood
-	// vector<int*> neighbors;
-	// int north[2] = { 0, 1 };
-	// neighbors.push_back(north);
-	// int east[2] = { 1, 0 };
-	// neighbors.push_back(east);
-	// int south[2] = { 0, -1 };
-	// neighbors.push_back(south);
-	// int west[2] = { -1, 0 };
-	// neighbors.push_back(west);
+	// create neighborhood
+	vector<int*> neighbors;
+	int top[2] = { 0, 1 };
+	neighbors.push_back(top);
+	int right[2] = { 1, 0 };
+	neighbors.push_back(right);
+	int bottom[2] = { 0, -1 };
+	neighbors.push_back(bottom);
+	int left[2] = { -1, 0 };
+	neighbors.push_back(left);
 
 	// start a timer
 	Timer timer;
 	timer.start();
 
-	int time = 0;
-	for (; time < max_time; time++) {
+	int t = 0;
+	for (; t < max_time; t++) {
 
-	// 	if (time < heat_time) {
-	// 		places->callAll(SugarPlace::APPLY_HEAT);
-	// 	}
+		places->callAll(SugarPlace::INC_SUGAR_AND_POLLUTION);
 
-	// 	// display intermediate results
-	// 	if (interval != 0 && (time % interval == 0 || time == max_time - 1)) {
-	// 		displaySugar(places, time, placesSize);
-	// 	}
+		displaySugar(places, t, placesSize); //DELETE AFTER DEBUGGING
 
-	// 	places->exchangeAll(&neighbors, SugarPlace::EULER_METHOD, NULL /*argument*/, 0 /*argSize*/);
+		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
+		displaySugar(places, t, placesSize); //DELETE AFTER DEBUGGING
+		
+		places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
+
+		// display intermediate results
+		if (interval != 0 && (t % interval == 0 || t == max_time - 1)) {
+			displaySugar(places, t, placesSize);
+		}
 	}
 
 	Logger::print("MASS time %d\n",timer.lap());
 
 	if (placesSize[0] < 80) {
-		displaySugar(places, time, placesSize);
+		displaySugar(places, t, placesSize);
 	}
 	// terminate the processes
 	Mass::finish();
