@@ -87,9 +87,16 @@ public:
 		void *argument, int argSize);
 
 
+	Agent** refreshAgents(int agentHandle);
+
+
 	template<typename P, typename S>
 	void instantiatePlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[], int qty);
+
+	template<typename AgentType, typename AgentStateType>
+	void instantiateAgents (int handle, void *argument, 
+		int argSize, int nAgents);
 
 private:
 	void unloadDevice(DeviceConfig *device);
@@ -115,8 +122,25 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
 	
+	//modify GPU data model
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
+}
+
+template<typename AgentType, typename AgentStateType>
+void Dispatcher::instantiateAgents (int handle, void *argument, 
+		int argSize, int nAgents) {
+
+	Logger::debug("Inside Dispatcher::instantiateAgents\n");
+
+	// modify host-side data model
+	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+		argSize, nAgents);
+
+	//modify GPU data model
+	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+		argSize, nAgents);
+
 }
 
 } // namespace mass

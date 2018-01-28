@@ -10,6 +10,7 @@ namespace mass {
 // static initialization
 Dispatcher *Mass::dispatcher = new Dispatcher();
 map<int, Places*> Mass::placesMap;
+map<int, Agents*> Mass::agentsMap;
 
 void Mass::init(string args[]) {
 	Logger::debug("Initializing Mass");

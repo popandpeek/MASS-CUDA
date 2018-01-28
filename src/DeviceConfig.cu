@@ -28,6 +28,7 @@ DeviceConfig::DeviceConfig(int device) :
 	CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, allMem * 3 / 4));
 	d_glob = NULL;
 	devPlacesMap = map<int, PlaceArray>{};
+	devAgentsMap = map<int, AgentArray>{};
 }
 
 DeviceConfig::~DeviceConfig() {

@@ -8,11 +8,13 @@
 
 #include "Dispatcher.h"
 #include "Places.h"
+#include "Agents.h"
 
 namespace mass {
 
 class Mass {
 	friend class Places;
+	friend class Agents;
 
 public:
 	/**
@@ -46,10 +48,18 @@ public:
 	static Places* createPlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[]);
 
+	/**
+	 * Creates a Places instance with the provided parameters.
+	 */
+	template<typename AgentType, typename AgentStateType>
+	static Agents* createAgents(int handle, void *argument, int argSize,
+			int nAgents, int placesHandle);
+
 
 private:
 
 	static std::map<int, Places*> placesMap;
+	static std::map<int, Agents*> agentsMap;
 	static Dispatcher *dispatcher; /**< The object that handles communication with the GPU(s). */
 };
 
@@ -68,6 +78,27 @@ Places* Mass::createPlaces(int handle, void *argument, int argSize,
 	Logger::debug("Exiting Mass::createPlaces\n");
 
 	return places;
+}
+
+template<typename AgentType, typename AgentStateType>
+Agents* Mass::createAgents(int handle, void *argument, int argSize,
+		int nAgents, int placesHandle) {
+
+	Logger::debug("Entering Mass::createAgents\n");
+
+	//TODO: create a map of agents on the Places grid. Use random number generation on the CPU and then copy to GPU.
+
+	// create an API object for this Agents collection
+	Agents *agents = new Agents(handle, nAgents, dispatcher);
+	agentsMap[handle] = agents;
+
+	// perform actual instantiation of user classes 
+	dispatcher->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+		argSize, nAgents);
+
+	Logger::debug("Exiting Mass::createAgents\n");
+
+	return agents;
 }
 
 

@@ -9,6 +9,7 @@
 #include "../src/Mass.h"
 #include "../src/Logger.h"
 #include "SugarPlace.h"
+#include "Ant.h"
 #include "Timer.h"
 
 using namespace std;
@@ -47,6 +48,10 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 	Logger::print(ss.str());
 }
 
+void SugarScape::displayAgents(Agents* agents, int time) {
+	//TODO: implement
+}
+
 // void SugarScape::runHostSim(int size, int max_time, int interval) {
 	
 // }
@@ -61,15 +66,20 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	// start a process at each computing node
 	Mass::init(arguments);
 
-	// initialization parameters
-	// int nAgents = size*size / 5;
+	//initialization parameters
+	int nAgents = size*size / 5;
 
 	// initialize places
-	Places *places = Mass::createPlaces<SugarPlace, SugarPlaceState>(0 /*handle*/, NULL,
+	Places *places = Mass::createPlaces<SugarPlace, SugarPlaceState>(0 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nDims, placesSize);
 	Logger::debug("Finished Mass::createPlaces\n");
 
 	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
+
+	//initialize agents
+
+	Agents *agents = Mass::createAgents<Ant, AntState> (1 /*handle*/, NULL /*arguments*/,
+			sizeof(double), nAgents, 0 /*placesHandle*/);
 
 	// create neighborhood
 	vector<int*> neighbors;
@@ -95,12 +105,13 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
 		displaySugar(places, t, placesSize); //DELETE AFTER DEBUGGING
-		
+
 		places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
 
 		// display intermediate results
 		if (interval != 0 && (t % interval == 0 || t == max_time - 1)) {
 			displaySugar(places, t, placesSize);
+			displayAgents(agents, t);
 		}
 	}
 
@@ -108,6 +119,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	if (placesSize[0] < 80) {
 		displaySugar(places, t, placesSize);
+		displayAgents(agents, t);
 	}
 	// terminate the processes
 	Mass::finish();

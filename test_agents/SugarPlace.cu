@@ -1,10 +1,3 @@
-/*
- *  @file Metal.cpp
- 	
- *	@section LICENSE
- *  This is a file for use in Nate Hart's Thesis for the UW Bothell MSCSSE. All rights reserved.
- */
-
 #include <ctime> // clock_t,
 #include <stdio.h> //remove after debugging
 #include "SugarPlace.h"

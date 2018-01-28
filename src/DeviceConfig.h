@@ -15,10 +15,18 @@ namespace mass {
 
 // forward declarations
 class Place;
+class Agent;
 
 // PlaceArray stores place pointers and state pointers on GPU
 struct PlaceArray {
 	Place** devPtr;
+	void *devState;
+	int qty;  //size
+};
+
+// PlaceArray stores place pointers and state pointers on GPU
+struct AgentArray {
+	Agent** devPtr;
 	void *devState;
 	int qty;  //size
 };
@@ -59,9 +67,14 @@ public:
 	Place** instantiatePlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[], int qty);
 
+	template<typename AgentType, typename AgentStateType>
+	Agent** instantiateAgents (int handle, void *argument, 
+		int argSize, int nAgents);
+
 private:
 	int deviceNum;
 	std::map<int, PlaceArray> devPlacesMap;
+	std::map<int, AgentArray> devAgentsMap;
 	GlobalConsts glob;
 	GlobalConsts *d_glob;
 	size_t freeMem;
@@ -144,6 +157,72 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	devPlacesMap[handle] = p;
 	Logger::debug("Finished DeviceConfig::instantiatePlaces");
 	return p.devPtr;
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
+		void *arg, int qty) {
+	unsigned idx = getGlobalIdx_1D_1D();
+
+	if (idx < qty) {
+		// set pointer to corresponding state object
+		agents[idx] = new AgentType(&(state[idx]), arg);
+		agents[idx]->setIndex(idx);
+		agents[idx]->setSize(qty);
+		//TODO: link to Place*
+	}
+}
+
+template<typename AgentType, typename AgentStateType>
+Agent** DeviceConfig::instantiateAgents (int handle, void *argument, 
+		int argSize, int nAgents) {
+	Logger::debug("Entering DeviceConfig::instantiateAgents\n");
+
+	if (devAgentsMap.count(handle) > 0) {
+		return NULL;
+	}
+
+	// create places tracking
+	AgentArray a;
+	a.qty = nAgents; //size
+
+	// create state array on device
+	AgentStateType* d_state = NULL;
+	int Sbytes = sizeof(AgentStateType);
+	CATCH(cudaMalloc((void** ) &d_state, nAgents * Sbytes));
+	a.devState = d_state;
+
+	// allocate device pointers
+	Agent** tmpAgents = NULL;
+	int ptrbytes = sizeof(Agent*);
+	CATCH(cudaMalloc((void** ) &tmpAgents, nAgents * ptrbytes));
+	a.devPtr = tmpAgents;
+
+	// handle arg
+	void *d_arg = NULL;
+	if (NULL != argument) {
+		CATCH(cudaMalloc((void** ) &d_arg, argSize));
+		CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
+	}
+
+	// launch instantiation kernel
+	int blockDim = (nAgents - 1) / BLOCK_SIZE + 1;
+	int threadDim = (nAgents - 1) / blockDim + 1;
+	Logger::debug("Launching agent instantiation kernel");
+	instantiateAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(a.devPtr, d_state,
+			d_arg, nAgents);
+	CHECK();
+	Logger::debug("Finished agent instantiation kernel");
+	
+	// clean up memory
+	if (NULL != argument) {
+		CATCH(cudaFree(d_arg));
+	}
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+
+	devAgentsMap[handle] = a;
+	Logger::debug("Finished DeviceConfig::instantiateAgents");
+	return a.devPtr;
 }
 
 } // end namespace
