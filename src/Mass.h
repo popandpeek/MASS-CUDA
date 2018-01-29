@@ -94,7 +94,7 @@ Agents* Mass::createAgents(int handle, void *argument, int argSize,
 
 	// perform actual instantiation of user classes 
 	dispatcher->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents);
+		argSize, nAgents, placesHandle);
 
 	Logger::debug("Exiting Mass::createAgents\n");
 

@@ -7,6 +7,7 @@
 class AntState: public mass::AgentState {
 public:
     int agentSugar, agentMetabolism, destinationIdx;
+    // Place* place;
 };
 
 #endif /* ANTSTATE_H_ */

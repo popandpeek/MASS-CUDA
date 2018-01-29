@@ -1,19 +1,19 @@
-
 #pragma once
 
 #include <map>
 #include <cassert>
+#include <unordered_set>
 
 #include "iostream"
 #include "cudaUtil.h"
 #include "Logger.h"
-//#include "PlaceState.h"
 #include "DataModel.h"
 #include "GlobalConsts.h"
+#include "MassException.h"
 
 namespace mass {
 
-// forward declarations
+// forward declaration
 class Place;
 class Agent;
 
@@ -32,9 +32,7 @@ struct AgentArray {
 };
 
 /**
- *  This class represents a computational resource. In most cases it will
- *  represent a GPU, but it could also be used to encapsulate a CPU
- *  computing resource.
+ *  This class represents a GPU.
  */
 class DeviceConfig {
 	friend class Dispatcher;
@@ -69,7 +67,7 @@ public:
 
 	template<typename AgentType, typename AgentStateType>
 	Agent** instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents);
+		int argSize, int nAgents, int placesHandle);
 
 private:
 	int deviceNum;
@@ -81,6 +79,31 @@ private:
 	size_t allMem;
 };
 // end class
+
+inline void getRandomPlaceIdxs(int idxs[], int nPlaces, int nAgents) {
+	int curAllocated = 0;
+
+	if (nAgents > nPlaces) {
+		for (int i=0; i<nPlaces; i++) {
+			for (int j=0; j<nAgents/nPlaces; j++) {
+				idxs[curAllocated] = i;
+				curAllocated ++;
+			}
+		}
+	}
+
+	// Allocate the remaining agents randomly:
+	std::unordered_set<int> occupied_places;
+
+	while (curAllocated < nAgents) {
+		unsigned int randPlace = rand() % nPlaces; //random number from 0 to nPlaces
+		if (occupied_places.count(randPlace)==0) {
+			occupied_places.insert(randPlace);
+			idxs[curAllocated] = randPlace;
+			curAllocated++;
+		}
+	}
+}
 
 template<typename PlaceType, typename StateType>
 __global__ void instantiatePlacesKernel(Place** places, StateType *state,
@@ -174,8 +197,21 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 }
 
 template<typename AgentType, typename AgentStateType>
+__global__ void mapAgentsKernel(Place **places, int placeQty, Agent **agents,
+		AgentStateType *state, int nAgents, int* placeIdxs) {
+	int idx = getGlobalIdx_1D_1D();  //agent index
+
+	if (idx < nAgents) {
+		int placeIdx = placeIdxs[idx];
+		Place* myPlace = places[placeIdx];
+		agents[idx] -> setPlace(myPlace);
+		myPlace -> addAgent(agents[idx]);
+	}
+}
+
+template<typename AgentType, typename AgentStateType>
 Agent** DeviceConfig::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents) {
+		int argSize, int nAgents, int placesHandle) {
 	Logger::debug("Entering DeviceConfig::instantiateAgents\n");
 
 	if (devAgentsMap.count(handle) > 0) {
@@ -213,6 +249,24 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 			d_arg, nAgents);
 	CHECK();
 	Logger::debug("Finished agent instantiation kernel");
+
+	// Create an array of Place idxs where to instantiate agents
+	PlaceArray places = devPlacesMap[placesHandle];
+	int placeIdxs[nAgents];
+	getRandomPlaceIdxs(placeIdxs, places.qty, nAgents);
+	int* placeIdxs_d;
+	CATCH(cudaMalloc(&placeIdxs_d, nAgents*sizeof(int)));
+	CATCH(cudaMemcpy(placeIdxs_d, placeIdxs, nAgents*sizeof(int), H2D));
+
+	// launch map kernel using 1 thread per agent
+	// TODO: allow for a user-provided map of agents to places
+	if (nAgents / places.qty + 1 > MAX_AGENTS) {
+		throw MassException("Number of agents per places exceeds the maximum setting of the library. Please change the library setting MAX_AGENTS and re-compile the library.");
+	}
+	Logger::debug("Launching agent mapping kernel");
+	mapAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(places.devPtr, places.qty,
+			a.devPtr, d_state, nAgents, placeIdxs_d);
+	CHECK();
 	
 	// clean up memory
 	if (NULL != argument) {

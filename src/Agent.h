@@ -6,6 +6,7 @@ namespace mass {
 
 // forward declaration
 class AgentState;
+class Place;
 
 class Agent {
 
@@ -23,6 +24,9 @@ public:
 
     MASS_FUNCTION virtual AgentState* getState();
 
+    MASS_FUNCTION Place* getPlace();
+    MASS_FUNCTION void setPlace(Place* place);
+
     MASS_FUNCTION int getIndex();
 
     MASS_FUNCTION void setIndex(int index);
@@ -31,6 +35,5 @@ public:
 
 
     AgentState *state;
-
 };
 }

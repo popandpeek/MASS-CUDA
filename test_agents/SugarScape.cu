@@ -23,7 +23,7 @@ SugarScape::~SugarScape() {
 }
 
 void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
-	Logger::debug("Entering Heat2d::displayResults");
+	Logger::debug("Entering SugarScape::displayResults");
 	ostringstream ss;
 
 	ss << "time = " << time << "\n";
@@ -72,7 +72,6 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	// initialize places
 	Places *places = Mass::createPlaces<SugarPlace, SugarPlaceState>(0 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nDims, placesSize);
-	Logger::debug("Finished Mass::createPlaces\n");
 
 	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
 

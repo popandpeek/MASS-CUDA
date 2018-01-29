@@ -96,7 +96,7 @@ public:
 
 	template<typename AgentType, typename AgentStateType>
 	void instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents);
+		int argSize, int nAgents, int placesHandle);
 
 private:
 	void unloadDevice(DeviceConfig *device);
@@ -129,7 +129,7 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 
 template<typename AgentType, typename AgentStateType>
 void Dispatcher::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents) {
+		int argSize, int nAgents, int placesHandle) {
 
 	Logger::debug("Inside Dispatcher::instantiateAgents\n");
 
@@ -139,7 +139,7 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 
 	//modify GPU data model
 	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents);
+		argSize, nAgents, placesHandle);
 
 }
 

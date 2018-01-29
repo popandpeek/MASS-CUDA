@@ -14,6 +14,7 @@ namespace mass {
 
 // forward declaration
 class PlaceState;
+class Agent;
 
 /**
  *  The Place class defines the default functions for acheiving GPU parallelism between place objects.
@@ -65,6 +66,10 @@ public:
 	MASS_FUNCTION void setIndex(int index);
 
 	MASS_FUNCTION void setSize(int *dimensions, int nDims);
+
+	MASS_FUNCTION bool addAgent(Agent* agent);
+
+	MASS_FUNCTION void removeAgent(Agent* agent);
 
 
 	PlaceState *state;

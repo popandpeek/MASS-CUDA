@@ -19,11 +19,11 @@ public:
     MASS_FUNCTION Ant(mass::AgentState *state, void *argument);
     MASS_FUNCTION ~Ant();
 
-    //MASS_FUNCTION virtual void *getMessage();
     MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
     MASS_FUNCTION virtual AntState* getState();
 
-    //MASS_FUNCTION int getCurSugar();
+    // MASS_FUNCTION virtual SugarPlace* getPlace();
+    // MASS_FUNCTION virtual void setPlace(SugarPlace* place);
 
 private:
 

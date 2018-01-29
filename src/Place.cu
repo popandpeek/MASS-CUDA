@@ -37,5 +37,33 @@ MASS_FUNCTION void Place::setSize(int *dimensions, int nDims) {
 	}
 }
 
+MASS_FUNCTION bool Place::addAgent(Agent* agent) {
+	// TODO: MAX_AGENTS should be set by user and should regulate the 
+	// collision-free migration in case max number of agents is reached
+	
+	if (state->agentPop < MAX_AGENTS) {
+		state->agents[state->agentPop] = agent;
+		state->agentPop ++;
+		return true;
+	}
+	return false;
+}
+
+MASS_FUNCTION void Place::removeAgent(Agent* agent) {
+	for (int i=0; i< state->agentPop; i++) {
+		if (state->agents[i] == agent) {
+			//shift all agents left:
+			for (int j=i; j<state->agentPop-1; j++) {
+				state->agents[j] = state->agents[j+1];
+			}
+			state->agents[state->agentPop-1] = NULL;
+
+			state->agentPop --;
+			return;
+		}
+	}
+}
+
+
 } /* namespace mass */
 

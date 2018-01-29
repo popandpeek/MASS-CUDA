@@ -36,3 +36,13 @@ MASS_FUNCTION AntState* Ant::getState() {
     return myState;
 }
 
+// MASS_FUNCTION SugarPlace* Ant::getPlace() {
+//     return myState->place;
+// }
+
+
+// MASS_FUNCTION void Ant::setPlace(SugarPlace* place) {
+//     myState->place = place;
+// }
+
+
