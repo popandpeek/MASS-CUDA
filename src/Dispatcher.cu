@@ -138,6 +138,8 @@ Place** Dispatcher::refreshPlaces(int handle) {
     PlacesModel *placesModel = model->getPlacesModel(handle);
 	
     if (initialized) {
+        Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
+        
 		void *devPtr = deviceInfo->getPlaceState(handle);
 
         int stateSize = placesModel->getStateSize();
@@ -296,24 +298,22 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 }
 
-Agent** Dispatcher::refreshAgents(int handle) {
+Agent** Dispatcher::refreshAgents(int handle, int& numAgents) {
     Logger::debug("Entering Dispatcher::refreshAgents");
     AgentsModel *agentsModel = model->getAgentsModel(handle);
     
     if (initialized) {
-        // TODO: uncomment and implement
-
-        // void *devPtr = deviceInfo->getPlaceState(handle);
-        // int stateSize = placesModel->getStateSize();
-        // int qty = placesModel->getNumElements();
-        // int bytes = stateSize * qty;
-        // CATCH(cudaMemcpy(placesModel->getStatePtr(), devPtr, bytes, D2H));
+        Logger::debug("Dispatcher::refreshAgents: Initialized -> copying info from GPU to CPU");
+        void *devPtr = deviceInfo->getAgentsState(handle);
+        int stateSize = agentsModel->getStateSize();
+        int qty = agentsModel->getNumElements(); //TODO: changing number of agents!!!
+        int bytes = stateSize * qty;
+        CATCH(cudaMemcpy(agentsModel->getStatePtr(), devPtr, bytes, D2H));
     }
 
     Logger::debug("Exiting Dispatcher::refreshAgents");
     return agentsModel->getAgentElements();
 }
-
 
 void Dispatcher::unloadDevice(DeviceConfig *device) {
 	Logger::debug("Inside Dispatcher::unloadDevice\n");

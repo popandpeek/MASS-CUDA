@@ -25,6 +25,7 @@ SugarScape::~SugarScape() {
 void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 	Logger::debug("Entering SugarScape::displayResults");
 	ostringstream ss;
+	ostringstream agents;
 
 	ss << "time = " << time << "\n";
 	Place ** retVals = places->getElements();
@@ -39,17 +40,33 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 						row, col, rmi);
 			}
 			int curSugar = ((SugarPlace*)retVals[rmi])->getCurSugar();
+			int n_agents = retVals[rmi]->getAgentPopulation();
 			ss << curSugar << " ";
+			agents << n_agents << " ";
 		}
 
 		ss << "\n";
+		agents << "\n";
 	}
 	ss << "\n";
+	agents << "\n";
 	Logger::print(ss.str());
+	Logger::print(agents.str());
 }
 
 void SugarScape::displayAgents(Agents* agents, int time) {
-	//TODO: implement
+	Logger::debug("Entering SugarScape::displayAgents");
+	ostringstream ss;
+	ss << "time = " << time << "\n";
+	mass::Agent** retVals = agents->getElements();
+	Logger::debug("SugarScape::displayAgents _____after getElements");
+	int nAgents = agents->getNumAgents();
+	Logger::debug("SugarScape::displayAgents _____after getNumAgents");
+	for (int i =0; i< nAgents; i++) {
+		int placeIdx = retVals[i] -> getPlaceIndex();
+		ss << "Agent[" << i << "] at location " << placeIdx << endl;   //FAILS HERE!!! Segmentation fault
+	}
+	Logger::print(ss.str());
 }
 
 // void SugarScape::runHostSim(int size, int max_time, int interval) {
@@ -100,10 +117,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 		places->callAll(SugarPlace::INC_SUGAR_AND_POLLUTION);
 
-		displaySugar(places, t, placesSize); //DELETE AFTER DEBUGGING
-
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
-		displaySugar(places, t, placesSize); //DELETE AFTER DEBUGGING
 
 		places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
 

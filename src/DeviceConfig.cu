@@ -82,6 +82,14 @@ int DeviceConfig::getNumPlacePtrs(int handle) {
 	return devPlacesMap[handle].qty;
 }
 
+Agent** DeviceConfig::getDevAgents(int handle) {
+	return devAgentsMap[handle].devPtr;
+}
+
+void* DeviceConfig::getAgentsState(int handle) {
+	return devAgentsMap[handle].devState; 
+}
+
 GlobalConsts DeviceConfig::getGlobalConstants() {
 	return glob;
 }

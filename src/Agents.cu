@@ -23,6 +23,7 @@ Agents::~Agents() {
 
 
 int Agents::getNumAgents() {
+    //TODO: maybe should do dispatcher->refreshAgents here as well
     return numElements;
 }
 
@@ -49,7 +50,7 @@ int Agents::getHandle() {
 
 
 Agent** Agents::getElements() {
-    elemPtrs = dispatcher->refreshAgents(handle);
+    elemPtrs = dispatcher->refreshAgents(handle, numElements/*gets updated*/);
     return elemPtrs;
 }
 

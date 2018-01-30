@@ -71,6 +71,8 @@ public:
 
 	MASS_FUNCTION void removeAgent(Agent* agent);
 
+	MASS_FUNCTION int getAgentPopulation();
+
 
 	PlaceState *state;
 

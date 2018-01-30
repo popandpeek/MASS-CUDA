@@ -64,6 +64,10 @@ MASS_FUNCTION void Place::removeAgent(Agent* agent) {
 	}
 }
 
+MASS_FUNCTION int Place::getAgentPopulation() {
+	return state->agentPop;
+}
+
 
 } /* namespace mass */
 

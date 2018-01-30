@@ -30,6 +30,14 @@ MASS_FUNCTION void Agent::setPlace(Place* place) {
     state->place = place;
 }
 
+MASS_FUNCTION int Agent::getPlaceIndex() {
+    return state->placeIndex;
+}
+
+MASS_FUNCTION void Agent::setPlaceIdx(int placeIndex) {
+    state->placeIndex = placeIndex;
+}
+
 MASS_FUNCTION int Agent::getIndex() {
     return state->index;
 }

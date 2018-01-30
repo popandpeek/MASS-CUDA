@@ -86,8 +86,12 @@ public:
 	void exchangeAllPlaces(int handle, std::vector<int*> *destinations, int functionId, 
 		void *argument, int argSize);
 
-
-	Agent** refreshAgents(int agentHandle);
+	/**
+	 * Called when the user wants to look at the data model on the host. This
+	 * will extract the most current data from the GPU for the specified agents
+	 * collection. It will also update the numAgents reference with the current agent count.
+	 */
+	Agent** refreshAgents(int agentHandle, int& numAgents);
 
 
 	template<typename P, typename S>

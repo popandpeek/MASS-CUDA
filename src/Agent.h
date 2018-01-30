@@ -26,6 +26,8 @@ public:
 
     MASS_FUNCTION Place* getPlace();
     MASS_FUNCTION void setPlace(Place* place);
+    MASS_FUNCTION int getPlaceIndex();
+    MASS_FUNCTION void setPlaceIdx(int placeIdx);
 
     MASS_FUNCTION int getIndex();
 

@@ -58,6 +58,9 @@ public:
 	void deletePlaces(int handle);
 	int getNumPlacePtrs(int handle);
 
+	Agent** getDevAgents(int handle);
+	void* getAgentsState(int handle);
+
 	GlobalConsts getGlobalConstants();
 	void updateConstants(GlobalConsts consts);
 
@@ -192,7 +195,6 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 		agents[idx] = new AgentType(&(state[idx]), arg);
 		agents[idx]->setIndex(idx);
 		agents[idx]->setSize(qty);
-		//TODO: link to Place*
 	}
 }
 
@@ -205,6 +207,7 @@ __global__ void mapAgentsKernel(Place **places, int placeQty, Agent **agents,
 		int placeIdx = placeIdxs[idx];
 		Place* myPlace = places[placeIdx];
 		agents[idx] -> setPlace(myPlace);
+		agents[idx] -> setPlaceIdx(placeIdx);
 		myPlace -> addAgent(agents[idx]);
 	}
 }
@@ -229,6 +232,7 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	a.devState = d_state;
 
 	// allocate device pointers
+	// TODO: think how to handle agent spawning in terms of space on GPU
 	Agent** tmpAgents = NULL;
 	int ptrbytes = sizeof(Agent*);
 	CATCH(cudaMalloc((void** ) &tmpAgents, nAgents * ptrbytes));
@@ -250,8 +254,9 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	CHECK();
 	Logger::debug("Finished agent instantiation kernel");
 
-	// Create an array of Place idxs where to instantiate agents
 	PlaceArray places = devPlacesMap[placesHandle];
+
+	// Create an array of Place idxs where to instantiate agents
 	int placeIdxs[nAgents];
 	getRandomPlaceIdxs(placeIdxs, places.qty, nAgents);
 	int* placeIdxs_d;

@@ -83,7 +83,7 @@ private:
     int handle;         // User-defined identifier for this Agents collection
     Dispatcher *dispatcher; // the GPU dispatcher
 
-    unsigned numElements;
+    int numElements;
     Agent **elemPtrs;
 
 };
