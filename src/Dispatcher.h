@@ -86,6 +86,13 @@ public:
 	void exchangeAllPlaces(int handle, std::vector<int*> *destinations, int functionId, 
 		void *argument, int argSize);
 
+	//TODO: add descriptions to all functions
+	void callAllAgents(int agentHandle, int functionId, void *argument,
+			int argSize);
+
+	// void *callAllAgents(int agentHandle, int functionId, void *arguments[],
+	// 		int argSize, int retSize);
+
 	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents

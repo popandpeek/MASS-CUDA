@@ -7,6 +7,9 @@ MASS_FUNCTION Ant::Ant(mass::AgentState *state, void *argument) :
     myState -> agentSugar = 0;
     myState -> agentMetabolism = 0;
     myState -> destinationIdx = 0;
+
+    //agentSugar_host[i] = rand() % maxInitAgentSugar +1;
+    //agentMetabolism_host [i] = rand() % maxMetabolism +1;
 }
 
 MASS_FUNCTION Ant::~Ant() {
@@ -15,18 +18,12 @@ MASS_FUNCTION Ant::~Ant() {
 
 MASS_FUNCTION void Ant::callMethod(int functionId, void *argument) {
     switch (functionId) {
-        // case SET_SUGAR:
-        //     setSugar();
-        //     break;
-        // case INC_SUGAR_AND_POLLUTION:
-        //     incSugarAndPollution();
-        //     break;
-        // case AVE_POLLUTIONS:
-        //     avePollutions();
-        //     break;
-        // case UPDATE_POLLUTION_WITH_AVERAGE:
-        //     updatePollutionWithAverage();
-        //     break;
+        case METABOLIZE:
+            metabolize();
+            break;
+        case SET_INIT_VALUES:
+            setInitValues();
+            break;
         default:
             break;
     }
@@ -36,13 +33,35 @@ MASS_FUNCTION AntState* Ant::getState() {
     return myState;
 }
 
-// MASS_FUNCTION SugarPlace* Ant::getPlace() {
-//     return myState->place;
-// }
+MASS_FUNCTION void Ant::setInitValues() {
+    // TODO: replace with random values initialization
+    myState -> agentSugar = getIndex() % maxMetabolism;
+    myState -> agentMetabolism = getIndex() % maxInitAgentSugar;
+}
 
+MASS_FUNCTION void Ant::metabolize() {
+    //TODO: implement
 
-// MASS_FUNCTION void Ant::setPlace(SugarPlace* place) {
-//     myState->place = place;
-// }
+    SugarPlace* myPlace = (SugarPlace*) getPlace();
+
+    myState -> agentSugar += myPlace -> getCurSugar();
+    myState -> agentSugar -= myState -> agentMetabolism;
+
+    myPlace -> setCurSugar(0); //TODO: implement
+    myPlace -> setPollution(myPlace -> getPollution() + myState->agentMetabolism); //TODO: implememnt functions in the SugarPlace
+
+    //TODO: experiment to see if direct access to variables is faster than accessors
+
+    if( myState -> agentSugar < 0 )
+    {
+        // Kill agent
+
+        //TODO: update with proper killing routine when available
+
+        // nAgentsInPlace[idx] = 0;
+        // myState -> agentSugar = -1;
+        // myState -> agentMetabolism = -1;
+    }
+}
 
 

@@ -59,12 +59,12 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 	ostringstream ss;
 	ss << "time = " << time << "\n";
 	mass::Agent** retVals = agents->getElements();
-	Logger::debug("SugarScape::displayAgents _____after getElements");
 	int nAgents = agents->getNumAgents();
-	Logger::debug("SugarScape::displayAgents _____after getNumAgents");
 	for (int i =0; i< nAgents; i++) {
 		int placeIdx = retVals[i] -> getPlaceIndex();
-		ss << "Agent[" << i << "] at location " << placeIdx << endl;   //FAILS HERE!!! Segmentation fault
+		int agentSugar = ((AntState*)(retVals[i]->getState()))->agentSugar;
+		int agentMetabolism = ((AntState*)(retVals[i]->getState()))->agentMetabolism;
+		ss << "Agent[" << i << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
 	}
 	Logger::print(ss.str());
 }
@@ -96,6 +96,8 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	Agents *agents = Mass::createAgents<Ant, AntState> (1 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nAgents, 0 /*placesHandle*/);
+
+	agents->callAll(Ant::SET_INIT_VALUES);
 
 	// create neighborhood
 	vector<int*> neighbors;

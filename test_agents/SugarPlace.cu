@@ -139,6 +139,18 @@ MASS_FUNCTION int SugarPlace::getCurSugar() {
 	return myState->curSugar;
 }
 
+MASS_FUNCTION void SugarPlace::setCurSugar(int newSugar) {
+    myState->curSugar = newSugar;
+}
+
+MASS_FUNCTION double SugarPlace::getPollution() {
+    return myState -> pollution;
+}
+
+MASS_FUNCTION void SugarPlace::setPollution(double newPollution){
+    myState -> pollution = newPollution;
+}
+
 MASS_FUNCTION void SugarPlace::callMethod(int functionId, void *argument) {
 	switch (functionId) {
 		case SET_SUGAR:

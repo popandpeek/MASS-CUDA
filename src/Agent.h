@@ -35,6 +35,8 @@ public:
 
     MASS_FUNCTION void setSize(int qty);
 
+    MASS_FUNCTION void terminate();
+
 
     AgentState *state;
 };

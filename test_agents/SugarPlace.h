@@ -22,6 +22,10 @@ public:
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
 
 	MASS_FUNCTION int getCurSugar();
+	MASS_FUNCTION void setCurSugar(int newSugar);
+	MASS_FUNCTION double getPollution();
+	MASS_FUNCTION void setPollution(double newPollution);
+	
 
 private:
 

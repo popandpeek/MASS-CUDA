@@ -17,7 +17,6 @@ namespace mass {
     // memset(this->state->size, 0, MAX_DIMS);
 }
 
-
 MASS_FUNCTION AgentState* Agent::getState() {
     return state;
 }
@@ -48,6 +47,10 @@ MASS_FUNCTION void Agent::setIndex(int index) {
 
 MASS_FUNCTION void Agent::setSize(int qty) {
     state->size = qty;
+}
+
+MASS_FUNCTION void Agent::terminate() {
+    state -> isAlive = false;
 }
 
 } /* namespace mass */

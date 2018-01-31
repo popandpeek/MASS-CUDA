@@ -6,15 +6,17 @@
 #include "../src/AgentState.h"
 #include "../src/Logger.h"
 #include "AntState.h"
+#include "SugarPlace.h"
+
+#define maxMetabolism 4;
+#define maxInitAgentSugar 10;
 
 class Ant: public mass::Agent {
 
 public:
 
-    // const static int SET_SUGAR = 0;
-    // const static int INC_SUGAR_AND_POLLUTION = 1;
-    // const static int AVE_POLLUTIONS = 2;
-    // const static int UPDATE_POLLUTION_WITH_AVERAGE = 3;
+    const static int METABOLIZE = 0;
+    const static int SET_INIT_VALUES = 1;
 
     MASS_FUNCTION Ant(mass::AgentState *state, void *argument);
     MASS_FUNCTION ~Ant();
@@ -29,11 +31,8 @@ private:
 
     AntState* myState;
 
-    // MASS_FUNCTION int initSugarAmount(int idx, int size, int mtPeakX, int mtPeakY, int maxMtSug);
-    // MASS_FUNCTION void setSugar();
-    // MASS_FUNCTION void incSugarAndPollution();
-    // MASS_FUNCTION void avePollutions();
-    // MASS_FUNCTION void updatePollutionWithAverage();
+    MASS_FUNCTION void metabolize();
+    MASS_FUNCTION void setInitValues();
 };
 
 #endif /* ANT_H_ */

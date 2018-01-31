@@ -31,6 +31,16 @@ __global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
 	}
 }
 
+__global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
+        void *argPtr) {
+
+    int idx = getGlobalIdx_1D_1D();
+
+    if (idx < nptrs) {
+        ptrs[idx]->callMethod(functionId, argPtr);
+    }
+}
+
 /**
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
@@ -139,7 +149,7 @@ Place** Dispatcher::refreshPlaces(int handle) {
 	
     if (initialized) {
         Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
-        
+
 		void *devPtr = deviceInfo->getPlaceState(handle);
 
         int stateSize = placesModel->getStateSize();
@@ -299,6 +309,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
 }
 
 Agent** Dispatcher::refreshAgents(int handle, int& numAgents) {
+    //TODO: is numAgents updated?
     Logger::debug("Entering Dispatcher::refreshAgents");
     AgentsModel *agentsModel = model->getAgentsModel(handle);
     
@@ -315,6 +326,57 @@ Agent** Dispatcher::refreshAgents(int handle, int& numAgents) {
     return agentsModel->getAgentElements();
 }
 
+void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
+            int argSize) {
+
+    if (initialized) {
+        Logger::debug("Dispatcher::callAllAgents: Calling all on agents[%d]. Function id = %d", agentHandle, functionId);
+
+        // load any necessary arguments
+        void *argPtr = NULL;
+        if (argument != NULL) {
+            deviceInfo->load(argPtr, argument, argSize);
+        }
+
+        Logger::debug("Dispatcher::callAllAgents: Calling callAllAgentsKernel");
+        AgentsModel *aModel = model->getAgentsModel(agentHandle);
+        callAllAgentsKernel<<<aModel->blockDim(), aModel->threadDim()>>>(
+                deviceInfo->getDevAgents(agentHandle), aModel->getNumElements(),
+                functionId, argPtr);
+        CHECK();
+
+        if (argPtr != NULL) {
+            Logger::debug("Dispatcher::callAllAgents: Freeing device args.");
+            cudaFree(argPtr);
+        }
+
+        Logger::debug("Exiting Dispatcher::callAllAgents()");
+    }
+}
+
+// void * Dispatcher::callAllAgents(int agentHandle, int functionId, void *arguments[],
+//             int argSize, int retSize) {
+//     // perform call all
+//     callAllAgents(agentHandle, functionId, arguments, argSize);
+//     // get data from GPUs
+//     int numAgents;
+//     refreshAgents(agentHandle, numAgents);
+//     // get necessary pointers and counts
+//     int qty = model->getAgentsModel(agentHandle)->getNumElements();
+//     Agent** agents = model->getAgentsModel(agentHandle)->getAgentElements();
+//     void *retVal = malloc(qty * retSize);
+//     char *dest = (char*) retVal;
+
+//     for (int i = 0; i < qty; ++i) {
+//         // copy messages to a return array
+//         //TODO: should we implement a getMessage() funct in Agent?
+//         memcpy(dest, agents[i]->getMessage(), retSize);
+//         dest += retSize;
+//     }
+//     return retVal;
+// }
+
+//TODO: do we need this?
 void Dispatcher::unloadDevice(DeviceConfig *device) {
 	Logger::debug("Inside Dispatcher::unloadDevice\n");
     std::map<int, PlacesModel*> placesModels = model -> getAllPlacesModels();

@@ -65,11 +65,12 @@ public:
      *  @param argSize the size in bytes of each argument element
      *  @param retSize the size in bytes of the return array element
      */
-    void *callAll(int functionId, void *arguments[], int argSize, int retSize);
+    // void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
-    // void exchangeAll(std::vector<int*> *destinations);
-
-    // void exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize);
+     /*
+     Executes agent termination / migration / spawning, which was initiated since the previous call to manageAll()
+     */
+    void manageAll();
 
     /**
      *  Returns an array of pointers to the Agent elements contained in this

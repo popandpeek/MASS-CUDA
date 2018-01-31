@@ -31,22 +31,29 @@ int Agents::getHandle() {
     return handle;
 }
 
-// void Agents::callAll(int functionId) {
-//     Logger::debug("Entering callAll(int functionId)");
-//     callAll(functionId, NULL, 0);
-// }
+void Agents::callAll(int functionId) {
+    Logger::debug("Entering Agents::callAll(int functionId)");
+    callAll(functionId, NULL, 0);
+}
 
-// void Agents::callAll(int functionId, void *argument, int argSize) {
-//     Logger::debug(
-//             "Entering callAll(int functionId, void *argument, int argSize)");
-//     dispatcher->callAllPlaces(handle, functionId, argument, argSize);
-// }
+void Agents::callAll(int functionId, void *argument, int argSize) {
+    Logger::debug(
+            "Entering Agents::callAll(int functionId, void *argument, int argSize)");
+    dispatcher->callAllAgents(handle, functionId, argument, argSize);
+}
 
 // void *Agents::callAll(int functionId, void *arguments[], int argSize,
 //         int retSize) {
-//     return dispatcher->callAllPlaces(handle, functionId, arguments, argSize,
+//     return dispatcher->callAllAgents(handle, functionId, arguments, argSize,
 //             retSize);
 // }
+
+void Agents::manageAll() {
+    //TODO: implement
+    // Step 1: kill all agents that need killing
+    // Step 2: migrate all agents that need migrating
+    // Step 3: spawn all new agents that need spawning
+}
 
 
 Agent** Agents::getElements() {
