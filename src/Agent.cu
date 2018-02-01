@@ -49,6 +49,10 @@ MASS_FUNCTION void Agent::setSize(int qty) {
     state->size = qty;
 }
 
+MASS_FUNCTION int Agent::getSize() {
+    return state->size;
+}
+
 MASS_FUNCTION void Agent::terminate() {
     state -> isAlive = false;
 }

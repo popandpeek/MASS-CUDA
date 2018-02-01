@@ -34,6 +34,7 @@ public:
     MASS_FUNCTION void setIndex(int index);
 
     MASS_FUNCTION void setSize(int qty);
+    MASS_FUNCTION int getSize();
 
     MASS_FUNCTION void terminate();
 

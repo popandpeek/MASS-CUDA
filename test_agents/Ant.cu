@@ -7,9 +7,6 @@ MASS_FUNCTION Ant::Ant(mass::AgentState *state, void *argument) :
     myState -> agentSugar = 0;
     myState -> agentMetabolism = 0;
     myState -> destinationIdx = 0;
-
-    //agentSugar_host[i] = rand() % maxInitAgentSugar +1;
-    //agentMetabolism_host [i] = rand() % maxMetabolism +1;
 }
 
 MASS_FUNCTION Ant::~Ant() {
@@ -21,8 +18,11 @@ MASS_FUNCTION void Ant::callMethod(int functionId, void *argument) {
         case METABOLIZE:
             metabolize();
             break;
-        case SET_INIT_VALUES:
-            setInitValues();
+        case SET_INIT_SUGAR:
+            setInitSugar((int*)argument);
+            break;
+        case SET_INIT_METABOLISM:
+            setInitMetabolism((int*)argument);
             break;
         default:
             break;
@@ -33,10 +33,13 @@ MASS_FUNCTION AntState* Ant::getState() {
     return myState;
 }
 
-MASS_FUNCTION void Ant::setInitValues() {
-    // TODO: replace with random values initialization
-    myState -> agentSugar = getIndex() % maxMetabolism;
-    myState -> agentMetabolism = getIndex() % maxInitAgentSugar;
+MASS_FUNCTION void Ant::setInitSugar(int *agentSugarArray) {
+
+    myState -> agentSugar = agentSugarArray[getIndex()]; 
+}
+
+MASS_FUNCTION void Ant::setInitMetabolism(int *agentMetabolismArray) {
+    myState -> agentMetabolism = agentMetabolismArray[getIndex()];
 }
 
 MASS_FUNCTION void Ant::metabolize() {

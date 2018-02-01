@@ -50,6 +50,7 @@ public:
 
 	/**
 	 * Creates a Places instance with the provided parameters.
+	 TODO: describe how  to use argument and what is argSize
 	 */
 	template<typename AgentType, typename AgentStateType>
 	static Agents* createAgents(int handle, void *argument, int argSize,

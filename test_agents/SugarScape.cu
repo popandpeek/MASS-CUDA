@@ -15,6 +15,9 @@
 using namespace std;
 using namespace mass;
 
+static const int maxMetabolism = 4;
+static const int maxInitAgentSugar = 10;
+
 SugarScape::SugarScape() {
 
 }
@@ -92,12 +95,22 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
 
-	//initialize agents
 
+	//initialize agents:
 	Agents *agents = Mass::createAgents<Ant, AntState> (1 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nAgents, 0 /*placesHandle*/);
 
-	agents->callAll(Ant::SET_INIT_VALUES);
+	//create an array of random agentSugar and agentMetabolism values
+	int agentSugarArray[nAgents];
+	int agentMetabolismArray[nAgents];
+	for (int i=0; i<nAgents; i++) {
+		agentSugarArray[i] = rand() % maxInitAgentSugar +1;
+		agentMetabolismArray[i] = rand() % maxMetabolism +1;
+	}
+
+	//set proper initial amounts of sugar and metabolism for agents
+	agents->callAll(Ant::SET_INIT_SUGAR, agentSugarArray, sizeof(int) * nAgents);
+	agents->callAll(Ant::SET_INIT_METABOLISM, agentMetabolismArray, sizeof(int) * nAgents);
 
 	// create neighborhood
 	vector<int*> neighbors;
