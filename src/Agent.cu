@@ -11,10 +11,6 @@ namespace mass {
  */MASS_FUNCTION Agent::Agent(AgentState *state, void *args) {
     this->state = state;
     this->state->index = 0;
-    //this->state->message_size = 0;
-    // memset(this->state->neighbors, 0, MAX_NEIGHBORS);
-    // memset(this->state->inMessages, 0, MAX_NEIGHBORS);
-    // memset(this->state->size, 0, MAX_DIMS);
 }
 
 MASS_FUNCTION AgentState* Agent::getState() {
@@ -53,7 +49,15 @@ MASS_FUNCTION int Agent::getSize() {
     return state->size;
 }
 
-MASS_FUNCTION void Agent::terminate() {
+MASS_FUNCTION bool Agent::isAlive() {
+    return state -> isAlive;
+}
+
+MASS_FUNCTION void Agent::setAlive() {
+    this->state->isAlive = true;
+}
+
+MASS_FUNCTION void Agent::terminateAgent() {
     state -> isAlive = false;
 }
 

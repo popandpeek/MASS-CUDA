@@ -36,7 +36,9 @@ public:
     MASS_FUNCTION void setSize(int qty);
     MASS_FUNCTION int getSize();
 
-    MASS_FUNCTION void terminate();
+    MASS_FUNCTION bool isAlive();
+    MASS_FUNCTION void setAlive();
+    MASS_FUNCTION void terminateAgent();
 
 
     AgentState *state;

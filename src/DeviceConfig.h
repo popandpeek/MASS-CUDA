@@ -195,6 +195,7 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 		agents[idx] = new AgentType(&(state[idx]), arg);
 		agents[idx]->setIndex(idx);
 		agents[idx]->setSize(qty);
+		agents[idx]->setAlive();
 	}
 }
 

@@ -51,6 +51,8 @@ void Agents::callAll(int functionId, void *argument, int argSize) {
 void Agents::manageAll() {
     //TODO: implement
     // Step 1: kill all agents that need killing
+    dispatcher->terminateAgents(handle);
+
     // Step 2: migrate all agents that need migrating
     // Step 3: spawn all new agents that need spawning
 }

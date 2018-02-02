@@ -64,10 +64,12 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 	mass::Agent** retVals = agents->getElements();
 	int nAgents = agents->getNumAgents();
 	for (int i =0; i< nAgents; i++) {
-		int placeIdx = retVals[i] -> getPlaceIndex();
-		int agentSugar = ((AntState*)(retVals[i]->getState()))->agentSugar;
-		int agentMetabolism = ((AntState*)(retVals[i]->getState()))->agentMetabolism;
-		ss << "Agent[" << i << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
+		if (retVals[i] -> isAlive()) {
+			int placeIdx = retVals[i] -> getPlaceIndex();
+			int agentSugar = ((AntState*)(retVals[i]->getState()))->agentSugar;
+			int agentMetabolism = ((AntState*)(retVals[i]->getState()))->agentMetabolism;
+			ss << "Agent[" << i << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
+		}
 	}
 	Logger::print(ss.str());
 }
@@ -135,6 +137,14 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
 
 		places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
+
+		// findPlaceForMigration
+		// selectAgentToAccept
+		// migrate
+		// resetMigrationData
+
+		agents->callAll(Ant::METABOLIZE);
+		agents->manageAll();
 
 		// display intermediate results
 		if (interval != 0 && (t % interval == 0 || t == max_time - 1)) {

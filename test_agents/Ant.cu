@@ -43,27 +43,20 @@ MASS_FUNCTION void Ant::setInitMetabolism(int *agentMetabolismArray) {
 }
 
 MASS_FUNCTION void Ant::metabolize() {
-    //TODO: implement
 
     SugarPlace* myPlace = (SugarPlace*) getPlace();
 
     myState -> agentSugar += myPlace -> getCurSugar();
     myState -> agentSugar -= myState -> agentMetabolism;
 
-    myPlace -> setCurSugar(0); //TODO: implement
-    myPlace -> setPollution(myPlace -> getPollution() + myState->agentMetabolism); //TODO: implememnt functions in the SugarPlace
+    myPlace -> setCurSugar(0);
+    myPlace -> setPollution(myPlace -> getPollution() + myState->agentMetabolism);
 
     //TODO: experiment to see if direct access to variables is faster than accessors
 
     if( myState -> agentSugar < 0 )
     {
-        // Kill agent
-
-        //TODO: update with proper killing routine when available
-
-        // nAgentsInPlace[idx] = 0;
-        // myState -> agentSugar = -1;
-        // myState -> agentMetabolism = -1;
+        terminateAgent();
     }
 }
 

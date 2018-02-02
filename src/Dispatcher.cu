@@ -36,7 +36,7 @@ __global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
 
     int idx = getGlobalIdx_1D_1D();
 
-    if (idx < nptrs) {
+    if ((idx < nptrs) && (ptrs[idx] -> isAlive())) {
         ptrs[idx]->callMethod(functionId, argPtr);
     }
 }
@@ -76,16 +76,25 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
-                state->inMessages[i] = ptrs[j]->getMessage();   
-                //printf("inside setNeighborPlacesKernel. idx = %d, i=%d, j=%d. setting value\n", idx, i, j);
+                state->inMessages[i] = ptrs[j]->getMessage();
             } else {
                 state->neighbors[i] = NULL;
                 state->inMessages[i] = NULL;
-                //printf("inside setNeighborPlacesKernel. idx = %d, i=%d, j=%d. setting NULL\n", idx, i, j);
             }
         }
 
         ptrs[idx]->callMethod(functionId, argPtr);
+    }
+}
+
+__global__  void terminateAgentsKernel(Agent **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if ((idx < nptrs) && (ptrs[idx] -> isAlive() == false)) {
+
+        Place* place = ptrs[idx] -> getPlace();
+        place -> removeAgent(ptrs[idx]);
+
+        //TODO: update the total count of agents & release agent into free pool
     }
 }
 
@@ -375,6 +384,19 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
 //     }
 //     return retVal;
 // }
+
+void Dispatcher::terminateAgents(int agentHandle) {
+    Logger::debug("Inside Dispatcher::terminateAgents");
+
+    AgentsModel *aModel = model->getAgentsModel(agentHandle);
+
+    terminateAgentsKernel<<<aModel->blockDim(), aModel->threadDim()>>>(
+            deviceInfo->getDevAgents(agentHandle), aModel->getNumElements());
+    CHECK();
+
+    Logger::debug("Exiting Dispatcher::terminateAgents");
+
+}
 
 //TODO: do we need this?
 void Dispatcher::unloadDevice(DeviceConfig *device) {
