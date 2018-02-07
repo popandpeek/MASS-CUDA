@@ -2,9 +2,10 @@
 #ifndef PLACESTATE_H_
 #define PLACESTATE_H_
 
-#define MAX_AGENTS 4
+#define MAX_AGENTS 1
 #define MAX_NEIGHBORS 8
 #define MAX_DIMS 6
+#define N_DESTINATIONS 8 //should match the nMigrationDestinations defined in the user app
 
 class Agent; //forward declaration
 
@@ -23,6 +24,10 @@ public:
 
     Agent *agents[MAX_AGENTS]; //agents residing on this place
     unsigned agentPop; // the population of agents on this place
+
+    Agent* potentialNextAgents[N_DESTINATIONS]; //agents that expressed an intention to migrate into this place
+    int potentialNextAgentsIdxs[N_DESTINATIONS]; //indexes of agents that expressed an intention to migrate into this place
+
 };
 
 } /* namespace mass */

@@ -90,7 +90,7 @@ Agents* Mass::createAgents(int handle, void *argument, int argSize,
 	//TODO: create a map of agents on the Places grid. Use random number generation on the CPU and then copy to GPU.
 
 	// create an API object for this Agents collection
-	Agents *agents = new Agents(handle, nAgents, dispatcher);
+	Agents *agents = new Agents(handle, nAgents, dispatcher, placesHandle);
 	agentsMap[handle] = agents;
 
 	// perform actual instantiation of user classes 

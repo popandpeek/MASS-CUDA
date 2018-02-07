@@ -16,6 +16,8 @@ public:
     unsigned placeIndex;  //index of the place where agent resides
     bool isAlive;
 
+    Place *destPlace;
+    int destRelativeIdx; //place index in the destination array relative to the agent location
 };
 
 } /* namespace mass */

@@ -7,8 +7,8 @@
 #include <string>
 #include "string.h"
 
-#define DEBUG
-// #undef DEBUG
+// #define DEBUG
+#undef DEBUG
 #define TEST
 
 

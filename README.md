@@ -9,6 +9,8 @@
 
 * Compilation
 
+    Before compiling the library to use with your project, set the proper parameters in <> on line <> to match <>.
+    
     Library comes with provided Makefile, so to compile & link the library and test application go to the main folder and run the command: `make`
 
 

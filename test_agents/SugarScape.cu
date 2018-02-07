@@ -114,7 +114,8 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	agents->callAll(Ant::SET_INIT_SUGAR, agentSugarArray, sizeof(int) * nAgents);
 	agents->callAll(Ant::SET_INIT_METABOLISM, agentMetabolismArray, sizeof(int) * nAgents);
 
-	// create neighborhood
+	// create neighborhood for average pollution calculations
+	// TODO: move from x,y coordinates to 1D coordinates, because we use 1D averywhere else anyway
 	vector<int*> neighbors;
 	int top[2] = { 0, 1 };
 	neighbors.push_back(top);
@@ -124,6 +125,24 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	neighbors.push_back(bottom);
 	int left[2] = { -1, 0 };
 	neighbors.push_back(left);
+
+	// create a vector of possible target destination places for an ant
+    vector<int*> migrationDestinations;
+    //TODO: modify all versions of the program to include left and up as well
+    for(int i=1;i<=maxVisible; i++ ) //going right
+    {
+        int *hDest = new int[2];
+        hDest[0] = i;
+        hDest[1] = 0;
+        migrationDestinations.push_back(hDest);
+    }
+    for(int i=1;i<=maxVisible; i++ ) //going up
+    {
+        int *vDest = new int[2];
+        vDest[0] = 0;
+        vDest[1] = i;
+        migrationDestinations.push_back(vDest);
+    }
 
 	// start a timer
 	Timer timer;
@@ -135,13 +154,14 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		places->callAll(SugarPlace::INC_SUGAR_AND_POLLUTION);
 
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
-
 		places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
 
-		// findPlaceForMigration
-		// selectAgentToAccept
-		// migrate
-		// resetMigrationData
+		places -> callAll(SugarPlace::IDENTIFY_IF_GOOD_FOR_MIGRATION);
+		places->exchangeAll(&migrationDestinations, SugarPlace::FIND_MIGRATION_DESTINATION, NULL /*argument*/, 0 /*argSize*/); 
+		
+		agents->callAll(Ant::MIGRATE);
+
+		agents->manageAll();
 
 		agents->callAll(Ant::METABOLIZE);
 		agents->manageAll();

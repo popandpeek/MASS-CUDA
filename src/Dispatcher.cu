@@ -50,6 +50,7 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
 
+        // TODO: check if pragma unroll has any effect on performance
         #pragma unroll
         for (int i = 0; i < nNeighbors_device; ++i) {
             int j = idx + offsets_device[i];
@@ -71,6 +72,7 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
         
+        // TODO: check if pragma unroll has any effect on performance
         #pragma unroll
         for (int i = 0; i < nNeighbors_device; ++i) {
             int j = idx + offsets_device[i];
@@ -90,11 +92,43 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
 __global__  void terminateAgentsKernel(Agent **ptrs, int nptrs) {
     int idx = getGlobalIdx_1D_1D();
     if ((idx < nptrs) && (ptrs[idx] -> isAlive() == false)) {
+        // printf("TERMINATING AGENT %d\n", ptrs[idx] ->getIndex());
 
         Place* place = ptrs[idx] -> getPlace();
         place -> removeAgent(ptrs[idx]);
 
         //TODO: update the total count of agents & release agent into free pool
+    }
+}
+
+__global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        ptrs[idx] -> resolveMigrationConflicts();
+    }
+}
+
+__global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        // printf("updateAgentLocationsKernel kernel for idx =%d \n", idx);
+        Place* destination = ptrs[idx]->state->destPlace;
+        if ( destination != NULL) {
+            // check that the new Place is actually accepting the agent
+            for (int i=0; i<MAX_AGENTS; i++) {
+                if (destination->state->agents[i] == ptrs[idx]) {
+                    // remove agent from the old place:
+                    ptrs[idx] -> getPlace() -> removeAgent(ptrs[idx]);
+
+                    // update place ptr in agent:
+                    ptrs[idx] -> setPlace(destination);
+                    // printf("_____updated place in agent %d to place %d\n", ptrs[idx]->getIndex(), destination->getIndex());
+                }
+            }
+            // clean all migration data:
+            ptrs[idx]-> state->destPlace = NULL;
+            ptrs[idx]-> state->destRelativeIdx = -1;
+        }
     }
 }
 
@@ -234,6 +268,7 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 
     neighborhood = vec;
     int nNeighbors = vec->size();
+    Logger::debug("______new nNeighbors=%d", nNeighbors);
 
     int *offsets = new int[nNeighbors]; 
 
@@ -262,6 +297,7 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
             multiplier *= dimensions[i]; // remove dimension from multiplier
         }
         offsets[j] = offset;
+        Logger::debug("offsets[%d] = %d", j, offsets[j]); 
     }
     
     // Now copy offsets to the GPU:
@@ -363,28 +399,6 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
     }
 }
 
-// void * Dispatcher::callAllAgents(int agentHandle, int functionId, void *arguments[],
-//             int argSize, int retSize) {
-//     // perform call all
-//     callAllAgents(agentHandle, functionId, arguments, argSize);
-//     // get data from GPUs
-//     int numAgents;
-//     refreshAgents(agentHandle, numAgents);
-//     // get necessary pointers and counts
-//     int qty = model->getAgentsModel(agentHandle)->getNumElements();
-//     Agent** agents = model->getAgentsModel(agentHandle)->getAgentElements();
-//     void *retVal = malloc(qty * retSize);
-//     char *dest = (char*) retVal;
-
-//     for (int i = 0; i < qty; ++i) {
-//         // copy messages to a return array
-//         //TODO: should we implement a getMessage() funct in Agent?
-//         memcpy(dest, agents[i]->getMessage(), retSize);
-//         dest += retSize;
-//     }
-//     return retVal;
-// }
-
 void Dispatcher::terminateAgents(int agentHandle) {
     Logger::debug("Inside Dispatcher::terminateAgents");
 
@@ -397,6 +411,25 @@ void Dispatcher::terminateAgents(int agentHandle) {
     Logger::debug("Exiting Dispatcher::terminateAgents");
 
 }
+
+void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
+    // Resolve migration colflicts between agents
+    Place** p_ptrs = deviceInfo->getDevPlaces(placeHandle);
+    PlacesModel *p = model->getPlacesModel(placeHandle);
+
+    // printf("\nLaunching Dispatcher::resolveMigrationConflictsKernel()\n");
+    resolveMigrationConflictsKernel<<<p->blockDim(), p->threadDim()>>>(p_ptrs, p->getNumElements());
+    CHECK();
+
+
+    AgentsModel *a = model->getAgentsModel(agentHandle);
+    Agent **a_ptrs = deviceInfo->getDevAgents(agentHandle);
+
+    Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel()");
+    updateAgentLocationsKernel<<<a->blockDim(), a->threadDim()>>>(a_ptrs, a->getNumElements());
+    CHECK();
+}
+
 
 //TODO: do we need this?
 void Dispatcher::unloadDevice(DeviceConfig *device) {

@@ -22,9 +22,9 @@ objlib:
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/DeviceConfig.cu -o obj/lib/DeviceConfig.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -D_MWAITXINTRIN_H_INCLUDED -D_FORCE_INLINES -D__STRICT_ANSI__ -c src/Dispatcher.cu -o obj/lib/Dispatcher.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Mass.cu -o obj/lib/Mass.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Agent.cu -o obj/lib/Agent.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Place.cu -o obj/lib/Place.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Places.cu -o obj/lib/Places.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Agent.cu -o obj/lib/Agent.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/Agents.cu -o obj/lib/Agents.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/AgentsModel.cu -o obj/lib/AgentsModel.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c src/PlacesModel.cu -o obj/lib/PlacesModel.o

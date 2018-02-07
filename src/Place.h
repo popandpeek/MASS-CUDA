@@ -1,20 +1,22 @@
 
 #pragma once
 
-// change either of these numbers to optomize for a particular simulation's needs
-#define MAX_AGENTS 4
-#define MAX_NEIGHBORS 8
-#define MAX_DIMS 6
- // easier for end users to understand than the __host__ __device__ meaning.
+// change either of these numbers to optimize for a particular simulation's needs
+// #define MAX_AGENTS 1
+// #define MAX_NEIGHBORS 8
+// #define MAX_DIMS 6
+
+// easier for end users to understand than the __host__ __device__ meaning.
 #define MASS_FUNCTION __host__ __device__
 
 #include<cuda_runtime.h>
+#include "Agent.h"
 
 namespace mass {
 
 // forward declaration
 class PlaceState;
-class Agent;
+//class Agent;
 
 /**
  *  The Place class defines the default functions for acheiving GPU parallelism between place objects.
@@ -61,6 +63,11 @@ public:
 
 	MASS_FUNCTION virtual PlaceState* getState();
 
+	/* The default migration conflict resolution is based on the ID of the migrating agent.
+	Can be overloaded in the derived Agent class
+	*/
+	MASS_FUNCTION virtual void resolveMigrationConflicts();
+
 	MASS_FUNCTION int getIndex();
 
 	MASS_FUNCTION void setIndex(int index);
@@ -72,6 +79,8 @@ public:
 	MASS_FUNCTION void removeAgent(Agent* agent);
 
 	MASS_FUNCTION int getAgentPopulation();
+
+	MASS_FUNCTION void addMigratingAgent(Agent* agent, int relativeIdx);
 
 
 	PlaceState *state;

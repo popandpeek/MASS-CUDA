@@ -71,58 +71,84 @@ MASS_FUNCTION void SugarPlace::avePollutions() {
     double top, right, bottom, left;
 
     if (idx - size >= 0) { //top
-    	if (myState->inMessages[0] == NULL) {
-    		printf("top neighbor is NULL !!!!!!!!!!!!!!! idx = %d\n", idx);
-    	}
     	top = *((double*) myState->inMessages[0]);
     } else {
     	top = 0.0;
     }
 	
 	if ((idx +1) % size != 0) { //right
-    	if (myState->inMessages[1] == NULL) {
-    		printf("right neighbor is NULL !!!!!!!!!!!!!!!idx = %d\n", idx);
-    	}
     	right = *((double*) myState->inMessages[1]);
     } else {
     	right = 0.0;
     }
 
     if (idx + size < size*size) { //bottom
-    	if (myState->inMessages[2] == NULL) {
-    		printf("bottom neighbor is NULL !!!!!!!!!!!!!!!idx = %d\n", idx);
-    	}
     	bottom = *((double*) myState->inMessages[2]);
     } else {
     	bottom = 0.0;
     }
 
     if (idx % size != 0) { //left
-    	if (myState->inMessages[3] == NULL) {
-    		printf("left neighbor is NULL !!!!!!!!!!!!!!!idx = %d\n", idx);
-    	}
     	left = *((double*) myState->inMessages[3]);
     } else {
     	left = 0.0;
     }
 
-    // idx + size < size*size ? top = *((double*) myState->inMessagesinMessages[0]) : 0.0;
-    // idx - size >= 0 ? bottom = *((double*) myState->inMessages[2]) : 0.0;
-    // (idx +1) % size != 0 ? right = *((double*) myState->inMessages[1]) : 0.0;
-    // (idx - 1) % size != size-2 ? left = *((double*) myState->inMessages[3]) : 0.0;
-
-    // printf("idx = [%d], top = %f, bottom = %f, left = %f, right = %f\n", idx, top, bottom, left, right);
-    // printf("average pollution for idx[%d]: %f\n", idx, ( top + bottom + left + right ) / 4.0);
-
     myState->avePollution = ( top + bottom + left + right ) / 4.0;
 }
 
 MASS_FUNCTION void SugarPlace::updatePollutionWithAverage() {
-	//printf("Inside updatePollutionWithAverage() for idx = %d. old pollution = %f, new pollution = %f\n", myState -> index, myState->pollution, myState->avePollution);
     myState->pollution = myState->avePollution;
     myState->avePollution = 0.0;
 }
 
+MASS_FUNCTION void SugarPlace::findMigrationDestination() {
+    // TODO: experiment if moving calulation of suitability into separate function will help 
+    // TODO: currently every place looks for suitable neighbors, experiment with maybe only doing for plaves with agents residing on them    
+    
+    myState -> migrationDest = NULL; //initially assume we won't find a suitable place
+    myState ->  migrationDestRelativeIdx = -1;
+
+    int idx = myState -> index;
+    int size = myState -> size[0];
+
+    // printf("inside findMigrationDestination() for idx =%d\n", idx);
+
+    for(int i=0; i< maxVisible; i++) { //displacement to the right
+        // TODO: fix the possibility to migrate across the plane border to next line
+        if (idx + i + 1< size*size) {
+            // printf("i = %d, assumed neighbor idx = %d, idx =%d\n", i, idx + i + 1, idx);
+            if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
+                // printf("____Found a new place for agent residing at place %d, new destination %d\n", idx, ((SugarPlace*)myState-> neighbors[i]) -> myState -> index );
+                myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
+                myState -> migrationDestRelativeIdx = i;
+                return;
+            }
+        }        
+    }
+
+    for (int i=maxVisible; i<maxVisible*2; i++) { //displacement up
+        if (idx - (i-maxVisible+1)*size > 0) {
+            // printf("i = %d, assumed neighbor idx = %d, idx =%d\n", i, idx - (i-maxVisible+1)*size, idx);
+            if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
+                // printf("____Found a new place for agent residing at place %d, new destination %d\n", idx, ((SugarPlace*)myState-> neighbors[i]) -> myState -> index );
+                myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
+                myState -> migrationDestRelativeIdx = i;
+                return;
+            }
+        }
+    }
+}
+
+MASS_FUNCTION void SugarPlace::identifyIfGoodForMigration() {
+    if ((getAgentPopulation() == 0) && (myState->curSugar / ( 1.0 + myState->pollution) > 0.0)) {
+        // printf("Place %d is GOOD for migration\n", myState -> index);
+        myState -> isGoodForMigration = true;
+    } else {
+        // printf("Place %d is NOT GOOD for migration\n", myState -> index);
+        myState -> isGoodForMigration = false;
+    }
+}
 
 MASS_FUNCTION SugarPlace::~SugarPlace() {
 	// nothing to delete
@@ -151,6 +177,18 @@ MASS_FUNCTION void SugarPlace::setPollution(double newPollution){
     myState -> pollution = newPollution;
 }
 
+MASS_FUNCTION bool SugarPlace::isGoodForMigration() {
+    return myState -> isGoodForMigration;
+}
+
+MASS_FUNCTION SugarPlace* SugarPlace::getMigrationDest() {
+    return myState -> migrationDest;
+}
+
+MASS_FUNCTION int SugarPlace::getMigrationDestRelIdx() {
+    return myState -> migrationDestRelativeIdx;
+}
+
 MASS_FUNCTION void SugarPlace::callMethod(int functionId, void *argument) {
 	switch (functionId) {
 		case SET_SUGAR:
@@ -165,6 +203,12 @@ MASS_FUNCTION void SugarPlace::callMethod(int functionId, void *argument) {
 		case UPDATE_POLLUTION_WITH_AVERAGE:
 			updatePollutionWithAverage();
 			break;
+        case FIND_MIGRATION_DESTINATION:
+            findMigrationDestination();
+            break;
+        case IDENTIFY_IF_GOOD_FOR_MIGRATION:
+            identifyIfGoodForMigration();
+            break;
 		default:
 			break;
 	}

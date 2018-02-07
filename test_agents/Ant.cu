@@ -24,6 +24,9 @@ MASS_FUNCTION void Ant::callMethod(int functionId, void *argument) {
         case SET_INIT_METABOLISM:
             setInitMetabolism((int*)argument);
             break;
+        case MIGRATE:
+            migrate();
+            break;
         default:
             break;
     }
@@ -57,6 +60,14 @@ MASS_FUNCTION void Ant::metabolize() {
     if( myState -> agentSugar < 0 )
     {
         terminateAgent();
+    }
+}
+
+MASS_FUNCTION void Ant::migrate() {
+    // printf("migrate() function for agent %d\n", getIndex());
+    SugarPlace* myPlace = (SugarPlace*) getPlace();
+    if (myPlace -> getMigrationDest() != NULL) {
+        migrateAgent(myPlace -> getMigrationDest(), myPlace -> getMigrationDestRelIdx());
     }
 }
 

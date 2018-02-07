@@ -208,7 +208,6 @@ __global__ void mapAgentsKernel(Place **places, int placeQty, Agent **agents,
 		int placeIdx = placeIdxs[idx];
 		Place* myPlace = places[placeIdx];
 		agents[idx] -> setPlace(myPlace);
-		agents[idx] -> setPlaceIdx(placeIdx);
 		myPlace -> addAgent(agents[idx]);
 	}
 }

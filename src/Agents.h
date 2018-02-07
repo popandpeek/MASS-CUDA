@@ -23,7 +23,7 @@ public:
      *
      *  @param handle the unique identifier of this Agents collections
      */
-    Agents(int handle, int nAgents, Dispatcher *d);
+    Agents(int handle, int nAgents, Dispatcher *d, int placesHandle);
 
     ~Agents();
 
@@ -82,6 +82,7 @@ public:
 private:
 
     int handle;         // User-defined identifier for this Agents collection
+    int placesHandle;   // Places collection associated with these Agents
     Dispatcher *dispatcher; // the GPU dispatcher
 
     int numElements;

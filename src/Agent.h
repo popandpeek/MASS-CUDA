@@ -24,10 +24,9 @@ public:
 
     MASS_FUNCTION virtual AgentState* getState();
 
-    MASS_FUNCTION Place* getPlace();
     MASS_FUNCTION void setPlace(Place* place);
+    MASS_FUNCTION Place* getPlace();
     MASS_FUNCTION int getPlaceIndex();
-    MASS_FUNCTION void setPlaceIdx(int placeIdx);
 
     MASS_FUNCTION int getIndex();
 
@@ -40,6 +39,7 @@ public:
     MASS_FUNCTION void setAlive();
     MASS_FUNCTION void terminateAgent();
 
+    MASS_FUNCTION void migrateAgent(Place* destination, int destinationRelativeIdx);
 
     AgentState *state;
 };

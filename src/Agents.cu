@@ -8,12 +8,13 @@ using namespace std;
 
 namespace mass {
 
-Agents::Agents(int handle, int nAgents, Dispatcher *d) {
+Agents::Agents(int handle, int nAgents, Dispatcher *d, int placesHandle) {
     this->handle = handle;
     this->dispatcher = d;
 
     this->elemPtrs = NULL;
     this->numElements = nAgents;
+    this->placesHandle = placesHandle;
 }
 
 
@@ -54,6 +55,8 @@ void Agents::manageAll() {
     dispatcher->terminateAgents(handle);
 
     // Step 2: migrate all agents that need migrating
+    dispatcher->migrateAgents(handle, placesHandle);
+
     // Step 3: spawn all new agents that need spawning
 }
 
