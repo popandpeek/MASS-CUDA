@@ -14,7 +14,6 @@ namespace mass {
 
 DeviceConfig::DeviceConfig() :
 		deviceNum(-1) {
-	d_glob = NULL;
 	freeMem = 0;
 	allMem = 0;
 	Logger::warn("DeviceConfig::NoParam constructor");
@@ -26,7 +25,6 @@ DeviceConfig::DeviceConfig(int device) :
 	CATCH(cudaSetDevice(deviceNum));
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 	CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, allMem * 3 / 4));
-	d_glob = NULL;
 	devPlacesMap = map<int, PlaceArray>{};
 	devAgentsMap = map<int, AgentArray>{};
 }
@@ -44,8 +42,6 @@ void DeviceConfig::freeDevice() {
 		++it;
 	}
 	devPlacesMap.clear();
-
-	CATCH(cudaFree(d_glob));
 
 	CATCH(cudaDeviceReset());
 	Logger::debug("Done with deviceConfig freeDevice().");
@@ -89,22 +85,6 @@ Agent** DeviceConfig::getDevAgents(int handle) {
 void* DeviceConfig::getAgentsState(int handle) {
 	return devAgentsMap[handle].devState; 
 }
-
-GlobalConsts DeviceConfig::getGlobalConstants() {
-	return glob;
-}
-
-void DeviceConfig::updateConstants(GlobalConsts consts) {
-	glob = consts;
-	if (NULL == d_glob) {
-		CATCH(cudaMalloc((void** ) &d_glob, sizeof(GlobalConsts)));
-	}
-	CATCH(cudaMemcpy(d_glob, &glob, sizeof(GlobalConsts), H2D));
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
-	Logger::debug("Device %d successfully updated global constants.",
-			this->deviceNum);
-}
-
 
 __global__ void destroyPlacesKernel(Place **places, int qty) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;

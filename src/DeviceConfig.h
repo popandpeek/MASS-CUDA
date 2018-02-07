@@ -61,9 +61,6 @@ public:
 	Agent** getDevAgents(int handle);
 	void* getAgentsState(int handle);
 
-	GlobalConsts getGlobalConstants();
-	void updateConstants(GlobalConsts consts);
-
 	template<typename P, typename S>
 	Place** instantiatePlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[], int qty);
@@ -76,8 +73,6 @@ private:
 	int deviceNum;
 	std::map<int, PlaceArray> devPlacesMap;
 	std::map<int, AgentArray> devAgentsMap;
-	GlobalConsts glob;
-	GlobalConsts *d_glob;
 	size_t freeMem;
 	size_t allMem;
 };
@@ -130,10 +125,6 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	if (devPlacesMap.count(handle) > 0) {
 		return NULL;
 	}
-
-	// add global constants to the GPU
-	memcpy(glob.globalDims, size, sizeof(int) * dimensions);
-	updateConstants(glob);
 
 	// create places tracking
 	PlaceArray p;

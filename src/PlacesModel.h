@@ -80,7 +80,6 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int qty) {
 	Logger::debug("Entering PlacesModel::createPlaces");
 
-	// TODO potential gap if state is not instantiated on the GPU as well. Would not use the argument.
 	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
 	S* tmpPtr = new S[qty];
 	p->state = tmpPtr;

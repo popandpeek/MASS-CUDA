@@ -58,7 +58,6 @@ void Places::exchangeAll(std::vector<int*> *destinations, int functionId, void *
 }
 
 Place** Places::getElements() {
-	// TODO can I avoid refresh every time?
 	elemPtrs = dispatcher->refreshPlaces(handle);
 	return elemPtrs;
 }

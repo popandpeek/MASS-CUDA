@@ -75,12 +75,6 @@ public:
 	 */
 	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
-	//// TODO implement the call some functions
-	// void callSome( int functionId, int dim, int index[] );
-	// void callSome( int functionId, void *argument, int argSize, int dim, int index[] );
-	// void *callSome( int functionId, void *arguments[], int argSize, int dim, int index[] );
-	// exchangeSome( int handle, int functionId, Vector<int*> *destinations, int dim, int index[] );
-
 	/**
 	 *  This function causes all Place elements to call the function specified on all neighboring
 	 *  place elements. The offsets to neighbors are defined in the destinations vector (a collection

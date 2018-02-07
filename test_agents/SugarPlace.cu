@@ -112,8 +112,6 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     int idx = myState -> index;
     int size = myState -> size[0];
 
-    // printf("inside findMigrationDestination() for idx =%d\n", idx);
-
     for(int i=0; i< maxVisible; i++) { //displacement to the right
         // TODO: fix the possibility to migrate across the plane border to next line
         if (idx + i + 1< size*size) {
