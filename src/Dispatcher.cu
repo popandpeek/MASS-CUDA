@@ -50,8 +50,6 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
 
-        // TODO: check if pragma unroll has any effect on performance
-        #pragma unroll
         for (int i = 0; i < nNeighbors_device; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
@@ -71,9 +69,7 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
-        
-        // TODO: check if pragma unroll has any effect on performance
-        #pragma unroll
+
         for (int i = 0; i < nNeighbors_device; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {

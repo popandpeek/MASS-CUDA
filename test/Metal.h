@@ -41,7 +41,6 @@ public:
 	 */
 	//MASS_FUNCTION virtual int placeSize();
 
-	// TODO remove this call if not necessary
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
 
 	MASS_FUNCTION void nextPhase();

@@ -56,7 +56,6 @@ public:
 	 */
 	//MASS_FUNCTION virtual int placeSize() = 0;
 
-	// TODO remove this call if not necessary
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
 
 	//MASS_FUNCTION virtual void setState(PlaceState *s);

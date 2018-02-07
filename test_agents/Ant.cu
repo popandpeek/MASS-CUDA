@@ -55,8 +55,6 @@ MASS_FUNCTION void Ant::metabolize() {
     myPlace -> setCurSugar(0);
     myPlace -> setPollution(myPlace -> getPollution() + myState->agentMetabolism);
 
-    //TODO: experiment to see if direct access to variables is faster than accessors
-
     if( myState -> agentSugar < 0 )
     {
         terminateAgent();

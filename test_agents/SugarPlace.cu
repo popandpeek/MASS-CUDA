@@ -115,9 +115,7 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     for(int i=0; i< maxVisible; i++) { //displacement to the right
         // TODO: fix the possibility to migrate across the plane border to next line
         if (idx + i + 1< size*size) {
-            // printf("i = %d, assumed neighbor idx = %d, idx =%d\n", i, idx + i + 1, idx);
             if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
-                // printf("____Found a new place for agent residing at place %d, new destination %d\n", idx, ((SugarPlace*)myState-> neighbors[i]) -> myState -> index );
                 myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
                 myState -> migrationDestRelativeIdx = i;
                 return;
@@ -127,9 +125,7 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
 
     for (int i=maxVisible; i<maxVisible*2; i++) { //displacement up
         if (idx - (i-maxVisible+1)*size > 0) {
-            // printf("i = %d, assumed neighbor idx = %d, idx =%d\n", i, idx - (i-maxVisible+1)*size, idx);
             if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
-                // printf("____Found a new place for agent residing at place %d, new destination %d\n", idx, ((SugarPlace*)myState-> neighbors[i]) -> myState -> index );
                 myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
                 myState -> migrationDestRelativeIdx = i;
                 return;
@@ -140,10 +136,8 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
 
 MASS_FUNCTION void SugarPlace::identifyIfGoodForMigration() {
     if ((getAgentPopulation() == 0) && (myState->curSugar / ( 1.0 + myState->pollution) > 0.0)) {
-        // printf("Place %d is GOOD for migration\n", myState -> index);
         myState -> isGoodForMigration = true;
     } else {
-        // printf("Place %d is NOT GOOD for migration\n", myState -> index);
         myState -> isGoodForMigration = false;
     }
 }
