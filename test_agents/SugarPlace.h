@@ -6,8 +6,8 @@
 #include "../src/Logger.h"
 #include "SugarPlaceState.h"
 
-const static int maxVisible = 4;
-const static int nMigrationDestinations = 8;
+const static int maxVisible = 3;
+const static int nMigrationDestinations = 6;
 
 class SugarPlace: public mass::Place {
 

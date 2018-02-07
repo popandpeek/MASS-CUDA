@@ -5,7 +5,7 @@
 #define MAX_AGENTS 1
 #define MAX_NEIGHBORS 8
 #define MAX_DIMS 6
-#define N_DESTINATIONS 8 //should match the nMigrationDestinations defined in the user app
+#define N_DESTINATIONS 6 //should match the nMigrationDestinations defined in the user app
 
 class Agent; //forward declaration
 

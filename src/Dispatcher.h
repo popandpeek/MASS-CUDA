@@ -114,8 +114,6 @@ public:
 		int argSize, int nAgents, int placesHandle);
 
 private:
-	void unloadDevice(DeviceConfig *device);
-
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
 	DeviceConfig* deviceInfo;
 

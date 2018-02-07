@@ -430,20 +430,5 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     CHECK();
 }
 
-
-//TODO: do we need this?
-void Dispatcher::unloadDevice(DeviceConfig *device) {
-	Logger::debug("Inside Dispatcher::unloadDevice\n");
-    std::map<int, PlacesModel*> placesModels = model -> getAllPlacesModels();
-	if (!placesModels.empty()) {
-		map<int, PlacesModel*>::iterator itP = placesModels.begin();
-		while (itP != placesModels.end()) {
-			refreshPlaces(itP->first); //copy all stuff from GPU to CPU to PlaceState*
-		}
-
-		deviceInfo = NULL;
-	}
-}
-
 }// namespace mass
 
