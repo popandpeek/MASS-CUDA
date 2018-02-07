@@ -18,7 +18,6 @@ namespace mass {
 
 	for (int i=0; i< N_DESTINATIONS; i++) {
 		state->potentialNextAgents[i] = NULL;
-		state->potentialNextAgentsIdxs[i] = -1;
 	}
 }
 
@@ -33,18 +32,13 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 	if (MAX_AGENTS == 1) { //common case, easier computation
 
 		Agent* acceptedAgent = NULL;
-		int acceptedIdx = -1;
 
 		for (int i=0; i< N_DESTINATIONS; i++) {
-			// TODO: take out the index array and see if it detriments the performance at all
-			// printf("resolveMigrationConflicts() kernel for idx =%d, inside the loop i=%d\n", getIndex(), i);
-
-			if (state->potentialNextAgentsIdxs[i] != -1) {
-				// printf("resolveMigrationConflicts() kernel for idx =%d, inside the loop i=%d. past if. potentialNextAgentsIdxs[i] = %d\n", getIndex(), i, state->potentialNextAgentsIdxs[i]);
-				if ((acceptedIdx == -1) || (state->potentialNextAgentsIdxs[i] < acceptedIdx)){
+			if (state->potentialNextAgents[i] != NULL) {
+				// printf("resolveMigrationConflicts() kernel for idx =%d, inside the loop i=%d. past if.\n", getIndex(), i);
+				if ((acceptedAgent == NULL) || (state->potentialNextAgents[i]->getIndex() < acceptedAgent->getIndex())){
 					// printf("resolveMigrationConflicts() kernel for idx =%d, inside the loop i=%d. past second if\n", getIndex(), i);
 					acceptedAgent = state->potentialNextAgents[i];
-					acceptedIdx = state->potentialNextAgentsIdxs[i];
 				}
 			} 
 		}
@@ -60,27 +54,23 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 	else { // more than 1 agent can reside in a place
 		printf("MAX_AGENTS > 1 in resolveMigrationConflicts()!!!\n");
 		Agent* potentialResidents[N_DESTINATIONS];
-		int potentialResidentsIdxs[N_DESTINATIONS] = {-1};
 
 		for (int i=0; i< N_DESTINATIONS; i++) {
-			if (state->potentialNextAgentsIdxs[i] == -1) continue;
+			if (state->potentialNextAgents[i] == NULL) continue;
 			
 			//Insert agent into proper place:
 			for (int j=0; j< N_DESTINATIONS; j++) {
-				if (potentialResidentsIdxs[j] == -1) {
-					potentialResidentsIdxs[j] = state->potentialNextAgentsIdxs[i];
+				if (potentialResidents[j] == NULL) {
 					potentialResidents[j] = state->potentialNextAgents[i];
 					break;
 				}
 
-				if (state->potentialNextAgentsIdxs[i] < potentialResidentsIdxs[j]) {
+				if (state->potentialNextAgents[i]->getIndex() < potentialResidents[j]->getIndex()) {
 					// insert new index here and shift everything right:
 					for (int k=N_DESTINATIONS-1; k>j; k--) {
 						potentialResidents[k] = potentialResidents[k-1];
-						potentialResidentsIdxs[k] = potentialResidentsIdxs[k-1];
 					}
 					potentialResidents[j] = state->potentialNextAgents[i];
-					potentialResidentsIdxs[j] = state->potentialNextAgentsIdxs[i];
 					break;
 				}
 			}
@@ -88,7 +78,7 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 
 		// Copy the N_DESTINATIONS first agents into next agents array:
 		int curAgent =0;
-		while ((state->agentPop < MAX_AGENTS) && (potentialResidentsIdxs[curAgent] != -1)) {
+		while ((state->agentPop < MAX_AGENTS) && (potentialResidents[curAgent] != NULL)) {
 			//copy agent into the first available spot:
 			for (int i=0; i< MAX_AGENTS; i++) {
 				if (state->agents[i] == NULL) {
@@ -101,10 +91,9 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 		}
 	}
 
-	// Clean potentialNextAgents and potentialNextAgentsIdxs arrays
+	// Clean potentialNextAgents array
 	for (int i=0; i< N_DESTINATIONS; i++) {
 		state->potentialNextAgents[i] = NULL;
-		state->potentialNextAgentsIdxs[i] = -1;
 	}
 
 }
@@ -164,7 +153,6 @@ MASS_FUNCTION int Place::getAgentPopulation() {
 MASS_FUNCTION void Place::addMigratingAgent(Agent* agent, int relativeIdx) {
 	// printf("Place::addMigratingAgent agent %d to place %d, relative idx = %d \n", agent->getIndex(), getIndex(), relativeIdx);
 	state -> potentialNextAgents[relativeIdx] = agent;
-	state -> potentialNextAgentsIdxs[relativeIdx] = agent -> getIndex();
 }
 
 
