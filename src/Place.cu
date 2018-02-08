@@ -27,17 +27,13 @@ MASS_FUNCTION PlaceState* Place::getState() {
 }
 
 MASS_FUNCTION void Place::resolveMigrationConflicts() {
-	// printf("resolveMigrationConflicts() kernel for idx =%d\n", getIndex());
 
 	if (MAX_AGENTS == 1) { //common case, easier computation
-
 		Agent* acceptedAgent = NULL;
 
 		for (int i=0; i< N_DESTINATIONS; i++) {
 			if (state->potentialNextAgents[i] != NULL) {
-				// printf("resolveMigrationConflicts() kernel for idx =%d, inside the loop i=%d. past if.\n", getIndex(), i);
 				if ((acceptedAgent == NULL) || (state->potentialNextAgents[i]->getIndex() < acceptedAgent->getIndex())){
-					// printf("resolveMigrationConflicts() kernel for idx =%d, inside the loop i=%d. past second if\n", getIndex(), i);
 					acceptedAgent = state->potentialNextAgents[i];
 				}
 			} 
@@ -47,7 +43,6 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 		if (acceptedAgent != NULL) {
 			state->agents[0] = acceptedAgent;
 			state->agentPop ++;
-			// printf("place %d accepted agent %d\n", getIndex(), acceptedAgent -> getIndex());
 		}
 	} 
 

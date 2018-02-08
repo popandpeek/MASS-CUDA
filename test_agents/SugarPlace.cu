@@ -104,8 +104,10 @@ MASS_FUNCTION void SugarPlace::updatePollutionWithAverage() {
 
 MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     // TODO: experiment if moving calulation of suitability into separate function will help 
-    // TODO: currently every place looks for suitable neighbors, experiment with maybe only doing for plaves with agents residing on them    
-    
+    // TODO: experiment with moving this check to Ant class, thus will have less threads and less thread divergence
+        
+    if (getAgentPopulation() == 0) return;
+
     myState -> migrationDest = NULL; //initially assume we won't find a suitable place
     myState ->  migrationDestRelativeIdx = -1;
 
