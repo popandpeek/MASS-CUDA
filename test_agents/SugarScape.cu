@@ -156,7 +156,6 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
 		places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
 
-		places -> callAll(SugarPlace::IDENTIFY_IF_GOOD_FOR_MIGRATION);
 		places->exchangeAll(&migrationDestinations, SugarPlace::FIND_MIGRATION_DESTINATION, NULL /*argument*/, 0 /*argSize*/); 
 		
 		agents->callAll(Ant::MIGRATE);

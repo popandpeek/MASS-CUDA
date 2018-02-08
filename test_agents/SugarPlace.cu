@@ -18,9 +18,6 @@ MASS_FUNCTION SugarPlace::SugarPlace(PlaceState* state, void *argument) :
     myState -> curSugar = 0;
     myState -> maxSugar = 0;
     myState -> nAgentsInPlace = 0;
-
-    // Agent properties:
-    // destinationIdx[idx] = -1; // the next place to migrate to
 }
 
 MASS_FUNCTION void SugarPlace::setSugar() {
@@ -103,9 +100,6 @@ MASS_FUNCTION void SugarPlace::updatePollutionWithAverage() {
 }
 
 MASS_FUNCTION void SugarPlace::findMigrationDestination() {
-    // TODO: experiment if moving calulation of suitability into separate function will help 
-    // TODO: experiment with moving this check to Ant class, thus will have less threads and less thread divergence
-        
     if (getAgentPopulation() == 0) return;
 
     myState -> migrationDest = NULL; //initially assume we won't find a suitable place
@@ -133,14 +127,6 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
                 return;
             }
         }
-    }
-}
-
-MASS_FUNCTION void SugarPlace::identifyIfGoodForMigration() {
-    if ((getAgentPopulation() == 0) && (myState->curSugar / ( 1.0 + myState->pollution) > 0.0)) {
-        myState -> isGoodForMigration = true;
-    } else {
-        myState -> isGoodForMigration = false;
     }
 }
 
@@ -172,7 +158,7 @@ MASS_FUNCTION void SugarPlace::setPollution(double newPollution){
 }
 
 MASS_FUNCTION bool SugarPlace::isGoodForMigration() {
-    return myState -> isGoodForMigration;
+    return ((getAgentPopulation() == 0) && (myState->curSugar / ( 1.0 + myState->pollution) > 0.0));
 }
 
 MASS_FUNCTION SugarPlace* SugarPlace::getMigrationDest() {
@@ -199,9 +185,6 @@ MASS_FUNCTION void SugarPlace::callMethod(int functionId, void *argument) {
 			break;
         case FIND_MIGRATION_DESTINATION:
             findMigrationDestination();
-            break;
-        case IDENTIFY_IF_GOOD_FOR_MIGRATION:
-            identifyIfGoodForMigration();
             break;
 		default:
 			break;

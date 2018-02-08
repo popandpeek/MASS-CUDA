@@ -13,8 +13,6 @@ public:
 
     SugarPlace* migrationDest;  //available migration destination within visibility range from this place
     int migrationDestRelativeIdx;
-
-    bool isGoodForMigration;
 };
 
 #endif /* SUGARPLACESTATE_H_ */

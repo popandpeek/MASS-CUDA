@@ -19,7 +19,6 @@ public:
 	const static int UPDATE_POLLUTION_WITH_AVERAGE = 3;
 	const static int FIND_MIGRATION_DESTINATION = 4;
 	const static int SELECT_AGENT_TO_ACCEPT = 5;
-	const static int IDENTIFY_IF_GOOD_FOR_MIGRATION = 7;
 
 	MASS_FUNCTION SugarPlace(mass::PlaceState *state, void *argument);
 	MASS_FUNCTION ~SugarPlace();
@@ -46,7 +45,6 @@ private:
 	MASS_FUNCTION void avePollutions();
 	MASS_FUNCTION void updatePollutionWithAverage();
 	MASS_FUNCTION void findMigrationDestination();
-	MASS_FUNCTION void identifyIfGoodForMigration();
 };
 
 #endif /* SUGAR_PLACE_H_ */
