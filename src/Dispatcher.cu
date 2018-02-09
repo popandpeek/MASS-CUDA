@@ -115,7 +115,6 @@ __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
             }
             // clean all migration data:
             ptrs[idx]-> state->destPlace = NULL;
-            ptrs[idx]-> state->destRelativeIdx = -1;
         }
     }
 }

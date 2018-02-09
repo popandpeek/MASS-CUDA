@@ -18,7 +18,6 @@ public:
 	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
 	unsigned index;            // the row-major index of this place
 	int size[MAX_DIMS];   // the size of the Places matrix
-	char numDims;
 
     Agent *agents[MAX_AGENTS]; //agents residing on this place
     unsigned agentPop; // the population of agents on this place

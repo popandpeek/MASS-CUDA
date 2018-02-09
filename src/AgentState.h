@@ -17,7 +17,6 @@ public:
     bool isAlive;
 
     Place *destPlace;
-    int destRelativeIdx; //place index in the destination array relative to the agent location
 };
 
 } /* namespace mass */

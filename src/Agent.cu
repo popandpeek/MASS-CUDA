@@ -11,8 +11,6 @@ namespace mass {
  */MASS_FUNCTION Agent::Agent(AgentState *state, void *args) {
     this->state = state;
     this->state->index = 0;
-
-    this->state->destRelativeIdx = -1;
 }
 
 MASS_FUNCTION AgentState* Agent::getState() {
@@ -62,10 +60,7 @@ MASS_FUNCTION void Agent::terminateAgent() {
 }
 
 MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelativeIdx) {
-    // printf("__________Attempting to migrate agent %d from %d to %d\n", getIndex(), getPlaceIndex(), destination->getIndex());
     state -> destPlace = destination;
-    state -> destRelativeIdx = destinationRelativeIdx;
-
     destination -> addMigratingAgent(this, destinationRelativeIdx);
 }
 
