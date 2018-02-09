@@ -31,31 +31,6 @@ public:
 	 */
 	MASS_FUNCTION Place(PlaceState* state, void *args = NULL);
 
-//	/**
-//	 *  Called by MASS while executing Places.callAll().
-//	 *
-//	 * @param functionId user-defined function id
-//	 * @param args user-defined arguments
-//	 */
-//	MASS_FUNCTION virtual void callMethod(int functionId, void* args) = 0;
-
-	/**
-	 *  Gets a pointer to this place's out message.
-	 */
-	MASS_FUNCTION virtual void *getMessage() = 0;
-
-	/**
-	 * Returns the number of bytes necessary to store this agent implementation.
-	 * The most simple implementation is a single line of code:
-	 * return sizeof(ThisClass);
-	 *
-	 * Because sizeof is resolved at compile-time, the user must implement this
-	 * function rather than inheriting it.
-	 *
-	 * @return an int >= 0;
-	 */
-	//MASS_FUNCTION virtual int placeSize() = 0;
-
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
 
 	//MASS_FUNCTION virtual void setState(PlaceState *s);

@@ -15,8 +15,6 @@
 
 // caching for optimizing performance of setNeighborPlacesKernel():
 __constant__ int offsets_device[MAX_NEIGHBORS]; 
-__constant__ int nNeighbors_device; 
-
 
 using namespace std;
 
@@ -44,40 +42,36 @@ __global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
 /**
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
-__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
+__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int nNeighbors) {
 	int idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
 
-        for (int i = 0; i < nNeighbors_device; ++i) {
+        for (int i = 0; i < nNeighbors; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
-                state->inMessages[i] = ptrs[j]->getMessage();
             } else {
                 state->neighbors[i] = NULL;
-                state->inMessages[i] = NULL;
             }
         }
     }
 }
 
-__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
+__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int nNeighbors, int functionId,
         void *argPtr) {
     int idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
 
-        for (int i = 0; i < nNeighbors_device; ++i) {
+        for (int i = 0; i < nNeighbors; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
-                state->inMessages[i] = ptrs[j]->getMessage();
             } else {
                 state->neighbors[i] = NULL;
-                state->inMessages[i] = NULL;
             }
         }
 
@@ -107,7 +101,6 @@ __global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
 __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
     int idx = getGlobalIdx_1D_1D();
     if (idx < nptrs) {
-        // printf("updateAgentLocationsKernel kernel for idx =%d \n", idx);
         Place* destination = ptrs[idx]->state->destPlace;
         if ( destination != NULL) {
             // check that the new Place is actually accepting the agent
@@ -118,7 +111,6 @@ __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
 
                     // update place ptr in agent:
                     ptrs[idx] -> setPlace(destination);
-                    // printf("_____updated place in agent %d to place %d\n", ptrs[idx]->getIndex(), destination->getIndex());
                 }
             }
             // clean all migration data:
@@ -227,25 +219,25 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 	}
 }
 
-void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
-		int argSize, int retSize) {
-	// perform call all
-	callAllPlaces(handle, functionId, arguments, argSize);
-	// get data from GPUs
-	refreshPlaces(handle);
-	// get necessary pointers and counts
-	int qty = model->getPlacesModel(handle)->getNumElements();
-	Place** places = model->getPlacesModel(handle)->getPlaceElements();
-	void *retVal = malloc(qty * retSize);
-	char *dest = (char*) retVal;
+// void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
+// 		int argSize, int retSize) {
+// 	// perform call all
+// 	callAllPlaces(handle, functionId, arguments, argSize);
+// 	// get data from GPUs
+// 	refreshPlaces(handle);
+// 	// get necessary pointers and counts
+// 	int qty = model->getPlacesModel(handle)->getNumElements();
+// 	Place** places = model->getPlacesModel(handle)->getPlaceElements();
+// 	void *retVal = malloc(qty * retSize);
+// 	char *dest = (char*) retVal;
 
-	for (int i = 0; i < qty; ++i) {
-		// copy messages to a return array
-		memcpy(dest, places[i]->getMessage(), retSize);
-		dest += retSize;
-	}
-	return retVal;
-}
+// 	for (int i = 0; i < qty; ++i) {
+// 		// copy messages to a return array
+// 		memcpy(dest, places[i]->getMessage(), retSize);
+// 		dest += retSize;
+// 	}
+// 	return retVal;
+// }
 
 bool compArr(int* a, int aLen, int *b, int bLen) {
 	if (aLen != bLen) {
@@ -299,8 +291,8 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
     // Now copy offsets to the GPU:
     cudaMemcpyToSymbol(offsets_device, offsets, sizeof(int) * nNeighbors);
     CHECK();
-    cudaMemcpyToSymbol(nNeighbors_device, &nNeighbors, sizeof(int));
-    CHECK();
+    // cudaMemcpyToSymbol(nNeighbors_device, &nNeighbors, sizeof(int));
+    // CHECK();
 
     delete [] offsets;
     Logger::debug("Exiting Dispatcher::updateNeighborhood");
@@ -319,7 +311,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 	PlacesModel *p = model->getPlacesModel(handle);
 
 	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
-	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);
+	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size());
 	CHECK();
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
 }
@@ -344,7 +336,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     int nptrs = deviceInfo->countDevPlaces(handle);
     PlacesModel *p = model->getPlacesModel(handle);
 
-    setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, functionId, argPtr);
+    setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
     CHECK();
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 }

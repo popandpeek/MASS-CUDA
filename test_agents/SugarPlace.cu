@@ -68,25 +68,25 @@ MASS_FUNCTION void SugarPlace::avePollutions() {
     double top, right, bottom, left;
 
     if (idx - size >= 0) { //top
-    	top = *((double*) myState->inMessages[0]);
+    	top = ((SugarPlace*)myState->neighbors[0])->getPollution();
     } else {
     	top = 0.0;
     }
 	
 	if ((idx +1) % size != 0) { //right
-    	right = *((double*) myState->inMessages[1]);
+    	right = ((SugarPlace*)myState->neighbors[1])->getPollution();
     } else {
     	right = 0.0;
     }
 
     if (idx + size < size*size) { //bottom
-    	bottom = *((double*) myState->inMessages[2]);
+    	bottom = ((SugarPlace*)myState->neighbors[2])->getPollution();
     } else {
     	bottom = 0.0;
     }
 
     if (idx % size != 0) { //left
-    	left = *((double*) myState->inMessages[3]);
+    	left = ((SugarPlace*)myState->neighbors[3])->getPollution();
     } else {
     	left = 0.0;
     }
@@ -132,13 +132,6 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
 
 MASS_FUNCTION SugarPlace::~SugarPlace() {
 	// nothing to delete
-}
-
-/**
- *  Gets a pointer to this place's out message.
- */
-MASS_FUNCTION void *SugarPlace::getMessage() {
-	return &(myState->pollution);
 }
 
 MASS_FUNCTION int SugarPlace::getCurSugar() {

@@ -23,7 +23,6 @@ public:
 	MASS_FUNCTION SugarPlace(mass::PlaceState *state, void *argument);
 	MASS_FUNCTION ~SugarPlace();
 
-	MASS_FUNCTION virtual void *getMessage();
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
 
 	MASS_FUNCTION int getCurSugar();

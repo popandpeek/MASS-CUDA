@@ -41,7 +41,7 @@ bool checkResults(Places *places, int time, int *placesSize) {
                 Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
                         row, col, rmi);
             }
-            double temp = *((double*) retVals[rmi]->getMessage());
+            double temp = ((Metal*) retVals[rmi])->getTemp();
             double roundedTemp = floor(temp / 2);
             ss << floor(temp / 2) << " ";
             if (roundedTemp != targetResults[row][col]) {

@@ -11,9 +11,7 @@ namespace mass {
  */MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
 	this->state = state;
 	this->state->index = 0;
-	this->state->message_size = 0;
 	memset(this->state->neighbors, 0, MAX_NEIGHBORS);
-	memset(this->state->inMessages, 0, MAX_NEIGHBORS);
 	memset(this->state->size, 0, MAX_DIMS);
 
 	for (int i=0; i< N_DESTINATIONS; i++) {

@@ -64,8 +64,8 @@ public:
 	 * @param retSize the size of the return value in bytes. If retSize == 0, NULL will be returned.
 	 * @return an array with one element of argSize per place. NULL if retSize == 0
 	 */
-	void *callAllPlaces(int placeHandle, int functionId, void *arguments[],
-			int argSize, int retSize);
+	// void *callAllPlaces(int placeHandle, int functionId, void *arguments[],
+	// 		int argSize, int retSize);
 
 	/**
 	 *  This function causes all Place elements to call the function specified on all neighboring
@@ -121,7 +121,7 @@ private:
 	bool initialized;
 	bool deviceLoaded;
 
-	std::vector<int*> *neighborhood; /**< The previous vector of neighbors.*/
+	std::vector<int*> *neighborhood; /* The previous vector of neighbors.*/
 
 };
 // end class

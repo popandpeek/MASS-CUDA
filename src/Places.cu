@@ -43,11 +43,11 @@ void Places::callAll(int functionId, void *argument, int argSize) {
 	dispatcher->callAllPlaces(handle, functionId, argument, argSize);
 }
 
-void *Places::callAll(int functionId, void *arguments[], int argSize,
-		int retSize) {
-	return dispatcher->callAllPlaces(handle, functionId, arguments, argSize,
-			retSize);
-}
+// void *Places::callAll(int functionId, void *arguments[], int argSize,
+// 		int retSize) {
+// 	return dispatcher->callAllPlaces(handle, functionId, arguments, argSize,
+// 			retSize);
+// }
 
 void Places::exchangeAll(std::vector<int*> *destinations) {
 	dispatcher->exchangeAllPlaces(handle, destinations);

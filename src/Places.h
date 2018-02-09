@@ -73,7 +73,7 @@ public:
 	 *  @param argSize the size in bytes of each argument element
 	 *  @param retSize the size in bytes of the return array element
 	 */
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
+	// void *callAll(int functionId, void *arguments[], int argSize, int retSize);
 
 	/**
 	 *  This function causes all Place elements to call the function specified on all neighboring

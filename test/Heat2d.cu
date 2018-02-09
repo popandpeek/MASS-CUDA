@@ -48,7 +48,7 @@ void Heat2d::displayResults(Places *places, int time, int *placesSize) {
 				Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
 						row, col, rmi);
 			}
-			double temp = *((double*) retVals[rmi]->getMessage());
+			double temp = ((Metal*) retVals[rmi])->getTemp();
 			ss << floor(temp / 2) << " ";
 		}
 
@@ -59,7 +59,7 @@ void Heat2d::displayResults(Places *places, int time, int *placesSize) {
 }
 
 void Heat2d::runHostSim(int size, int max_time, int heat_time, int interval) {
-	Logger::print("Starting CPU simulation\n");
+	Logger::debug("Starting CPU simulation\n");
 	double r = a * dt / (dd * dd);
 
 	// create a space
@@ -291,7 +291,7 @@ __global__ void euler(double *dest, double *src, int size, int t, int heat_time,
 }
 
 void Heat2d::runDeviceSim(int size, int max_time, int heat_time, int interval) {
-	Logger::print("Starting GPU simulation\n");
+	Logger::debug("Starting GPU simulation\n");
 	double r = a * dt / (dd * dd);
 
 	// create a space
