@@ -60,8 +60,8 @@ MASS_FUNCTION void Agent::setAlive() {
 }
 
 MASS_FUNCTION void Agent::terminateAgent() {
-    // printf("__________Terminating agent %d\n", getIndex());
     state -> isAlive = false;
+    state->place->removeAgent(this);
 }
 
 MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelativeIdx) {

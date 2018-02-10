@@ -79,17 +79,17 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int nNeighbors,
     }
 }
 
-__global__  void terminateAgentsKernel(Agent **ptrs, int nptrs) {
-    int idx = getGlobalIdx_1D_1D();
-    if ((idx < nptrs) && (ptrs[idx] -> isAlive() == false)) {
-        // printf("TERMINATING AGENT %d\n", ptrs[idx] ->getIndex());
+// __global__  void terminateAgentsKernel(Agent **ptrs, int nptrs) {
+//     int idx = getGlobalIdx_1D_1D();
+//     if ((idx < nptrs) && (ptrs[idx] -> isAlive() == false)) {
+//         // printf("TERMINATING AGENT %d\n", ptrs[idx] ->getIndex());
 
-        Place* place = ptrs[idx] -> getPlace();
-        place -> removeAgent(ptrs[idx]);
+//         Place* place = ptrs[idx] -> getPlace();
+//         place -> removeAgent(ptrs[idx]);
 
-        //TODO: update the total count of agents & release agent into free pool
-    }
-}
+//         //TODO: update the total count of agents & release agent into free pool
+//     }
+// }
 
 __global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
     int idx = getGlobalIdx_1D_1D();
@@ -387,15 +387,15 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
 }
 
 void Dispatcher::terminateAgents(int agentHandle) {
-    Logger::debug("Inside Dispatcher::terminateAgents");
+    // Logger::debug("Inside Dispatcher::terminateAgents");
 
-    AgentsModel *aModel = model->getAgentsModel(agentHandle);
+    // AgentsModel *aModel = model->getAgentsModel(agentHandle);
 
-    terminateAgentsKernel<<<aModel->blockDim(), aModel->threadDim()>>>(
-            deviceInfo->getDevAgents(agentHandle), aModel->getNumElements());
-    CHECK();
+    // terminateAgentsKernel<<<aModel->blockDim(), aModel->threadDim()>>>(
+    //         deviceInfo->getDevAgents(agentHandle), aModel->getNumElements());
+    // CHECK();
 
-    Logger::debug("Exiting Dispatcher::terminateAgents");
+    // Logger::debug("Exiting Dispatcher::terminateAgents");
 
 }
 
