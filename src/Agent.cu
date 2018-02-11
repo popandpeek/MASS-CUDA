@@ -23,16 +23,11 @@ MASS_FUNCTION Place* Agent::getPlace() {
 
 MASS_FUNCTION void Agent::setPlace(Place* place) {
     state->place = place;
+    state->placeIndex = place->getIndex();
 }
 
 MASS_FUNCTION int Agent::getPlaceIndex() {
-    if (state->place != NULL) {
-        return state->place->getIndex();
-    } else {
-        printf("Warning: Agent[%d] place is NULL\n", getIndex());
-        return -1;
-    }
-    
+    return state->placeIndex;
 }    
 
 MASS_FUNCTION int Agent::getIndex() {
