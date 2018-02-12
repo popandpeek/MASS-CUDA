@@ -97,6 +97,8 @@ public:
 
 	void migrateAgents(int agentHandle, int placeHandle);
 
+	void spawnAgents(int agentHandle, int placeHandle);
+
 	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents

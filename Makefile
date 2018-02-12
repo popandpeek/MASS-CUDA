@@ -1,4 +1,4 @@
-all: dirs app test appagents
+all: dirs app appagents test
 
 dirs:
 	mkdir -p obj/lib
@@ -11,7 +11,7 @@ app: objlib objtest
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test/main.o lib/mass_cuda.a -o bin/app
 
 test: objlib objtest
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test/test.o lib/mass_cuda.a -o bin/test
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test_agents/SugarScape.o obj/test_agents/SugarPlace.o obj/test_agents/SugarPlaceState.o obj/test_agents/Ant.o obj/test_agents/AntState.o obj/test/test.o lib/mass_cuda.a -o bin/test
 
 appagents: objlib objtestagents
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test_agents/*.o lib/mass_cuda.a -o bin/appagents

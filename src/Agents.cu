@@ -58,6 +58,7 @@ void Agents::manageAll() {
     dispatcher->migrateAgents(handle, placesHandle);
 
     // Step 3: spawn all new agents that need spawning
+    dispatcher->spawnAgents(handle, placesHandle);
 }
 
 

@@ -57,11 +57,16 @@ MASS_FUNCTION void Agent::setAlive() {
 MASS_FUNCTION void Agent::terminateAgent() {
     state -> isAlive = false;
     state->place->removeAgent(this);
+    state -> index = -1;
 }
 
 MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelativeIdx) {
     state -> destPlace = destination;
     destination -> addMigratingAgent(this, destinationRelativeIdx);
+}
+
+MASS_FUNCTION void Agent::spawn(int numAgents, void* arguments, int arg_size) {
+    // TODO: implement
 }
 
 } /* namespace mass */

@@ -41,6 +41,8 @@ public:
 
     MASS_FUNCTION void migrateAgent(Place* destination, int destinationRelativeIdx);
 
+    MASS_FUNCTION void spawn(int numAgents, void* arguments, int arg_size);
+
     AgentState *state;
 };
 }
