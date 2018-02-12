@@ -8,12 +8,12 @@ using namespace std;
 
 namespace mass {
 
-Agents::Agents(int handle, int nAgents, Dispatcher *d, int placesHandle) {
+Agents::Agents(int handle, Dispatcher *d, int placesHandle) {
     this->handle = handle;
     this->dispatcher = d;
 
     this->elemPtrs = NULL;
-    this->numElements = nAgents;
+    //this->numElements = nAgents;
     this->placesHandle = placesHandle;
 }
 
@@ -24,8 +24,11 @@ Agents::~Agents() {
 
 
 int Agents::getNumAgents() {
-    //TODO: maybe should do dispatcher->refreshAgents here as well
-    return numElements;
+    return dispatcher->getNumAgents(handle);
+}
+
+int Agents::getNumAgentObjects() {
+    return dispatcher->getNumAgentObjects(handle);
 }
 
 int Agents::getHandle() {
@@ -43,11 +46,6 @@ void Agents::callAll(int functionId, void *argument, int argSize) {
     dispatcher->callAllAgents(handle, functionId, argument, argSize);
 }
 
-// void *Agents::callAll(int functionId, void *arguments[], int argSize,
-//         int retSize) {
-//     return dispatcher->callAllAgents(handle, functionId, arguments, argSize,
-//             retSize);
-// }
 
 void Agents::manageAll() {
     //TODO: implement
@@ -63,7 +61,7 @@ void Agents::manageAll() {
 
 
 Agent** Agents::getElements() {
-    elemPtrs = dispatcher->refreshAgents(handle, numElements/*gets updated*/);
+    elemPtrs = dispatcher->refreshAgents(handle);
     return elemPtrs;
 }
 

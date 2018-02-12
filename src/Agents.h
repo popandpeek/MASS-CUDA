@@ -23,15 +23,20 @@ public:
      *
      *  @param handle the unique identifier of this Agents collections
      */
-    Agents(int handle, int nAgents, Dispatcher *d, int placesHandle);
+    Agents(int handle, Dispatcher *d, int placesHandle);
 
     ~Agents();
 
     /**
-     * Returns the number of agents present in this agents collection.
+     * Returns the number of alive agents present in this agents collection.
      * @return
      */
     int getNumAgents();
+
+    /*
+    Returns the number of all agent objects present in this agents collection (some can be terminated).
+    */
+    int getNumAgentObjects();
 
     /**
      *  Returns the handle associated with this Agents object that was set at construction.
@@ -85,7 +90,7 @@ private:
     int placesHandle;   // Places collection associated with these Agents
     Dispatcher *dispatcher; // the GPU dispatcher
 
-    int numElements;
+    //int numElements;
     Agent **elemPtrs;
 
 };

@@ -1,8 +1,6 @@
 #ifndef AGENTSMODEL_H_
 #define AGENTSMODEL_H_
 
-#define THREADS_PER_BLOCK 512
-
 #include "Agent.h"
 #include "AgentState.h"
 #include "Logger.h"
@@ -21,22 +19,6 @@ public:
     unsigned getNumElements();
     int getHandle();
 
-    /**
-     * Returns the ideal block dimension for this AgentsModel. Used for launching
-     * kernel functions on this AgentsModel's data.
-     *
-     * @return
-     */
-    dim3 blockDim();
-
-    /**
-     * Returns the ideal thread dimension for this AgentsModel. Used for launching
-     * kernel functions on this AgentsModel's data.
-     *
-     * @return
-     */
-    dim3 threadDim();
-
     template<typename AgentType, typename AgentStateType>
     static AgentsModel* createAgents(int handle, void *argument, 
         int argSize, int nAgents);
@@ -49,20 +31,8 @@ private:
 
     int handle;
     unsigned numElements;
-
-    /*
-     * Dimentions of blocks and threads for GPU
-     * 0 is blockdim, 1 is threaddim
-     */
-    dim3 dims[2];
     
     AgentsModel(int handle, int qty);
-
-    /**
-     * Refreshes the ideal dimensions for kernel launches. This should be called
-     * only when the AgentsModel is created.
-     */
-    void setIdealDims();
 };
 
 template<typename AgentType, typename AgentStateType>

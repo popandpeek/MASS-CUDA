@@ -28,7 +28,10 @@ struct PlaceArray {
 struct AgentArray {
 	Agent** devPtr;
 	void *devState;
-	int qty;  //size
+	int nAgents;  //number of live agents
+	int nObjects; //number of all agent objects
+	int nextIdx;  //next available idx for allocation
+	dim3 dims[2]; //block and thread dimentions
 };
 
 /**
@@ -47,10 +50,6 @@ public:
 	void load(void*& destination, const void* source, size_t bytes);
 	void unload(void* destination, void* source, size_t bytes);
 
-	/*
-	 * Place Mutators
-	 */
-
 	Place** getDevPlaces(int handle);
 	void* getPlaceState(int handle);
 	int countDevPlaces(int handle);
@@ -60,6 +59,16 @@ public:
 
 	Agent** getDevAgents(int handle);
 	void* getAgentsState(int handle);
+
+	int getNumAgents(int handle);
+	int getNumAgentObjects(int handle);
+	int getMaxAgents(int handle);
+
+	/* Returns block and thread dimentions for the Agent collection 
+	   based on the number of elements beloging to the collection
+	*/
+	dim3* getDims(int agentHandle);
+
 
 	template<typename P, typename S>
 	Place** instantiatePlaces(int handle, void *argument, int argSize,
@@ -178,14 +187,13 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 
 template<typename AgentType, typename AgentStateType>
 __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
-		void *arg, int qty) {
+		void *arg, int nAgents) {
 	unsigned idx = getGlobalIdx_1D_1D();
 
-	if (idx < qty) {
+	if (idx < nAgents) {
 		// set pointer to corresponding state object
 		agents[idx] = new AgentType(&(state[idx]), arg);
 		agents[idx]->setIndex(idx);
-		agents[idx]->setSize(qty);
 		agents[idx]->setAlive();
 	}
 }
@@ -214,19 +222,20 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 
 	// create places tracking
 	AgentArray a;
-	a.qty = nAgents; //size
+	a.nAgents = nAgents; //size
+	a.nObjects = nAgents*2; //allocate more space to allow for agent spawning
+	a.nextIdx = nAgents;
 
 	// create state array on device
 	AgentStateType* d_state = NULL;
 	int Sbytes = sizeof(AgentStateType);
-	CATCH(cudaMalloc((void** ) &d_state, nAgents * Sbytes));
+	CATCH(cudaMalloc((void** ) &d_state, a.nObjects * Sbytes));
 	a.devState = d_state;
 
 	// allocate device pointers
-	// TODO: think how to handle agent spawning in terms of space on GPU
 	Agent** tmpAgents = NULL;
 	int ptrbytes = sizeof(Agent*);
-	CATCH(cudaMalloc((void** ) &tmpAgents, nAgents * ptrbytes));
+	CATCH(cudaMalloc((void** ) &tmpAgents, a.nObjects * ptrbytes));
 	a.devPtr = tmpAgents;
 
 	// handle arg
@@ -241,7 +250,7 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	int threadDim = (nAgents - 1) / blockDim + 1;
 	Logger::debug("Launching agent instantiation kernel");
 	instantiateAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(a.devPtr, d_state,
-			d_arg, nAgents);
+			d_arg, a.nAgents);
 	CHECK();
 	Logger::debug("Finished agent instantiation kernel");
 

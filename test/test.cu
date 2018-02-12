@@ -131,7 +131,6 @@ bool checkSugarScapeResults(Places *places, int time, int *placesSize) {
     } else {
         return true;
     }
-    return correctResult;
 }
 
 void runMassSimTest(int size, int max_time, int heat_time) {

@@ -88,7 +88,7 @@ Agents* Mass::createAgents(int handle, void *argument, int argSize,
 	Logger::debug("Entering Mass::createAgents\n");
 
 	// create an API object for this Agents collection
-	Agents *agents = new Agents(handle, nAgents, dispatcher, placesHandle);
+	Agents *agents = new Agents(handle, dispatcher, placesHandle);
 	agentsMap[handle] = agents;
 
 	// perform actual instantiation of user classes 

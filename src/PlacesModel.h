@@ -2,11 +2,10 @@
 #ifndef PLACESMODEL_H_
 #define PLACESMODEL_H_
 
-#define THREADS_PER_BLOCK 512
-
 #include <map>
 
 #include "MassException.h"
+#include "cudaUtil.h"
 #include "Place.h"
 #include "PlaceState.h"
 #include "Logger.h"

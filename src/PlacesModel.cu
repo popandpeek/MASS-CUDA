@@ -58,7 +58,7 @@ dim3 PlacesModel::threadDim() {
 
 void PlacesModel::setIdealDims() {
 	Logger::debug("Inside PlacesModel::setIdealDims");
-	int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
+	int numBlocks = (numElements - 1) / BLOCK_SIZE + 1;
 	dim3 blockDim(numBlocks);
 
 	int nThr = (numElements - 1) / numBlocks + 1;

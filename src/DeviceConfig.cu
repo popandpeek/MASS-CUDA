@@ -43,6 +43,8 @@ void DeviceConfig::freeDevice() {
 	}
 	devPlacesMap.clear();
 
+	//TODO: delete Agents
+
 	CATCH(cudaDeviceReset());
 	Logger::debug("Done with deviceConfig freeDevice().");
 }
@@ -84,6 +86,31 @@ Agent** DeviceConfig::getDevAgents(int handle) {
 
 void* DeviceConfig::getAgentsState(int handle) {
 	return devAgentsMap[handle].devState; 
+}
+
+int DeviceConfig::getNumAgents(int handle) {
+	return devAgentsMap[handle].nAgents;
+}
+
+int DeviceConfig::getNumAgentObjects(int handle) {
+	return devAgentsMap[handle].nextIdx;
+}
+
+int DeviceConfig::getMaxAgents(int handle) {
+	return devAgentsMap[handle].nObjects;
+}
+
+dim3* DeviceConfig::getDims(int handle) {
+    int numBlocks = (getNumAgentObjects(handle) - 1) / BLOCK_SIZE + 1;
+    dim3 blockDim(numBlocks);
+
+    int nThr = (getNumAgentObjects(handle) - 1) / numBlocks + 1;
+    dim3 threadDim(nThr);
+
+    devAgentsMap[handle].dims[0] = blockDim;
+    devAgentsMap[handle].dims[1] = threadDim;
+
+    return devAgentsMap[handle].dims;
 }
 
 __global__ void destroyPlacesKernel(Place **places, int qty) {

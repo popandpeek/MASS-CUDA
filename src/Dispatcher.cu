@@ -206,37 +206,17 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 	}
 }
 
-// void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
-// 		int argSize, int retSize) {
-// 	// perform call all
-// 	callAllPlaces(handle, functionId, arguments, argSize);
-// 	// get data from GPUs
-// 	refreshPlaces(handle);
-// 	// get necessary pointers and counts
-// 	int qty = model->getPlacesModel(handle)->getNumElements();
-// 	Place** places = model->getPlacesModel(handle)->getPlaceElements();
-// 	void *retVal = malloc(qty * retSize);
-// 	char *dest = (char*) retVal;
-
-// 	for (int i = 0; i < qty; ++i) {
-// 		// copy messages to a return array
-// 		memcpy(dest, places[i]->getMessage(), retSize);
-// 		dest += retSize;
+// bool compArr(int* a, int aLen, int *b, int bLen) {
+// 	if (aLen != bLen) {
+// 		return false;
 // 	}
-// 	return retVal;
+
+// 	for (int i = 0; i < aLen; ++i) {
+// 		if (a[i] != b[i])
+// 			return false;
+// 	}
+// 	return true;
 // }
-
-bool compArr(int* a, int aLen, int *b, int bLen) {
-	if (aLen != bLen) {
-		return false;
-	}
-
-	for (int i = 0; i < aLen; ++i) {
-		if (a[i] != b[i])
-			return false;
-	}
-	return true;
-}
 
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
@@ -326,17 +306,19 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 }
 
-Agent** Dispatcher::refreshAgents(int handle, int& numAgents) {
-    //TODO: is numAgents updated?
+Agent** Dispatcher::refreshAgents(int handle) {
     Logger::debug("Entering Dispatcher::refreshAgents");
     AgentsModel *agentsModel = model->getAgentsModel(handle);
     
     if (initialized) {
         Logger::debug("Dispatcher::refreshAgents: Initialized -> copying info from GPU to CPU");
+
         void *devPtr = deviceInfo->getAgentsState(handle);
+        int qty = deviceInfo->getMaxAgents(handle);
         int stateSize = agentsModel->getStateSize();
-        int qty = agentsModel->getNumElements(); //TODO: changing number of agents!!!
+
         int bytes = stateSize * qty;
+
         CATCH(cudaMemcpy(agentsModel->getStatePtr(), devPtr, bytes, D2H));
     }
 
@@ -358,8 +340,10 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
 
         Logger::debug("Dispatcher::callAllAgents: Calling callAllAgentsKernel");
         AgentsModel *aModel = model->getAgentsModel(agentHandle);
-        callAllAgentsKernel<<<aModel->blockDim(), aModel->threadDim()>>>(
-                deviceInfo->getDevAgents(agentHandle), aModel->getNumElements(),
+        dim3* dims = deviceInfo->getDims(agentHandle);
+
+        callAllAgentsKernel<<<dims[0], dims[1]>>>(
+                deviceInfo->getDevAgents(agentHandle), deviceInfo->getNumAgentObjects(agentHandle),
                 functionId, argPtr);
         CHECK();
 
@@ -377,25 +361,30 @@ void Dispatcher::terminateAgents(int agentHandle) {
 }
 
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
-    // Resolve migration colflicts between agents
     Place** p_ptrs = deviceInfo->getDevPlaces(placeHandle);
     PlacesModel *p = model->getPlacesModel(placeHandle);
 
-    // printf("\nLaunching Dispatcher::resolveMigrationConflictsKernel()\n");
     resolveMigrationConflictsKernel<<<p->blockDim(), p->threadDim()>>>(p_ptrs, p->getNumElements());
     CHECK();
 
-
-    AgentsModel *a = model->getAgentsModel(agentHandle);
     Agent **a_ptrs = deviceInfo->getDevAgents(agentHandle);
+    dim3* dims = deviceInfo->getDims(agentHandle);
 
     Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel()");
-    updateAgentLocationsKernel<<<a->blockDim(), a->threadDim()>>>(a_ptrs, a->getNumElements());
+    updateAgentLocationsKernel<<<dims[0], dims[1]>>>(a_ptrs, getNumAgentObjects(agentHandle));
     CHECK();
 }
 
 void Dispatcher::spawnAgents(int agentHandle, int placeHandle) {
-    
+    //TODO: implement
+}
+
+int Dispatcher::getNumAgents(int agentHandle) {
+    return deviceInfo->getNumAgents(agentHandle);
+}
+
+int Dispatcher::getNumAgentObjects(int agentHandle) {
+    return deviceInfo->getNumAgentObjects(agentHandle);
 }
 
 }// namespace mass

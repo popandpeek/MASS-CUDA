@@ -38,14 +38,6 @@ MASS_FUNCTION void Agent::setIndex(int index) {
     state->index = index;
 }
 
-MASS_FUNCTION void Agent::setSize(int qty) {
-    state->size = qty;
-}
-
-MASS_FUNCTION int Agent::getSize() {
-    return state->size;
-}
-
 MASS_FUNCTION bool Agent::isAlive() {
     return state -> isAlive;
 }

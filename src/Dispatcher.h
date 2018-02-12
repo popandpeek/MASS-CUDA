@@ -99,12 +99,15 @@ public:
 
 	void spawnAgents(int agentHandle, int placeHandle);
 
+	int getNumAgents(int agentHandle);
+	int getNumAgentObjects(int agentHandle);
+
 	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents
 	 * collection. It will also update the numAgents reference with the current agent count.
 	 */
-	Agent** refreshAgents(int agentHandle, int& numAgents);
+	Agent** refreshAgents(int agentHandle);
 
 
 	template<typename P, typename S>
@@ -148,13 +151,13 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 
 	Logger::debug("Inside Dispatcher::instantiateAgents\n");
 
-	// modify host-side data model
-	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents);
-
-	//modify GPU data model
+	//create GPU data model
 	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
 		argSize, nAgents, placesHandle);
+
+	//create host-side data model
+	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+		argSize, deviceInfo->getMaxAgents(handle));
 
 }
 

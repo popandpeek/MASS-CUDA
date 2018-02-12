@@ -6,7 +6,6 @@ AgentsModel::AgentsModel(int handle, int qty) {
     Logger::debug("Running PlacesModel constructor");
     this->handle = handle;
     this->numElements = qty;
-    setIdealDims();
 }
 
 AgentsModel::~AgentsModel() {
@@ -35,26 +34,6 @@ int AgentsModel::getHandle() {
 
 unsigned AgentsModel::getNumElements() {
     return numElements;
-}
-
-dim3 AgentsModel::blockDim() {
-    return dims[0];
-}
-
-dim3 AgentsModel::threadDim() {
-    return dims[1];
-}
-
-void AgentsModel::setIdealDims() {
-    Logger::debug("Inside AgentsModel::setIdealDims");
-    int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
-    dim3 blockDim(numBlocks);
-
-    int nThr = (numElements - 1) / numBlocks + 1;
-    dim3 threadDim(nThr);
-
-    dims[0] = blockDim;
-    dims[1] = threadDim;
 }
 
 } // end namespace
