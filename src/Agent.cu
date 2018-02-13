@@ -57,8 +57,10 @@ MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelati
     destination -> addMigratingAgent(this, destinationRelativeIdx);
 }
 
-MASS_FUNCTION void Agent::spawn(int numAgents, void* arguments, int arg_size) {
-    // TODO: implement
+MASS_FUNCTION void Agent::spawn(int numAgents, Place* place) {
+    
+    state -> nChildren += numAgents;
+    state -> childPlace = place;
 }
 
 } /* namespace mass */

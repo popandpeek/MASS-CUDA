@@ -107,6 +107,34 @@ __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
     }
 }
 
+__global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < *nextIdx) {
+        if ((ptrs[idx]->isAlive()) && (ptrs[idx]->state->nChildren > 0)) {
+            // find a spot in Agents array:
+            int idxStart = atomicAdd(nextIdx, ptrs[idx]->state->nChildren);
+            if (idxStart+ptrs[idx]->state->nChildren >= maxAgents) {
+                printf("Number of agents spawning exceeds the maximum number of agents allowed\n");
+                return;
+            }
+            for (int i=0; i< ptrs[idx]->state->nChildren; i++) {
+                // instantiate with proper index
+                ptrs[idxStart+i]->setAlive();
+                ptrs[idxStart+i]->setIndex(idxStart+i);
+
+                // link to a place:
+                ptrs[idxStart+i] -> setPlace(ptrs[idx]->state->childPlace);
+                ptrs[idx]->state->childPlace -> addAgent(ptrs[idxStart+i]);
+            }
+
+            // restore Agent spawning data:
+            ptrs[idx]->state->nChildren = 0;
+            ptrs[idx]->state->childPlace = NULL;
+
+        }
+    }
+}
+
 Dispatcher::Dispatcher() {
 	model = NULL;
 	initialized = false;
@@ -205,18 +233,6 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 		Logger::debug("Exiting Dispatcher::callAllPlaces()");
 	}
 }
-
-// bool compArr(int* a, int aLen, int *b, int bLen) {
-// 	if (aLen != bLen) {
-// 		return false;
-// 	}
-
-// 	for (int i = 0; i < aLen; ++i) {
-// 		if (a[i] != b[i])
-// 			return false;
-// 	}
-// 	return true;
-// }
 
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
@@ -375,8 +391,27 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     CHECK();
 }
 
-void Dispatcher::spawnAgents(int agentHandle, int placeHandle) {
-    //TODO: implement
+void Dispatcher::spawnAgents(int handle) {
+    
+    Logger::debug("Inside Dispatcher::spawnAgents");
+    Agent **a_ptrs = deviceInfo->getDevAgents(handle);
+    dim3* dims = deviceInfo->getDims(handle);
+
+    //allocate numAgentObjects on GPU:
+    int* h_numAgentObjects = new int(getNumAgentObjects(handle));
+    int* d_numAgentObjects;
+    CATCH(cudaMalloc(&d_numAgentObjects, sizeof(int)));
+    CATCH(cudaMemcpy(d_numAgentObjects, h_numAgentObjects, sizeof(int), H2D));
+
+    spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs, d_numAgentObjects, deviceInfo->getMaxAgents(handle));
+    CHECK();
+
+    CATCH(cudaMemcpy(h_numAgentObjects, d_numAgentObjects, sizeof(int), D2H));
+
+    int nNewAgents = *h_numAgentObjects - getNumAgentObjects(handle);
+    deviceInfo->devAgentsMap[handle].nAgents += nNewAgents;
+    deviceInfo->devAgentsMap[handle].nextIdx += nNewAgents;
+
 }
 
 int Dispatcher::getNumAgents(int agentHandle) {

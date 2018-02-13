@@ -17,6 +17,10 @@ public:
     bool isAlive;
 
     Place *destPlace;
+
+    int nChildren;  //number of agents to spawn at the next call to migrate()
+    Place *childPlace;
+
 };
 
 } /* namespace mass */

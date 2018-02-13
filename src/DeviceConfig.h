@@ -187,7 +187,7 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 
 template<typename AgentType, typename AgentStateType>
 __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
-		void *arg, int nAgents) {
+		void *arg, int nAgents, int maxAgents) {
 	unsigned idx = getGlobalIdx_1D_1D();
 
 	if (idx < nAgents) {
@@ -195,6 +195,9 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 		agents[idx] = new AgentType(&(state[idx]), arg);
 		agents[idx]->setIndex(idx);
 		agents[idx]->setAlive();
+	} else if (idx < maxAgents) {
+		//create placeholder objects for future agent spawning
+		agents[idx] = new AgentType(&(state[idx]), arg);
 	}
 }
 
@@ -250,7 +253,7 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	int threadDim = (nAgents - 1) / blockDim + 1;
 	Logger::debug("Launching agent instantiation kernel");
 	instantiateAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(a.devPtr, d_state,
-			d_arg, a.nAgents);
+			d_arg, a.nAgents, a.nObjects);
 	CHECK();
 	Logger::debug("Finished agent instantiation kernel");
 

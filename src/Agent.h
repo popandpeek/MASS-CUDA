@@ -38,7 +38,12 @@ public:
 
     MASS_FUNCTION void migrateAgent(Place* destination, int destinationRelativeIdx);
 
-    MASS_FUNCTION void spawn(int numAgents, void* arguments, int arg_size);
+    /* Spawns the specified number of new agents at the specified place.
+    The function does not accept instantiation arguments due to current limitations of the library.
+    If you need to set some parameters of the newly created Agents, please set these parameters 
+    in a seprate function after agent creation.
+    */
+    MASS_FUNCTION void spawn(int numAgents, Place* place);
 
     AgentState *state;
 };

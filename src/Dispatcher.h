@@ -97,7 +97,7 @@ public:
 
 	void migrateAgents(int agentHandle, int placeHandle);
 
-	void spawnAgents(int agentHandle, int placeHandle);
+	void spawnAgents(int agentHandle);
 
 	int getNumAgents(int agentHandle);
 	int getNumAgentObjects(int agentHandle);
