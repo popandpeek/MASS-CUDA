@@ -76,7 +76,7 @@ public:
 
 	template<typename AgentType, typename AgentStateType>
 	Agent** instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle);
+		int argSize, int nAgents, int placesHandle, int maxAgents);
 
 private:
 	int deviceNum;
@@ -197,7 +197,6 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 		agents[idx]->setAlive();
 	} else if (idx < maxAgents) {
 		//create placeholder objects for future agent spawning
-		printf("instantiateAgentsKernel: creating a placeholder object for agent %d\n", idx);
 		agents[idx] = new AgentType(&(state[idx]), arg);
 	}
 }
@@ -217,7 +216,7 @@ __global__ void mapAgentsKernel(Place **places, int placeQty, Agent **agents,
 
 template<typename AgentType, typename AgentStateType>
 Agent** DeviceConfig::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle) {
+		int argSize, int nAgents, int placesHandle, int maxAgents) {
 	Logger::debug("Entering DeviceConfig::instantiateAgents\n");
 
 	if (devAgentsMap.count(handle) > 0) {
@@ -227,7 +226,12 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	// create places tracking
 	AgentArray a;
 	a.nAgents = nAgents; //size
-	a.nObjects = nAgents*2; //allocate more space to allow for agent spawning
+	if (maxAgents == 0) {
+		a.nObjects = nAgents; //allocate more space to allow for agent spawning
+	} else {
+		a.nObjects = maxAgents;
+	}
+	
 	a.nextIdx = nAgents;
 
 	// create state array on device

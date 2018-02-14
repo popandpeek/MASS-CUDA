@@ -109,18 +109,14 @@ __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
 
 __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
     int idx = getGlobalIdx_1D_1D();
-    printf("spawnAgentsKernel for idx %d. current num agents %d\n", idx, *nextIdx);
     if (idx < *nextIdx) {
         if ((ptrs[idx]->isAlive()) && (ptrs[idx]->state->nChildren > 0)) {
             // find a spot in Agents array:
             int idxStart = atomicAdd(nextIdx, ptrs[idx]->state->nChildren);
-            printf("allocating children for agent %d. start idx for child is %d\n", idx, idxStart);
             if (idxStart+ptrs[idx]->state->nChildren >= maxAgents) {
-                printf("Number of agents spawning exceeds the maximum number of agents allowed\n");
                 return;
             }
             for (int i=0; i< ptrs[idx]->state->nChildren; i++) {
-                printf("setting up child %d for agent %d\n", idxStart+i, idx);
                 // instantiate with proper index
                 ptrs[idxStart+i]->setAlive();
                 ptrs[idxStart+i]->setIndex(idxStart+i);
@@ -128,8 +124,6 @@ __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
                 // link to a place:
                 ptrs[idxStart+i] -> setPlace(ptrs[idx]->state->childPlace);
                 ptrs[idx]->state->childPlace -> addAgent(ptrs[idxStart+i]);
-
-                printf("finished setting up child %d for agent %d\n", idxStart+i, idx);
             }
 
             // restore Agent spawning data:
@@ -138,7 +132,6 @@ __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
 
         }
     }
-    printf("ending spawnAgentsKernel for idx %d. current num agents %d\n", idx, *nextIdx);
 }
 
 Dispatcher::Dispatcher() {
@@ -408,8 +401,6 @@ void Dispatcher::spawnAgents(int handle) {
     int* d_numAgentObjects;
     CATCH(cudaMalloc(&d_numAgentObjects, sizeof(int)));
     CATCH(cudaMemcpy(d_numAgentObjects, h_numAgentObjects, sizeof(int), H2D));
-
-    printf("Launching spawnAgentsKernel\n");
 
     spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs, d_numAgentObjects, deviceInfo->getMaxAgents(handle));
     CHECK();

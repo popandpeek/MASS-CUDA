@@ -116,7 +116,7 @@ public:
 
 	template<typename AgentType, typename AgentStateType>
 	void instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle);
+		int argSize, int nAgents, int placesHandle, int maxAgents);
 
 private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
@@ -147,13 +147,13 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 
 template<typename AgentType, typename AgentStateType>
 void Dispatcher::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle) {
+		int argSize, int nAgents, int placesHandle, int maxAgents) {
 
 	Logger::debug("Inside Dispatcher::instantiateAgents\n");
 
 	//create GPU data model
 	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents, placesHandle);
+		argSize, nAgents, placesHandle, maxAgents);
 
 	//create host-side data model
 	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
