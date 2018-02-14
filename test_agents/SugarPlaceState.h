@@ -8,7 +8,7 @@ class SugarPlace; //forward declaration
 class SugarPlaceState: public mass::PlaceState {
 public:
 
-    int curSugar, maxSugar, nAgentsInPlace, nextAgentIdx;
+    int curSugar, maxSugar;
     double pollution, avePollution;
 
     SugarPlace* migrationDest;  //available migration destination within visibility range from this place

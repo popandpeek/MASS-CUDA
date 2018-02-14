@@ -14,6 +14,8 @@
 #include "../test_agents/Ant.h"
 #include "../test_agents/AntState.h"
 
+#include "../test_agent_spawn/TestAgent.h"
+#include "../test_agent_spawn/TestPlace.h"
 
 using namespace std;
 using namespace mass;
@@ -131,6 +133,39 @@ bool checkSugarScapeResults(Places *places, int time, int *placesSize) {
     } else {
         return true;
     }
+}
+
+bool checkAgentSpawningResults (Places *places, int time, int *placesSize) {
+    bool correctResult = true;
+
+    // TODO: implement
+
+    return correctResult;
+}
+
+void displayPlaces(Places *places, int time, int *placesSize) {
+    ostringstream agents;
+
+    agents << "time = " << time << "\n";
+    Place ** retVals = places->getElements();
+    int indices[2];
+    for (int row = 0; row < placesSize[0]; row++) {
+        indices[0] = row;
+        for (int col = 0; col < placesSize[1]; col++) {
+            indices[1] = col;
+            int rmi = places->getRowMajorIdx(indices);
+            if (rmi != (row % placesSize[0]) * placesSize[0] + col) {
+                Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
+                        row, col, rmi);
+            }
+            int n_agents = retVals[rmi]->getAgentPopulation();
+            agents << n_agents << " ";
+        }
+
+        agents << "\n";
+    }
+    agents << "\n";
+    Logger::print(agents.str());
 }
 
 void runMassSimTest(int size, int max_time, int heat_time) {
@@ -310,6 +345,53 @@ void runSugarScapeTest(int size, int max_time) {
     Mass::finish();
 }
 
+void runAgentSpawningTest(int size, int max_time) {
+    string *arguments = NULL;
+    int nDims = 2;
+    int placesSize[] = { size, size };
+    int nAgents = size*size / 5;
+
+    Mass::init(arguments);
+
+    // initialize places and agents
+    Places *places = Mass::createPlaces<TestPlace, TestPlaceState>(0 /*handle*/, NULL /*arguments*/,
+            sizeof(double), nDims, placesSize);
+
+    Agents *agents = Mass::createAgents<TestAgent, TestAgentState> (1 /*handle*/, NULL /*arguments*/,
+            sizeof(double), nAgents, 0 /*placesHandle*/);
+
+    // create neighborhood for average pollution calculations
+    vector<int*> neighbors;
+    int top[2] = { 0, 1 };
+    neighbors.push_back(top);
+    int right[2] = { 1, 0 };
+    neighbors.push_back(right);
+    int bottom[2] = { 0, -1 };
+    neighbors.push_back(bottom);
+    int left[2] = { -1, 0 };
+    neighbors.push_back(left);
+
+    displayPlaces(places, -1, placesSize);
+
+    int t = 0;
+    for (; t < max_time; t++) {
+
+        places->exchangeAll(&neighbors, TestPlace::FIND_SPAWNING_DEST, NULL /*argument*/, 0 /*argSize*/);
+        
+        agents->callAll(TestAgent::SPAWN_NORTH);
+        agents->manageAll();
+
+        displayPlaces(places, t, placesSize);
+    }
+
+    if (checkAgentSpawningResults(places, t, placesSize)) {
+        Logger::print("Intergation test for library with agent spawning is successful!\n");
+    }
+
+    // terminate the processes
+    Mass::finish();
+}
+
 int main() {
     Logger::setLogFile("test_program_logs.txt");
 
@@ -319,10 +401,12 @@ int main() {
 
     Logger::print("Running intergation test using Heat2D program\n");
 
-    runMassSimTest(size, max_time, heat_time);
-    runMassSimTestImproved(size, max_time, heat_time);
+    // runMassSimTest(size, max_time, heat_time);
+    // runMassSimTestImproved(size, max_time, heat_time);
 
-    runSugarScapeTest(size, max_time);
+    // runSugarScapeTest(size, max_time);
+
+    runAgentSpawningTest(size, max_time);
 
     return 0;
 }

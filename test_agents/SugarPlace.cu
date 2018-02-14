@@ -13,11 +13,9 @@ MASS_FUNCTION SugarPlace::SugarPlace(PlaceState* state, void *argument) :
 
     myState -> pollution = 0.0;    // the current pollution
     myState -> avePollution = 0.0; // averaging four neighbors' pollution
-    myState -> nextAgentIdx = -1;      // the next agent to come here
 
     myState -> curSugar = 0;
     myState -> maxSugar = 0;
-    myState -> nAgentsInPlace = 0;
 }
 
 MASS_FUNCTION void SugarPlace::setSugar() {

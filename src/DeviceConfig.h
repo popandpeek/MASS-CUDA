@@ -197,6 +197,7 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 		agents[idx]->setAlive();
 	} else if (idx < maxAgents) {
 		//create placeholder objects for future agent spawning
+		printf("instantiateAgentsKernel: creating a placeholder object for agent %d\n", idx);
 		agents[idx] = new AgentType(&(state[idx]), arg);
 	}
 }
@@ -249,8 +250,8 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	}
 
 	// launch instantiation kernel
-	int blockDim = (nAgents - 1) / BLOCK_SIZE + 1;
-	int threadDim = (nAgents - 1) / blockDim + 1;
+	int blockDim = (a.nObjects - 1) / BLOCK_SIZE + 1;
+	int threadDim = (a.nObjects - 1) / blockDim + 1;
 	Logger::debug("Launching agent instantiation kernel");
 	instantiateAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(a.devPtr, d_state,
 			d_arg, a.nAgents, a.nObjects);
