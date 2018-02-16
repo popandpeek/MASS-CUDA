@@ -15,9 +15,9 @@ int main() {
 	// test logging
 	Logger::setLogFile("perf_test_results.txt");
 
-	const int nRuns = 3; // number of times to run each test
-	const int nSizes = 4;
-	int size[nSizes] = { 125, 250, 500, 1000};
+	const int nRuns = 1; // number of times to run each test
+	const int nSizes = 11;
+	int size[nSizes] = { 5, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 
 	int max_time = 3000;
 	int heat_time = 2700;
