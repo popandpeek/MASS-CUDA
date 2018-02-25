@@ -54,7 +54,7 @@ public:
 	 */
 	template<typename AgentType, typename AgentStateType>
 	static Agents* createAgents(int handle, void *argument, int argSize,
-			int nAgents, int placesHandle, int maxAgents =0);
+			int nAgents, int placesHandle, int maxAgents =0, int* placeIdxs = NULL);
 
 
 private:
@@ -83,7 +83,7 @@ Places* Mass::createPlaces(int handle, void *argument, int argSize,
 
 template<typename AgentType, typename AgentStateType>
 Agents* Mass::createAgents(int handle, void *argument, int argSize,
-		int nAgents, int placesHandle, int maxAgents) {
+		int nAgents, int placesHandle, int maxAgents, int* placeIdxs) {
 
 	Logger::debug("Entering Mass::createAgents\n");
 
@@ -93,7 +93,7 @@ Agents* Mass::createAgents(int handle, void *argument, int argSize,
 
 	// perform actual instantiation of user classes 
 	dispatcher->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents, placesHandle, maxAgents);
+		argSize, nAgents, placesHandle, maxAgents, placeIdxs);
 
 	Logger::debug("Exiting Mass::createAgents\n");
 

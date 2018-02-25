@@ -63,13 +63,11 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 	ss << "time = " << time << "\n";
 	mass::Agent** retVals = agents->getElements();
 	int nAgentObjects = agents->getNumAgentObjects();
-	int nAgents = agents->getNumAgents();
 	for (int i =0; i< nAgentObjects; i++) {
 		if (retVals[i] -> isAlive()) {
 			int placeIdx = retVals[i] -> getPlaceIndex();
 			int agentSugar = ((AntState*)(retVals[i]->getState()))->agentSugar;
 			int agentMetabolism = ((AntState*)(retVals[i]->getState()))->agentMetabolism;
-			ss << "Number of agents = " << nAgents << endl;
 			ss << "Agent[" << i << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
 		}
 	}

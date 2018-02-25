@@ -372,7 +372,7 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
 }
 
 void Dispatcher::terminateAgents(int agentHandle) {
-    
+    //TODO: implement periodic garbage collection of terminated agents and reuse of that space to allocate new agents
 }
 
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {

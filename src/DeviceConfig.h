@@ -76,7 +76,7 @@ public:
 
 	template<typename AgentType, typename AgentStateType>
 	Agent** instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle, int maxAgents);
+		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs);
 
 private:
 	int deviceNum;
@@ -216,7 +216,7 @@ __global__ void mapAgentsKernel(Place **places, int placeQty, Agent **agents,
 
 template<typename AgentType, typename AgentStateType>
 Agent** DeviceConfig::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle, int maxAgents) {
+		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs) {
 	Logger::debug("Entering DeviceConfig::instantiateAgents\n");
 
 	if (devAgentsMap.count(handle) > 0) {
@@ -264,15 +264,18 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 
 	PlaceArray places = devPlacesMap[placesHandle];
 
-	// Create an array of Place idxs where to instantiate agents
-	int placeIdxs[nAgents];
-	getRandomPlaceIdxs(placeIdxs, places.qty, nAgents);
+	// if user did not provide a map of agents - create the default distribution of agents over places
+	if (placeIdxs == NULL) {
+		placeIdxs = new int[nAgents];
+		getRandomPlaceIdxs(placeIdxs, places.qty, nAgents);
+	}
+	
 	int* placeIdxs_d;
 	CATCH(cudaMalloc(&placeIdxs_d, nAgents*sizeof(int)));
 	CATCH(cudaMemcpy(placeIdxs_d, placeIdxs, nAgents*sizeof(int), H2D));
+	delete []placeIdxs;
 
 	// launch map kernel using 1 thread per agent
-	// TODO: allow for a user-provided map of agents to places
 	if (nAgents / places.qty + 1 > MAX_AGENTS) {
 		throw MassException("Number of agents per places exceeds the maximum setting of the library. Please change the library setting MAX_AGENTS and re-compile the library.");
 	}
