@@ -6,16 +6,16 @@
 #include "../src/Mass.h"
 #include "../src/Logger.h"
 
-#include "Metal.h"
-#include "Timer.h"
+#include "../heat2d/Metal.h"
+#include "../heat2d/Timer.h"
 
-#include "../test_agents/SugarPlace.h"
-#include "../test_agents/SugarPlaceState.h"
-#include "../test_agents/Ant.h"
-#include "../test_agents/AntState.h"
+#include "../sugarscape/SugarPlace.h"
+#include "../sugarscape/SugarPlaceState.h"
+#include "../sugarscape/Ant.h"
+#include "../sugarscape/AntState.h"
 
-#include "../test_agent_spawn/TestAgent.h"
-#include "../test_agent_spawn/TestPlace.h"
+#include "TestAgent.h"
+#include "TestPlace.h"
 
 using namespace std;
 using namespace mass;
@@ -125,8 +125,6 @@ bool checkSugarScapeResults(Places *places, int time, int *placesSize) {
     }
     ss << "\n";
     agents << "\n";
-
-    //TODO: compare with data from agent array
 
     if (!correctResult) {
         throw MassException("Incorrect simulation results: \n" + ss.str() + agents.str());

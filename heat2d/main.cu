@@ -18,13 +18,12 @@ int main() {
 	const int nRuns = 1; // number of times to run each test
 	const int nSizes = 11;
 	int size[nSizes] = { 5, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
-
 	int max_time = 3000;
 	int heat_time = 2700;
-
 	int interval = 0;
 
-	// const int nRuns = 1; // number of times to run each test
+	// For debigging can use the following settings:
+	// const int nRuns = 1;
 	// const int nSizes = 1;
 	// int size[nSizes] = { 10};
 	// int max_time = 10;

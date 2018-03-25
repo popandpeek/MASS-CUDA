@@ -13,7 +13,7 @@
 #include "Places.h"
 #include "DataModel.h"
 
-// caching for optimizing performance of setNeighborPlacesKernel():
+// using constant memory to optimize the performance of exchangeAllPlacesKernel():
 __constant__ int offsets_device[MAX_NEIGHBORS]; 
 
 using namespace std;
@@ -42,7 +42,7 @@ __global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
 /**
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
-__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int nNeighbors) {
+__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors) {
 	int idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
@@ -59,7 +59,7 @@ __global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int nNeighbors)
     }
 }
 
-__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int nNeighbors, int functionId,
+__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors, int functionId,
         void *argPtr) {
     int idx = getGlobalIdx_1D_1D();
 
@@ -290,8 +290,8 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 	int nptrs = deviceInfo->countDevPlaces(handle);
 	PlacesModel *p = model->getPlacesModel(handle);
 
-	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
-	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size());
+	Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel()");
+	exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size());
 	CHECK();
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
 }
@@ -316,7 +316,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     int nptrs = deviceInfo->countDevPlaces(handle);
     PlacesModel *p = model->getPlacesModel(handle);
 
-    setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
+    exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
     CHECK();
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 }

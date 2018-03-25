@@ -45,7 +45,6 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 	} 
 
 	else { // more than 1 agent can reside in a place
-		printf("MAX_AGENTS > 1 in resolveMigrationConflicts()!!!\n");
 		Agent* potentialResidents[N_DESTINATIONS];
 
 		for (int i=0; i< N_DESTINATIONS; i++) {
@@ -107,9 +106,6 @@ MASS_FUNCTION void Place::setSize(int *dimensions, int nDims) {
 }
 
 MASS_FUNCTION bool Place::addAgent(Agent* agent) {
-	// TODO: MAX_AGENTS should be set by user and should regulate the 
-	// collision-free migration in case max number of agents is reached
-	
 	if (state->agentPop < MAX_AGENTS) {
 		state->agents[state->agentPop] = agent;
 		state->agentPop ++;

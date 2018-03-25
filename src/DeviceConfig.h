@@ -227,7 +227,7 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	AgentArray a;
 	a.nAgents = nAgents; //size
 	if (maxAgents == 0) {
-		a.nObjects = nAgents; //allocate more space to allow for agent spawning
+		a.nObjects = nAgents*2; //allocate more space to allow for agent spawning
 	} else {
 		a.nObjects = maxAgents;
 	}

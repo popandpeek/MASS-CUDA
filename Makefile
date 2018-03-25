@@ -1,21 +1,21 @@
-all: dirs app appagents test
+all: dirs heat2d sugarscape test
 
 dirs:
 	mkdir -p obj/lib
+	mkdir -p obj/heat2d
+	mkdir -p obj/sugarscape
 	mkdir -p obj/test
-	mkdir -p obj/test_agents
-	mkdir -p obj/test_agent_spawn
 	mkdir -p bin
 	mkdir -p lib
 
-app: objlib objtest
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test/main.o lib/mass_cuda.a -o bin/app
+heat2d: objlib objheat2d
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/heat2d/*.o lib/mass_cuda.a -o bin/heat2d
 
-test: objlib objtest objtestagentspawn
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test/Timer.o obj/test/Heat2d.o obj/test/Metal.o obj/test/MetalState.o obj/test_agents/SugarScape.o obj/test_agents/SugarPlace.o obj/test_agents/SugarPlaceState.o obj/test_agents/Ant.o obj/test_agents/AntState.o obj/test_agent_spawn/TestPlace.o obj/test_agent_spawn/TestAgent.o obj/test/test.o lib/mass_cuda.a -o bin/test
+sugarscape: objlib objsugarscape
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/sugarscape/*.o lib/mass_cuda.a -o bin/sugarscape
 
-appagents: objlib objtestagents
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/test_agents/*.o lib/mass_cuda.a -o bin/appagents
+test: objlib objheat2d objtest
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -lcurand -L/usr/local/cuda/lib64 obj/heat2d/Timer.o obj/heat2d/Heat2d.o obj/heat2d/Metal.o obj/heat2d/MetalState.o obj/sugarscape/SugarScape.o obj/sugarscape/SugarPlace.o obj/sugarscape/SugarPlaceState.o obj/sugarscape/Ant.o obj/sugarscape/AntState.o obj/test/TestPlace.o obj/test/TestAgent.o obj/test/test.o lib/mass_cuda.a -o bin/test
 
 objlib:
 	# Flag -c only compiles files but not links them
@@ -35,29 +35,29 @@ objlib:
 	ar ru lib/mass_cuda.a obj/lib/*.o
 	ranlib lib/mass_cuda.a
 
-objtest: 
+objheat2d: 
 	# Flag -c only compiles files but not links them
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/Timer.cpp -o obj/test/Timer.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/Heat2d.cu -o obj/test/Heat2d.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/Metal.cu -o obj/test/Metal.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/MetalState.cu -o obj/test/MetalState.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/main.cu -o obj/test/main.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c heat2d/Timer.cpp -o obj/heat2d/Timer.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c heat2d/Heat2d.cu -o obj/heat2d/Heat2d.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c heat2d/Metal.cu -o obj/heat2d/Metal.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c heat2d/MetalState.cu -o obj/heat2d/MetalState.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c heat2d/main.cu -o obj/heat2d/main.o
+
+objsugarscape:
+	# Flag -c only compiles files but not links them
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/Timer.cpp -o obj/sugarscape/Timer.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/SugarScape.cu -o obj/sugarscape/SugarScape.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/SugarPlace.cu -o obj/sugarscape/SugarPlace.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/SugarPlaceState.cu -o obj/sugarscape/SugarPlaceState.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/Ant.cu -o obj/sugarscape/Ant.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/AntState.cu -o obj/sugarscape/AntState.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c sugarscape/main.cu -o obj/sugarscape/main.o
+
+objtest:
+	# Flag -c only compiles files but not links them
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/TestPlace.cu -o obj/test/TestPlace.o
+	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/TestAgent.cu -o obj/test/TestAgent.o
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test/test.cu -o obj/test/test.o
-
-objtestagents:
-	# Flag -c only compiles files but not links them
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/Timer.cpp -o obj/test_agents/Timer.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/SugarScape.cu -o obj/test_agents/SugarScape.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/SugarPlace.cu -o obj/test_agents/SugarPlace.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/SugarPlaceState.cu -o obj/test_agents/SugarPlaceState.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/Ant.cu -o obj/test_agents/Ant.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/AntState.cu -o obj/test_agents/AntState.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agents/main.cu -o obj/test_agents/main.o
-
-objtestagentspawn:
-	# Flag -c only compiles files but not links them
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agent_spawn/TestPlace.cu -o obj/test_agent_spawn/TestPlace.o
-	nvcc -Wno-deprecated-gpu-targets -rdc=true -std=c++11 -c test_agent_spawn/TestAgent.cu -o obj/test_agent_spawn/TestAgent.o
 
 clean:
 	rm -rf obj

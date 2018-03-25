@@ -50,7 +50,7 @@ PlacesModel* DataModel::instantiatePlaces(int handle, void *argument,
 		int argSize, int dimensions, int size[], int qty) {
 	Logger::debug("Entering DataModel::instantiatePlaces\n");
 	if (placesMap.count(handle) > 0) {
-		Logger::debug("placesMap.count(handle) > 0\n");  //TODO: replace with warning
+		Logger::warn("A places model with the handle %d already exists", handle);
 		return placesMap[handle];
 	}
 
@@ -66,7 +66,7 @@ AgentsModel* DataModel::instantiateAgents (int handle, void *argument,
 	Logger::debug("Entering DataModel::instantiateAgents\n");
 
 	if (agentsMap.count(handle) > 0) {
-		Logger::debug("agentsMap.count(handle) > 0\n");  //TODO: replace with warning
+		Logger::warn("A agents model with the handle %d already exists", handle);
 		return agentsMap[handle];
 	}
 

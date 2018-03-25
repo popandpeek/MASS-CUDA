@@ -48,7 +48,6 @@ void Agents::callAll(int functionId, void *argument, int argSize) {
 
 
 void Agents::manageAll() {
-    //TODO: implement
     // Step 1: kill all agents that need killing
     dispatcher->terminateAgents(handle);
 

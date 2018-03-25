@@ -2,6 +2,7 @@
 #ifndef PLACESTATE_H_
 #define PLACESTATE_H_
 
+//TODO: define in one place only(now both here and in Place.h)
 #define MAX_AGENTS 1
 #define MAX_NEIGHBORS 8
 #define MAX_DIMS 6

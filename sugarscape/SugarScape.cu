@@ -111,7 +111,6 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	agents->callAll(Ant::SET_INIT_METABOLISM, agentMetabolismArray, sizeof(int) * nAgents);
 
 	// create neighborhood for average pollution calculations
-	// TODO: move from x,y coordinates to 1D coordinates, because we use 1D averywhere else anyway
 	vector<int*> neighbors;
 	int top[2] = { 0, 1 };
 	neighbors.push_back(top);
