@@ -1,16 +1,12 @@
 
 #pragma once
 
-// change either of these numbers to optimize for a particular simulation's needs
-// #define MAX_AGENTS 1
-// #define MAX_NEIGHBORS 8
-// #define MAX_DIMS 6
-
 // easier for end users to understand than the __host__ __device__ meaning.
 #define MASS_FUNCTION __host__ __device__
 
 #include<cuda_runtime.h>
 #include "Agent.h"
+#include "settings.h"
 
 namespace mass {
 

@@ -2,11 +2,7 @@
 #ifndef PLACESTATE_H_
 #define PLACESTATE_H_
 
-//TODO: define in one place only(now both here and in Place.h)
-#define MAX_AGENTS 1
-#define MAX_NEIGHBORS 8
-#define MAX_DIMS 6
-#define N_DESTINATIONS 6 //should match the nMigrationDestinations defined in the user app
+#include "settings.h"
 
 class Agent; //forward declaration
 
