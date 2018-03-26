@@ -13,7 +13,7 @@ class Agent {
 public:
 
     /**
-     *  A contiguous space of arguments is passed to the constructor
+     *   A contiguous space of arguments is passed to the constructor
      */
     MASS_FUNCTION Agent(AgentState* state, void *args = NULL);
 
