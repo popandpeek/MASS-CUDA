@@ -81,7 +81,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	int nDims = 2;
 	int placesSize[] = { size, size };
 
-	// start a process at each computing node
+	// start the MASS CUDA library processes
 	Mass::init(arguments);
 
 	//initialization parameters

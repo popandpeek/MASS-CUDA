@@ -2,29 +2,36 @@
 
 ### What is this repository for? ###
 
-* This repo is for MASS CUDA library development. It contains the MASS CUDA library and testing application - Heat 2D.
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+* This repo is for MASS CUDA library use and development. It contains the MASS CUDA library and applications using it - Heat 2D, SugarScape and test application.
 
 ### How do I get set up? ###
 
 * Compilation
-
-    Before compiling the library to use with your project, set the proper parameters in <> on line <> to match <>.
     
     Library comes with provided Makefile, so to compile & link the library and test application go to the main folder and run the command: `make`
+
+* Optimization
+    
+    To tailor the library settings to a particular application, set the appropriate application-specific parameters in the src/settings.h file.
+
+    To optimize the kernel launch configuration for the particular GPU performance, the user can change the BLOCK_SIZE parameter in the src/sudaUtil.h file.
 
 
 * Running
 
-    To run the test Heat2D app run the command: `./bin/app`
-    The results of the execution will be saved in the text file called `perf_test_results.txt`
+    To run the Heat2D app run the command: `./bin/heat2d`. The results of the execution will be saved in the text file called `perf_test_results.txt`.
+
+    To run the SugarScape app run the command `./bin/sugarscape`. The results of the execution will be saved in the file called `sugar_scape_test_results.txt`.
+
+    To run the test program tun the command`./bin/test`. The results will be saved in file `test_program_logs.txt`.
+    
 
 
 * Repo owner or admin
 
-    The current library developer to contact:
+    The most recent active developer of the library to contact:
     Lisa Kosiachenko
-    elizavet at uw dot education domain abbreviation
+    ekosyachenko at gmail dot com
 
     
 * Other community or team contact

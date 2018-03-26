@@ -49,7 +49,7 @@ public:
 			int dimensions, int size[]);
 
 	/**
-	 * Creates a Places instance with the provided parameters.
+	 * Creates a Agents instance with the provided parameters.
 	  @param argument is the argument passed to each Agents constructor fucntion. 
 	  		It should be a void * to a contiguos space of arguments.
 	  @param argSize is the size of the contiguous space of arguments specified in argument
