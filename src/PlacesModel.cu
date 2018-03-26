@@ -4,6 +4,7 @@ using namespace std;
 namespace mass {
 
 PlacesModel::PlacesModel(int handle, int dimensions, int size[], int qty) {
+	Logger::debug("Running PlacesModel constructor");
 	this->handle = handle;
 	this->numElements = qty;
 	this->numDims = dimensions;
@@ -56,7 +57,8 @@ dim3 PlacesModel::threadDim() {
 }
 
 void PlacesModel::setIdealDims() {
-	int numBlocks = (numElements - 1) / THREADS_PER_BLOCK + 1;
+	Logger::debug("Inside PlacesModel::setIdealDims");
+	int numBlocks = (numElements - 1) / BLOCK_SIZE + 1;
 	dim3 blockDim(numBlocks);
 
 	int nThr = (numElements - 1) / numBlocks + 1;

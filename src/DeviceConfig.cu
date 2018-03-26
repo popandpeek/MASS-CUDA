@@ -14,7 +14,6 @@ namespace mass {
 
 DeviceConfig::DeviceConfig() :
 		deviceNum(-1) {
-	d_glob = NULL;
 	freeMem = 0;
 	allMem = 0;
 	Logger::warn("DeviceConfig::NoParam constructor");
@@ -26,8 +25,8 @@ DeviceConfig::DeviceConfig(int device) :
 	CATCH(cudaSetDevice(deviceNum));
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 	CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, allMem * 3 / 4));
-	d_glob = NULL;
 	devPlacesMap = map<int, PlaceArray>{};
+	devAgentsMap = map<int, AgentArray>{};
 }
 
 DeviceConfig::~DeviceConfig() {
@@ -37,14 +36,21 @@ DeviceConfig::~DeviceConfig() {
 void DeviceConfig::freeDevice() {
 	Logger::debug("deviceConfig free ");
 
-	std::map<int, PlaceArray>::iterator it = devPlacesMap.begin();
-	while (it != devPlacesMap.end()) {
-		deletePlaces(it->first);
-		++it;
+	// Delete agents:
+	std::map<int, AgentArray>::iterator it_a = devAgentsMap.begin();
+	while (it_a != devAgentsMap.end()) {
+		deleteAgents(it_a->first);
+		++it_a;
+	}
+	devAgentsMap.clear();
+
+	// Delete places:
+	std::map<int, PlaceArray>::iterator it_p = devPlacesMap.begin();
+	while (it_p != devPlacesMap.end()) {
+		deletePlaces(it_p->first);
+		++it_p;
 	}
 	devPlacesMap.clear();
-
-	CATCH(cudaFree(d_glob));
 
 	CATCH(cudaDeviceReset());
 	Logger::debug("Done with deviceConfig freeDevice().");
@@ -81,21 +87,57 @@ int DeviceConfig::getNumPlacePtrs(int handle) {
 	return devPlacesMap[handle].qty;
 }
 
-GlobalConsts DeviceConfig::getGlobalConstants() {
-	return glob;
+Agent** DeviceConfig::getDevAgents(int handle) {
+	return devAgentsMap[handle].devPtr;
 }
 
-void DeviceConfig::updateConstants(GlobalConsts consts) {
-	glob = consts;
-	if (NULL == d_glob) {
-		CATCH(cudaMalloc((void** ) &d_glob, sizeof(GlobalConsts)));
+void* DeviceConfig::getAgentsState(int handle) {
+	return devAgentsMap[handle].devState; 
+}
+
+int DeviceConfig::getNumAgents(int handle) {
+	return devAgentsMap[handle].nAgents;
+}
+
+int DeviceConfig::getNumAgentObjects(int handle) {
+	return devAgentsMap[handle].nextIdx;
+}
+
+int DeviceConfig::getMaxAgents(int handle) {
+	return devAgentsMap[handle].nObjects;
+}
+
+dim3* DeviceConfig::getDims(int handle) {
+    int numBlocks = (getNumAgentObjects(handle) - 1) / BLOCK_SIZE + 1;
+    dim3 blockDim(numBlocks);
+
+    int nThr = (getNumAgentObjects(handle) - 1) / numBlocks + 1;
+    dim3 threadDim(nThr);
+
+    devAgentsMap[handle].dims[0] = blockDim;
+    devAgentsMap[handle].dims[1] = threadDim;
+
+    return devAgentsMap[handle].dims;
+}
+
+__global__ void destroyAgentsKernel(Agent **agents, int qty) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if (idx < qty) {
+		delete agents[idx];
 	}
-	CATCH(cudaMemcpy(d_glob, &glob, sizeof(GlobalConsts), H2D));
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
-	Logger::debug("Device %d successfully updated global constants.",
-			this->deviceNum);
 }
 
+void DeviceConfig::deleteAgents(int handle) {
+	AgentArray a = devAgentsMap[handle];
+
+	dim3* dims = getDims(handle);
+	destroyAgentsKernel<<<dims[0], dims[1]>>>(a.devPtr, a.nObjects);
+	CHECK();
+	CATCH(cudaFree(a.devPtr));
+	CATCH(cudaFree(a.devState));
+	devAgentsMap.erase(handle);
+}
 
 __global__ void destroyPlacesKernel(Place **places, int qty) {
 	int idx = blockDim.x * blockIdx.x + threadIdx.x;

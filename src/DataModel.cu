@@ -32,8 +32,28 @@ void DataModel::addPlacesModel(PlacesModel *places) {
 	placesMap[handle] = places;
 }
 
+void DataModel::addAgentsModel(AgentsModel *agents) {
+	Logger::debug("Entering DataModel::addAgentsModel\n");
+	if (NULL == agents) {
+		throw MassException("Null pointer in addAgentsModel");
+	}
+
+	int handle = agents->getHandle();
+	if (agentsMap.count(handle) > 0) {
+		Logger::error("DataModel::agentsMap already contains AgentsModel %d",
+				handle);
+		throw MassException("Adding same collection more than once.");
+	}
+
+	agentsMap[handle] = agents;
+}
+
 PlacesModel* DataModel::getPlacesModel(int handle) {
 	return placesMap[handle];
+}
+
+AgentsModel* DataModel::getAgentsModel(int handle) {
+	return agentsMap[handle];
 }
 
 std::map<int, PlacesModel*> DataModel::getAllPlacesModels() {

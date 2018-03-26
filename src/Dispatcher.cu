@@ -13,10 +13,8 @@
 #include "Places.h"
 #include "DataModel.h"
 
-// caching for optimizing performance of setNeighborPlacesKernel():
+// using constant memory to optimize the performance of exchangeAllPlacesKernel():
 __constant__ int offsets_device[MAX_NEIGHBORS]; 
-__constant__ int nNeighbors_device; 
-
 
 using namespace std;
 
@@ -31,49 +29,108 @@ __global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
 	}
 }
 
+__global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
+        void *argPtr) {
+
+    int idx = getGlobalIdx_1D_1D();
+
+    if ((idx < nptrs) && (ptrs[idx] -> isAlive())) {
+        ptrs[idx]->callMethod(functionId, argPtr);
+    }
+}
+
 /**
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
-__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs) {
+__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors) {
 	int idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
 
-        #pragma unroll
-        for (int i = 0; i < nNeighbors_device; ++i) {
+        for (int i = 0; i < nNeighbors; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
-                state->inMessages[i] = ptrs[j]->getMessage();
             } else {
                 state->neighbors[i] = NULL;
-                state->inMessages[i] = NULL;
             }
         }
     }
 }
 
-__global__ void setNeighborPlacesKernel(Place **ptrs, int nptrs, int functionId,
+__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors, int functionId,
         void *argPtr) {
     int idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx]->getState();
-        
-        #pragma unroll
-        for (int i = 0; i < nNeighbors_device; ++i) {
+
+        for (int i = 0; i < nNeighbors; ++i) {
             int j = idx + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
-                state->inMessages[i] = ptrs[j]->getMessage();
             } else {
                 state->neighbors[i] = NULL;
-                state->inMessages[i] = NULL;
             }
         }
 
         ptrs[idx]->callMethod(functionId, argPtr);
+    }
+}
+
+__global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        ptrs[idx] -> resolveMigrationConflicts();
+    }
+}
+
+__global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        Place* destination = ptrs[idx]->state->destPlace;
+        if ( destination != NULL) {
+            // check that the new Place is actually accepting the agent
+            for (int i=0; i<MAX_AGENTS; i++) {
+                if (destination->state->agents[i] == ptrs[idx]) {
+                    // remove agent from the old place:
+                    ptrs[idx] -> getPlace() -> removeAgent(ptrs[idx]);
+
+                    // update place ptr in agent:
+                    ptrs[idx] -> setPlace(destination);
+                }
+            }
+            // clean all migration data:
+            ptrs[idx]-> state->destPlace = NULL;
+        }
+    }
+}
+
+__global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < *nextIdx) {
+        if ((ptrs[idx]->isAlive()) && (ptrs[idx]->state->nChildren > 0)) {
+            // find a spot in Agents array:
+            int idxStart = atomicAdd(nextIdx, ptrs[idx]->state->nChildren);
+            if (idxStart+ptrs[idx]->state->nChildren >= maxAgents) {
+                return;
+            }
+            for (int i=0; i< ptrs[idx]->state->nChildren; i++) {
+                // instantiate with proper index
+                ptrs[idxStart+i]->setAlive();
+                ptrs[idxStart+i]->setIndex(idxStart+i);
+
+                // link to a place:
+                ptrs[idxStart+i] -> setPlace(ptrs[idx]->state->childPlace);
+                ptrs[idx]->state->childPlace -> addAgent(ptrs[idxStart+i]);
+            }
+
+            // restore Agent spawning data:
+            ptrs[idx]->state->nChildren = 0;
+            ptrs[idx]->state->childPlace = NULL;
+
+        }
     }
 }
 
@@ -136,6 +193,8 @@ Place** Dispatcher::refreshPlaces(int handle) {
     PlacesModel *placesModel = model->getPlacesModel(handle);
 	
     if (initialized) {
+        Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
+
 		void *devPtr = deviceInfo->getPlaceState(handle);
 
         int stateSize = placesModel->getStateSize();
@@ -174,43 +233,12 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 	}
 }
 
-void *Dispatcher::callAllPlaces(int handle, int functionId, void *arguments[],
-		int argSize, int retSize) {
-	// perform call all
-	callAllPlaces(handle, functionId, arguments, argSize);
-	// get data from GPUs
-	refreshPlaces(handle);
-	// get necessary pointers and counts
-	int qty = model->getPlacesModel(handle)->getNumElements();
-	Place** places = model->getPlacesModel(handle)->getPlaceElements();
-	void *retVal = malloc(qty * retSize);
-	char *dest = (char*) retVal;
-
-	for (int i = 0; i < qty; ++i) {
-		// copy messages to a return array
-		memcpy(dest, places[i]->getMessage(), retSize);
-		dest += retSize;
-	}
-	return retVal;
-}
-
-bool compArr(int* a, int aLen, int *b, int bLen) {
-	if (aLen != bLen) {
-		return false;
-	}
-
-	for (int i = 0; i < aLen; ++i) {
-		if (a[i] != b[i])
-			return false;
-	}
-	return true;
-}
-
 bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
 
     neighborhood = vec;
     int nNeighbors = vec->size();
+    Logger::debug("______new nNeighbors=%d", nNeighbors);
 
     int *offsets = new int[nNeighbors]; 
 
@@ -239,12 +267,11 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
             multiplier *= dimensions[i]; // remove dimension from multiplier
         }
         offsets[j] = offset;
+        Logger::debug("offsets[%d] = %d", j, offsets[j]); 
     }
     
     // Now copy offsets to the GPU:
     cudaMemcpyToSymbol(offsets_device, offsets, sizeof(int) * nNeighbors);
-    CHECK();
-    cudaMemcpyToSymbol(nNeighbors_device, &nNeighbors, sizeof(int));
     CHECK();
 
     delete [] offsets;
@@ -263,8 +290,8 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 	int nptrs = deviceInfo->countDevPlaces(handle);
 	PlacesModel *p = model->getPlacesModel(handle);
 
-	Logger::debug("Launching Dispatcher::setNeighborPlacesKernel()");
-	setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs);
+	Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel()");
+	exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size());
 	CHECK();
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
 }
@@ -274,6 +301,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
  */
 void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, int functionId, 
         void *argument, int argSize) {
+    Logger::debug("Inside Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
     if (destinations != neighborhood) {
         updateNeighborhood(handle, destinations);
     }
@@ -288,21 +316,112 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     int nptrs = deviceInfo->countDevPlaces(handle);
     PlacesModel *p = model->getPlacesModel(handle);
 
-    setNeighborPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, functionId, argPtr);
+    exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
+    CHECK();
+    Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
+}
+
+Agent** Dispatcher::refreshAgents(int handle) {
+    Logger::debug("Entering Dispatcher::refreshAgents");
+    AgentsModel *agentsModel = model->getAgentsModel(handle);
+    
+    if (initialized) {
+        Logger::debug("Dispatcher::refreshAgents: Initialized -> copying info from GPU to CPU");
+
+        void *devPtr = deviceInfo->getAgentsState(handle);
+        int qty = deviceInfo->getMaxAgents(handle);
+        int stateSize = agentsModel->getStateSize();
+
+        int bytes = stateSize * qty;
+
+        CATCH(cudaMemcpy(agentsModel->getStatePtr(), devPtr, bytes, D2H));
+    }
+
+    Logger::debug("Exiting Dispatcher::refreshAgents");
+    return agentsModel->getAgentElements();
+}
+
+void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
+            int argSize) {
+
+    if (initialized) {
+        Logger::debug("Dispatcher::callAllAgents: Calling all on agents[%d]. Function id = %d", agentHandle, functionId);
+
+        // load any necessary arguments
+        void *argPtr = NULL;
+        if (argument != NULL) {
+            deviceInfo->load(argPtr, argument, argSize);
+        }
+
+        Logger::debug("Dispatcher::callAllAgents: Calling callAllAgentsKernel");
+        AgentsModel *aModel = model->getAgentsModel(agentHandle);
+        dim3* dims = deviceInfo->getDims(agentHandle);
+
+        callAllAgentsKernel<<<dims[0], dims[1]>>>(
+                deviceInfo->getDevAgents(agentHandle), deviceInfo->getNumAgentObjects(agentHandle),
+                functionId, argPtr);
+        CHECK();
+
+        if (argPtr != NULL) {
+            Logger::debug("Dispatcher::callAllAgents: Freeing device args.");
+            cudaFree(argPtr);
+        }
+
+        Logger::debug("Exiting Dispatcher::callAllAgents()");
+    }
+}
+
+void Dispatcher::terminateAgents(int agentHandle) {
+    //TODO: implement periodic garbage collection of terminated agents and reuse of that space to allocate new agents
+}
+
+void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
+    Place** p_ptrs = deviceInfo->getDevPlaces(placeHandle);
+    PlacesModel *p = model->getPlacesModel(placeHandle);
+
+    resolveMigrationConflictsKernel<<<p->blockDim(), p->threadDim()>>>(p_ptrs, p->getNumElements());
+    CHECK();
+
+    Agent **a_ptrs = deviceInfo->getDevAgents(agentHandle);
+    dim3* dims = deviceInfo->getDims(agentHandle);
+
+    Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel()");
+    updateAgentLocationsKernel<<<dims[0], dims[1]>>>(a_ptrs, getNumAgentObjects(agentHandle));
     CHECK();
 }
 
-void Dispatcher::unloadDevice(DeviceConfig *device) {
-	Logger::debug("Inside Dispatcher::unloadDevice\n");
-    std::map<int, PlacesModel*> placesModels = model -> getAllPlacesModels();
-	if (!placesModels.empty()) {
-		map<int, PlacesModel*>::iterator itP = placesModels.begin();
-		while (itP != placesModels.end()) {
-			refreshPlaces(itP->first); //copy all stuff from GPU to CPU to PlaceState*
-		}
+void Dispatcher::spawnAgents(int handle) {
+    
+    Logger::debug("Inside Dispatcher::spawnAgents");
+    Agent **a_ptrs = deviceInfo->getDevAgents(handle);
+    dim3* dims = deviceInfo->getDims(handle);
 
-		deviceInfo = NULL;
-	}
+    //allocate numAgentObjects on GPU:
+    int* h_numAgentObjects = new int(getNumAgentObjects(handle));
+    int* d_numAgentObjects;
+    CATCH(cudaMalloc(&d_numAgentObjects, sizeof(int)));
+    CATCH(cudaMemcpy(d_numAgentObjects, h_numAgentObjects, sizeof(int), H2D));
+
+    spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs, d_numAgentObjects, deviceInfo->getMaxAgents(handle));
+    CHECK();
+
+    CATCH(cudaMemcpy(h_numAgentObjects, d_numAgentObjects, sizeof(int), D2H));
+    if (*h_numAgentObjects > deviceInfo->getMaxAgents(handle)) {
+        throw MassException("Trying to spawn more agents than the maximun set for the system");
+    }
+
+    int nNewAgents = *h_numAgentObjects - getNumAgentObjects(handle);
+    deviceInfo->devAgentsMap[handle].nAgents += nNewAgents;
+    deviceInfo->devAgentsMap[handle].nextIdx += nNewAgents;
+    Logger::debug("Finished Dispatcher::spawnAgents");
+}
+
+int Dispatcher::getNumAgents(int agentHandle) {
+    return deviceInfo->getNumAgents(agentHandle);
+}
+
+int Dispatcher::getNumAgentObjects(int agentHandle) {
+    return deviceInfo->getNumAgentObjects(agentHandle);
 }
 
 }// namespace mass

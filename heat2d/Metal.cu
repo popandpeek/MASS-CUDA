@@ -28,10 +28,8 @@ MASS_FUNCTION Metal::~Metal() {
 	// nothing to delete
 }
 
-/**
- *  Gets a pointer to this place's out message.
- */MASS_FUNCTION void *Metal::getMessage() {
-	return &(myState->temp[myState->p]);
+MASS_FUNCTION double Metal::getTemp() {
+	return myState->temp[myState->p];
 }
 
 /**
@@ -93,10 +91,10 @@ MASS_FUNCTION void Metal::eulerMethod() { // EULER_METHOD
 	int p = myState->p;
 	int p2 = (p + 1) % 2;
 	if (!isBorderCell()) {
-		double north = *((double*) myState->inMessages[0]);
-		double east = *((double*) myState->inMessages[1]);
-		double south = *((double*) myState->inMessages[2]);
-		double west = *((double*) myState->inMessages[3]);
+		double north = ((Metal*)(myState->neighbors[0])) -> getTemp();
+		double east =  ((Metal*)(myState->neighbors[1])) -> getTemp();
+		double south = ((Metal*)(myState->neighbors[2])) -> getTemp();
+		double west =  ((Metal*)(myState->neighbors[3])) -> getTemp();
 
 		double curTemp = myState->temp[p];
 		myState->temp[p2] = curTemp + myState->r * (east - 2 * curTemp + west)
@@ -132,7 +130,7 @@ MASS_FUNCTION void Metal::setBorders(int phase) {
 		idx = 3; // west neighbor value
 	}
 
-	myState->temp[phase] = *((double*) myState->inMessages[idx]);
+	myState->temp[phase] = ((Metal*)(myState->neighbors[idx])) -> getTemp();
 } // end setBorders
 
 MASS_FUNCTION inline bool Metal::isBorderCell() {

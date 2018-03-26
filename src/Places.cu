@@ -43,22 +43,25 @@ void Places::callAll(int functionId, void *argument, int argSize) {
 	dispatcher->callAllPlaces(handle, functionId, argument, argSize);
 }
 
-void *Places::callAll(int functionId, void *arguments[], int argSize,
-		int retSize) {
-	return dispatcher->callAllPlaces(handle, functionId, arguments, argSize,
-			retSize);
-}
-
 void Places::exchangeAll(std::vector<int*> *destinations) {
 	dispatcher->exchangeAllPlaces(handle, destinations);
 }
 
+/**
+ *  This function causes all Place elements to call the function specified on all neighboring
+ *  place elements. In addition to the fuctionality of the exchangeAllPlaces function specified above 
+ *  it also takes functionId as a parameter and arguments to that functiom. 
+ *  When the data is collected from the neighboring places, 
+ *  the specified function is executed on all of the places with specified parameters.
+ *  The rationale behind implemening this version of exchangeAllPlaces is performance optimization:
+ *  the data cached during data collection step can be used for the data calculation and thus minimize
+ *  the number of memeory fetches and improve performance.
+ */
 void Places::exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize) {
 	dispatcher->exchangeAllPlaces(handle, destinations, functionId, argument, argSize);
 }
 
 Place** Places::getElements() {
-	// TODO can I avoid refresh every time?
 	elemPtrs = dispatcher->refreshPlaces(handle);
 	return elemPtrs;
 }

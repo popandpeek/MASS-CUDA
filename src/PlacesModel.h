@@ -2,11 +2,10 @@
 #ifndef PLACESMODEL_H_
 #define PLACESMODEL_H_
 
-#define THREADS_PER_BLOCK 512
-
 #include <map>
 
 #include "MassException.h"
+#include "cudaUtil.h"
 #include "Place.h"
 #include "PlaceState.h"
 #include "Logger.h"
@@ -80,7 +79,6 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int qty) {
 	Logger::debug("Entering PlacesModel::createPlaces");
 
-	// TODO potential gap if state is not instantiated on the GPU as well. Would not use the argument.
 	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
 	S* tmpPtr = new S[qty];
 	p->state = tmpPtr;
@@ -91,6 +89,7 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 		Place *pl = new P((PlaceState*) &(tmpPtr[i]), argument);
 		p->places[i] = pl;
 	}
+	Logger::debug("Finished PlacesModel::createPlaces");
 	return p;
 }
 

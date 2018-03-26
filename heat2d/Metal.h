@@ -27,7 +27,7 @@ public:
 	/**
 	 *  Gets a pointer to this place's out message.
 	 */
-	MASS_FUNCTION virtual void *getMessage();
+	// MASS_FUNCTION virtual void *getMessage();
 
 	/**
 	 * Returns the number of bytes necessary to store this agent implementation.
@@ -41,10 +41,11 @@ public:
 	 */
 	//MASS_FUNCTION virtual int placeSize();
 
-	// TODO remove this call if not necessary
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
 
 	MASS_FUNCTION void nextPhase();
+
+	MASS_FUNCTION double getTemp();
 
 private:
 

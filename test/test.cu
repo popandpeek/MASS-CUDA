@@ -6,11 +6,22 @@
 #include "../src/Mass.h"
 #include "../src/Logger.h"
 
-#include "Metal.h"
-#include "Timer.h"
+#include "../heat2d/Metal.h"
+#include "../heat2d/Timer.h"
+
+#include "../sugarscape/SugarPlace.h"
+#include "../sugarscape/SugarPlaceState.h"
+#include "../sugarscape/Ant.h"
+#include "../sugarscape/AntState.h"
+
+#include "TestAgent.h"
+#include "TestPlace.h"
 
 using namespace std;
 using namespace mass;
+
+static const int maxMetabolism = 4;
+static const int maxInitAgentSugar = 10;
 
 bool checkResults(Places *places, int time, int *placesSize) {
     bool correctResult = true;
@@ -41,7 +52,7 @@ bool checkResults(Places *places, int time, int *placesSize) {
                 Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
                         row, col, rmi);
             }
-            double temp = *((double*) retVals[rmi]->getMessage());
+            double temp = ((Metal*) retVals[rmi])->getTemp();
             double roundedTemp = floor(temp / 2);
             ss << floor(temp / 2) << " ";
             if (roundedTemp != targetResults[row][col]) {
@@ -57,6 +68,141 @@ bool checkResults(Places *places, int time, int *placesSize) {
     } else {
         return true;
     }
+}
+
+bool checkSugarScapeResults(Places *places, int time, int *placesSize) {
+    bool correctResult = true;
+    ostringstream ss, agents;
+
+    int targetSugar[10][10] = {
+        {0, 0, 0, 1, 1, 1, 2, 1, 1, 1 },
+        {0, 0, 0, 1, 2, 2, 1, 0, 2, 1 },
+        {0, 0, 1, 1, 2, 3, 3, 3, 2, 1 },
+        {0, 1, 1, 2, 2, 3, 3, 2, 1, 0 },
+        {1, 2, 2, 2, 1, 0, 3, 3, 2, 1 },
+        {1, 2, 2, 1, 0, 2, 2, 2, 2, 1 },
+        {2, 2, 2, 1, 0, 1, 0, 1, 0, 1 },
+        {1, 2, 1, 0, 3, 0, 1, 0, 0, 0 },
+        {1, 2, 2, 2, 2, 2, 0, 0, 0, 0 },
+        {1, 1, 1, 1, 0, 1, 1, 0, 0, 0 }
+    };
+
+    int targetAgentDistribution[10][10] ={
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        {0, 0, 0, 0, 0, 0, 0, 1, 0, 0 },
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0 },
+        {0, 0, 0, 0, 1, 0, 0, 0, 0, 0 },
+        {0, 0, 0, 0, 1, 0, 1, 0, 1, 0 },
+        {0, 0, 0, 1, 0, 1, 0, 1, 0, 0 },
+        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0 },
+        {0, 0, 0, 0, 1, 0, 0, 0, 0, 0 }
+    };
+
+    Place ** retVals = places->getElements();
+    int indices[2];
+    for (int row = 0; row < placesSize[0]; row++) {
+        indices[0] = row;
+        for (int col = 0; col < placesSize[1]; col++) {
+            indices[1] = col;
+            int rmi = places->getRowMajorIdx(indices);
+            if (rmi != (row % placesSize[0]) * placesSize[0] + col) {
+                Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
+                        row, col, rmi);
+            }
+            int curSugar = ((SugarPlace*)retVals[rmi])->getCurSugar();
+            int n_agents = retVals[rmi]->getAgentPopulation();
+            ss << curSugar << " ";
+            if (curSugar != targetSugar[row][col]) {
+                correctResult = false;
+            }
+            agents << n_agents << " ";
+            if (n_agents != targetAgentDistribution[row][col]) {
+                correctResult = false;
+            }
+        }
+    }
+    ss << "\n";
+    agents << "\n";
+
+    if (!correctResult) {
+        throw MassException("Incorrect simulation results: \n" + ss.str() + agents.str());
+    } else {
+        return true;
+    }
+}
+
+bool checkAgentSpawningResults (Places *places, int time, int *placesSize) {
+    bool correctResult = true;
+    ostringstream agents;
+
+    int targetAgentDistribution[10][10] ={
+    {1, 0, 0, 1, 1, 1, 1, 1, 1, 1},
+    {1, 0, 0, 1, 1, 1, 1, 1, 0, 1},
+    {1, 0, 0, 1, 1, 1, 1, 1, 0, 1},
+    {1, 0, 1, 1, 1, 1, 1, 1, 0, 0},
+    {1, 0, 1, 1, 1, 1, 1, 1, 0, 0},
+    {1, 0, 1, 0, 1, 1, 0, 1, 0, 0},
+    {0, 0, 1, 0, 1, 1, 0, 1, 0, 0},
+    {0, 0, 1, 0, 1, 1, 0, 1, 0, 0},
+    {0, 0, 1, 0, 1, 1, 0, 1, 0, 0},
+    {0, 0, 0, 0, 0, 1, 0, 0, 0, 0}
+    };
+
+    Place ** retVals = places->getElements();
+    int indices[2];
+    for (int row = 0; row < placesSize[0]; row++) {
+        indices[0] = row;
+        for (int col = 0; col < placesSize[1]; col++) {
+            indices[1] = col;
+            int rmi = places->getRowMajorIdx(indices);
+            if (rmi != (row % placesSize[0]) * placesSize[0] + col) {
+                Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
+                        row, col, rmi);
+            }
+            int n_agents = retVals[rmi]->getAgentPopulation();
+            agents << n_agents << " ";
+            if (n_agents != targetAgentDistribution[row][col]) {
+                Logger::print("Results not matching in [%d][%d]", row, col);
+                correctResult = false;
+            }
+        }
+
+        agents << "\n";
+    }
+    agents << "\n";
+    if (!correctResult) {
+        Logger::error("Results of test simulation are not correct: "+agents.str()+" does not match targetAgentDistribution");
+        return false;
+    } else {
+        return true;
+    }
+}
+
+void displayPlaces(Places *places, int time, int *placesSize) {
+    ostringstream agents;
+
+    agents << "time = " << time << "\n";
+    Place ** retVals = places->getElements();
+    int indices[2];
+    for (int row = 0; row < placesSize[0]; row++) {
+        indices[0] = row;
+        for (int col = 0; col < placesSize[1]; col++) {
+            indices[1] = col;
+            int rmi = places->getRowMajorIdx(indices);
+            if (rmi != (row % placesSize[0]) * placesSize[0] + col) {
+                Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
+                        row, col, rmi);
+            }
+            int n_agents = retVals[rmi]->getAgentPopulation();
+            agents << n_agents << " ";
+        }
+
+        agents << "\n";
+    }
+    agents << "\n";
+    Logger::print(agents.str());
 }
 
 void runMassSimTest(int size, int max_time, int heat_time) {
@@ -154,6 +300,135 @@ void runMassSimTestImproved(int size, int max_time, int heat_time) {
     Mass::finish();
 }
 
+void runSugarScapeTest(int size, int max_time) {
+    string *arguments = NULL;
+    int nDims = 2;
+    int placesSize[] = { size, size };
+    int nAgents = size*size / 5;
+
+    Mass::init(arguments);
+
+    // initialize places and agents
+    Places *places = Mass::createPlaces<SugarPlace, SugarPlaceState>(0 /*handle*/, NULL /*arguments*/,
+            sizeof(double), nDims, placesSize);
+    places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
+
+    Agents *agents = Mass::createAgents<Ant, AntState> (1 /*handle*/, NULL /*arguments*/,
+            sizeof(double), nAgents, 0 /*placesHandle*/);
+
+    //create an array of random agentSugar and agentMetabolism values
+    int agentSugarArray[nAgents];
+    int agentMetabolismArray[nAgents];
+    for (int i=0; i<nAgents; i++) {
+        agentSugarArray[i] = rand() % maxInitAgentSugar +1;
+        agentMetabolismArray[i] = rand() % maxMetabolism +1;
+    }
+
+    //set proper initial amounts of sugar and metabolism for agents
+    agents->callAll(Ant::SET_INIT_SUGAR, agentSugarArray, sizeof(int) * nAgents);
+    agents->callAll(Ant::SET_INIT_METABOLISM, agentMetabolismArray, sizeof(int) * nAgents);
+
+    // create neighborhood for average pollution calculations
+    vector<int*> neighbors;
+    int top[2] = { 0, 1 };
+    neighbors.push_back(top);
+    int right[2] = { 1, 0 };
+    neighbors.push_back(right);
+    int bottom[2] = { 0, -1 };
+    neighbors.push_back(bottom);
+    int left[2] = { -1, 0 };
+    neighbors.push_back(left);
+
+    // create a vector of possible target destination places for an ant
+    vector<int*> migrationDestinations;
+    for(int i=1;i<=maxVisible; i++ ) //going right
+    {
+        int *hDest = new int[2];
+        hDest[0] = i;
+        hDest[1] = 0;
+        migrationDestinations.push_back(hDest);
+    }
+    for(int i=1;i<=maxVisible; i++ ) //going up
+    {
+        int *vDest = new int[2];
+        vDest[0] = 0;
+        vDest[1] = i;
+        migrationDestinations.push_back(vDest);
+    }
+
+    int t = 0;
+    for (; t < max_time; t++) {
+
+        places->callAll(SugarPlace::INC_SUGAR_AND_POLLUTION);
+
+        places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
+        places->callAll(SugarPlace::UPDATE_POLLUTION_WITH_AVERAGE);
+
+        places->exchangeAll(&migrationDestinations, SugarPlace::FIND_MIGRATION_DESTINATION, NULL /*argument*/, 0 /*argSize*/); 
+        
+        agents->callAll(Ant::MIGRATE);
+
+        agents->manageAll();
+
+        agents->callAll(Ant::METABOLIZE);
+        agents->manageAll();
+    }
+
+    if (checkSugarScapeResults(places, t, placesSize)) {
+        Logger::print("Intergation test for library with dynamic agents is successful!\n");
+    }
+
+    // terminate the processes
+    Mass::finish();
+}
+
+void runAgentSpawningTest(int size, int max_time) {
+    string *arguments = NULL;
+    int nDims = 2;
+    int placesSize[] = { size, size };
+    int nAgents = size*size / 5;
+
+    Mass::init(arguments);
+
+    // initialize places and agents
+    Places *places = Mass::createPlaces<TestPlace, TestPlaceState>(0 /*handle*/, NULL /*arguments*/,
+            sizeof(double), nDims, placesSize);
+
+    Agents *agents = Mass::createAgents<TestAgent, TestAgentState> (1 /*handle*/, NULL /*arguments*/,
+            sizeof(double), nAgents, 0 /*placesHandle*/, nAgents*4);
+
+    // create neighborhood for average pollution calculations
+    vector<int*> neighbors;
+    int top[2] = { 0, 1 };
+    neighbors.push_back(top);
+    int right[2] = { 1, 0 };
+    neighbors.push_back(right);
+    int bottom[2] = { 0, -1 };
+    neighbors.push_back(bottom);
+    int left[2] = { -1, 0 };
+    neighbors.push_back(left);
+
+    //displayPlaces(places, -1, placesSize);
+
+    int t = 0;
+    for (; t < max_time; t++) {
+
+        places->exchangeAll(&neighbors, TestPlace::FIND_SPAWNING_DEST, NULL /*argument*/, 0 /*argSize*/);
+        
+        agents->callAll(TestAgent::SPAWN_NORTH);
+        agents->manageAll();
+    }
+
+    //displayPlaces(places, t, placesSize);
+
+    if (checkAgentSpawningResults(places, t, placesSize)) {
+        Logger::print("Intergation test for library with agent spawning is successful!\n");
+    }
+
+    // terminate the processes
+    Mass::finish();
+}
+
 int main() {
     Logger::setLogFile("test_program_logs.txt");
 
@@ -165,6 +440,10 @@ int main() {
 
     runMassSimTest(size, max_time, heat_time);
     runMassSimTestImproved(size, max_time, heat_time);
+
+    runSugarScapeTest(size, max_time);
+
+    runAgentSpawningTest(size, max_time);
 
     return 0;
 }

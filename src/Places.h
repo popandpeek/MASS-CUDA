@@ -62,32 +62,10 @@ public:
 	void callAll(int functionId, void *argument, int argSize);
 
 	/**
-	 *  Calls the function specified on all place elements by passing argument[i]
-	 *  to place[i]'s function, and receives a value from it into (void *)[i] whose
-	 *  element size is retSize bytes. In case of multi-dimensional Places array,
-	 *  'i' is considered as the index when the Places array is flattened into row-major
-	 *  order in a single dimension.
-	 *
-	 *  @param functionId the function id passed to each Place element
-	 *  @param arguments the arguments to be passed to each Place element
-	 *  @param argSize the size in bytes of each argument element
-	 *  @param retSize the size in bytes of the return array element
-	 */
-	void *callAll(int functionId, void *arguments[], int argSize, int retSize);
-
-	//// TODO implement the call some functions
-	// void callSome( int functionId, int dim, int index[] );
-	// void callSome( int functionId, void *argument, int argSize, int dim, int index[] );
-	// void *callSome( int functionId, void *arguments[], int argSize, int dim, int index[] );
-	// exchangeSome( int handle, int functionId, Vector<int*> *destinations, int dim, int index[] );
-
-	/**
-	 *  This function causes all Place elements to call the function specified on all neighboring
-	 *  place elements. The offsets to neighbors are defined in the destinations vector (a collection
-	 *  of offsets from the caller to the callee place elements). The caller cell's outMessage is a
-	 *  continuous set of arguments passed to the callee's method. The caller's inMessages[] stores
-	 *  values returned from all callees. More specifically, inMessages[i] maintains a set of return
-	 *  from the ith neighbor in destinations.
+	 *  This function causes all Place elements to exchange information about their neighbors.
+	 *  The neighbors array in each of the places is populated with pointers to the Places in specified 
+	 *  in the destinations vector. The offsets to neighbors are defined in the destinations vector (a collection
+	 *  of offsets from the caller to the callee place elements).
 	 *  Example destinations vector:
 	 *    vector<int*> destinations;
 	 *    int north[2] = {0, 1}; destinations.push_back( north );
@@ -97,6 +75,17 @@ public:
 	 */
 	void exchangeAll(std::vector<int*> *destinations);
 
+	/**
+	 *  This function causes all Place elements to exchange information about their neighbors and to call 
+	 *  the function specified with functionId on each of the places afterwards.
+	 *  In addition to the fuctionality of the standard exchangeAllPlaces function specified above 
+	 *  it also takes functionId as a parameter and arguments to that functiom. 
+	 *  When the data is collected from the neighboring places, 
+	 *  the specified function is executed on all of the places with specified parameters.
+	 *  The rationale behind implemening this version of exchangeAllPlaces is performance optimization:
+	 *  the data cached during data collection step can be used for the data calculation and thus minimize
+	 *  the number of memeory fetches and improve performance.
+	 */
 	void exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize);
 
 	/**
