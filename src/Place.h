@@ -29,12 +29,10 @@ public:
 
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
 
-	//MASS_FUNCTION virtual void setState(PlaceState *s);
-
 	MASS_FUNCTION virtual PlaceState* getState();
 
 	/* The default migration conflict resolution is based on the ID of the migrating agent.
-	Can be overloaded in the derived Agent class
+	Can be overloaded in the derived Place class
 	*/
 	MASS_FUNCTION virtual void resolveMigrationConflicts();
 

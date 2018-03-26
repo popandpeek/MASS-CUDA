@@ -12,11 +12,8 @@ class Agent {
 
 public:
 
-    // map(int maxAgents, vector<int> size, vector<int> coordinates ); - > from c++ lib
-
     /**
-     *  A contiguous space of arguments is passed 
-     *  to the constructor.
+     *  A contiguous space of arguments is passed to the constructor
      */
     MASS_FUNCTION Agent(AgentState* state, void *args = NULL);
 

@@ -18,11 +18,11 @@ class Mass {
 
 public:
 	/**
-	 *  Initializes the MASS environment using default GPU resource. 
+	 *  Initializes the MASS environment using the GPU resource with 
+	 *  the highest compute capability discovered on the machine.
 	 *  Must be called prior to all other MASS methods.
-	 *  @param args what do these do?
 	 */
-	static void init(std::string args[] = NULL);
+	static void init();
 
 	/**
 	 *  Shuts down the MASS environment, releasing all resources.
@@ -31,7 +31,7 @@ public:
 
 	/**
 	 *  Gets the places object for this handle.
-	 *  @param handle an int that corresponds to a places object.
+	 *  @param handle an int that uniquely identifies a places collection.
 	 *  @return NULL if not found.
 	 */
 	static Places *getPlaces(int handle);
@@ -43,6 +43,9 @@ public:
 
 	/**
 	 * Creates a Places instance with the provided parameters.
+	 @param argument is the argument passed to each Places constructor fucntion. 
+	  		It should be a void * to a contiguos space of arguments.
+	  @param argSize is the size of the contiguous space of arguments specified in argument
 	 */
 	template<typename P, typename S>
 	static Places* createPlaces(int handle, void *argument, int argSize,
@@ -77,6 +80,9 @@ Places* Mass::createPlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[]) {
 
 	Logger::debug("Entering Mass::createPlaces\n");
+	if (dimensions != 2) {
+		Logger::warn("The current version of MASS CUDA only supports the 2D dimensionality");
+	}
 	// create an API object for this Places collection
 	Places *places = new Places(handle, dimensions, size, dispatcher);
 	placesMap[handle] = places;

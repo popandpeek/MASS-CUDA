@@ -60,19 +60,7 @@ public:
      */
     void callAll(int functionId, void *argument, int argSize);
 
-    /**
-     *  Calls the function specified on all agent elements by passing argument[i]
-     *  to place[i]'s function, and receives a value from it into (void *)[i] whose
-     *  element size is retSize bytes.
-     *
-     *  @param functionId the function id passed to each Agent element
-     *  @param arguments the arguments to be passed to each Agent element
-     *  @param argSize the size in bytes of each argument element
-     *  @param retSize the size in bytes of the return array element
-     */
-    // void *callAll(int functionId, void *arguments[], int argSize, int retSize);
-
-     /*
+    /*
      Executes agent termination / migration / spawning, which was initiated since the previous call to manageAll()
      */
     void manageAll();
