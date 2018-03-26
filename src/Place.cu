@@ -115,7 +115,6 @@ MASS_FUNCTION bool Place::addAgent(Agent* agent) {
 }
 
 MASS_FUNCTION void Place::removeAgent(Agent* agent) {
-	// printf("   Inside Place::removeAgent for agent %d\n", getIndex());
 	for (int i=0; i< state->agentPop; i++) {
 		if (state->agents[i] == NULL) continue;
 		if (state->agents[i]->getIndex() == agent->getIndex()) {
@@ -124,14 +123,10 @@ MASS_FUNCTION void Place::removeAgent(Agent* agent) {
 				state->agents[j] = state->agents[j+1];
 			}
 			state->agents[state->agentPop-1] = NULL;
-
-			// printf("decreasing agentPop for agent %d\n", getIndex());
 			state->agentPop --;
 			return;
 		}
 	}
-	// TODO: for big sizes sometimes get this message, figure out why
-	// printf("REQUESTED AGENT WASNT FOUND IN THE PLACE. agent id =%d, place id = %d\n", agent->getIndex(), getIndex());
 }
 
 MASS_FUNCTION int Place::getAgentPopulation() {
@@ -140,7 +135,6 @@ MASS_FUNCTION int Place::getAgentPopulation() {
 
 
 MASS_FUNCTION void Place::addMigratingAgent(Agent* agent, int relativeIdx) {
-	// printf("Place::addMigratingAgent agent %d to place %d, relative idx = %d \n", agent->getIndex(), getIndex(), relativeIdx);
 	state -> potentialNextAgents[relativeIdx] = agent;
 }
 

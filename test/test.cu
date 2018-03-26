@@ -408,7 +408,7 @@ void runAgentSpawningTest(int size, int max_time) {
     int left[2] = { -1, 0 };
     neighbors.push_back(left);
 
-    displayPlaces(places, -1, placesSize);
+    //displayPlaces(places, -1, placesSize);
 
     int t = 0;
     for (; t < max_time; t++) {
@@ -419,7 +419,7 @@ void runAgentSpawningTest(int size, int max_time) {
         agents->manageAll();
     }
 
-    displayPlaces(places, t, placesSize);
+    //displayPlaces(places, t, placesSize);
 
     if (checkAgentSpawningResults(places, t, placesSize)) {
         Logger::print("Intergation test for library with agent spawning is successful!\n");

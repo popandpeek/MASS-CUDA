@@ -62,7 +62,6 @@ MASS_FUNCTION void Ant::metabolize() {
 }
 
 MASS_FUNCTION void Ant::migrate() {
-    // printf("migrate() function for agent %d\n", getIndex());
     SugarPlace* myPlace = (SugarPlace*) getPlace();
     if (myPlace -> getMigrationDest() != NULL) {
         migrateAgent(myPlace -> getMigrationDest(), myPlace -> getMigrationDestRelIdx());

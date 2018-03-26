@@ -36,14 +36,21 @@ DeviceConfig::~DeviceConfig() {
 void DeviceConfig::freeDevice() {
 	Logger::debug("deviceConfig free ");
 
-	std::map<int, PlaceArray>::iterator it = devPlacesMap.begin();
-	while (it != devPlacesMap.end()) {
-		deletePlaces(it->first);
-		++it;
+	// Delete agents:
+	std::map<int, AgentArray>::iterator it_a = devAgentsMap.begin();
+	while (it_a != devAgentsMap.end()) {
+		deleteAgents(it_a->first);
+		++it_a;
+	}
+	devAgentsMap.clear();
+
+	// Delete places:
+	std::map<int, PlaceArray>::iterator it_p = devPlacesMap.begin();
+	while (it_p != devPlacesMap.end()) {
+		deletePlaces(it_p->first);
+		++it_p;
 	}
 	devPlacesMap.clear();
-
-	//TODO: delete Agents
 
 	CATCH(cudaDeviceReset());
 	Logger::debug("Done with deviceConfig freeDevice().");
@@ -111,6 +118,25 @@ dim3* DeviceConfig::getDims(int handle) {
     devAgentsMap[handle].dims[1] = threadDim;
 
     return devAgentsMap[handle].dims;
+}
+
+__global__ void destroyAgentsKernel(Agent **agents, int qty) {
+	int idx = blockDim.x * blockIdx.x + threadIdx.x;
+
+	if (idx < qty) {
+		delete agents[idx];
+	}
+}
+
+void DeviceConfig::deleteAgents(int handle) {
+	AgentArray a = devAgentsMap[handle];
+
+	dim3* dims = getDims(handle);
+	destroyAgentsKernel<<<dims[0], dims[1]>>>(a.devPtr, a.nObjects);
+	CHECK();
+	CATCH(cudaFree(a.devPtr));
+	CATCH(cudaFree(a.devState));
+	devAgentsMap.erase(handle);
 }
 
 __global__ void destroyPlacesKernel(Place **places, int qty) {

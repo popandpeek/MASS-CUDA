@@ -54,7 +54,6 @@ public:
 	void* getPlaceState(int handle);
 	int countDevPlaces(int handle);
 
-	void deletePlaces(int handle);
 	int getNumPlacePtrs(int handle);
 
 	Agent** getDevAgents(int handle);
@@ -68,7 +67,6 @@ public:
 	   based on the number of elements beloging to the collection
 	*/
 	dim3* getDims(int agentHandle);
-
 
 	template<typename P, typename S>
 	Place** instantiatePlaces(int handle, void *argument, int argSize,
@@ -84,6 +82,9 @@ private:
 	std::map<int, AgentArray> devAgentsMap;
 	size_t freeMem;
 	size_t allMem;
+
+	void deletePlaces(int handle);
+	void deleteAgents(int handle);
 };
 // end class
 
@@ -285,6 +286,7 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	CHECK();
 	
 	// clean up memory
+	CATCH(cudaFree(placeIdxs_d));
 	if (NULL != argument) {
 		CATCH(cudaFree(d_arg));
 	}

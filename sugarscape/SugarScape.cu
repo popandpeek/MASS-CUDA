@@ -123,7 +123,6 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	// create a vector of possible target destination places for an ant
     vector<int*> migrationDestinations;
-    //TODO: modify all versions of the program to include left and up as well
     for(int i=1;i<=maxVisible; i++ ) //going right
     {
         int *hDest = new int[2];
