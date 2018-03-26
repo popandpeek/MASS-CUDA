@@ -12,7 +12,7 @@ Dispatcher *Mass::dispatcher = new Dispatcher();
 map<int, Places*> Mass::placesMap;
 map<int, Agents*> Mass::agentsMap;
 
-void Mass::init(string args[]) {
+void Mass::init() {
 	Logger::debug("Initializing Mass");
 	if (dispatcher == NULL) {
 		dispatcher = new Dispatcher();
