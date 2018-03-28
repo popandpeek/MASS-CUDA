@@ -207,11 +207,10 @@ void displayPlaces(Places *places, int time, int *placesSize) {
 
 void runMassSimTest(int size, int max_time, int heat_time) {
 
-    string *arguments = NULL;
     int nDims = 2;
     int placesSize[] = { size, size };
 
-    Mass::init(arguments);
+    Mass::init();
 
     // initialization parameters
     double a = 1.0;  // heat speed
@@ -255,11 +254,10 @@ void runMassSimTest(int size, int max_time, int heat_time) {
 
 void runMassSimTestImproved(int size, int max_time, int heat_time) {
 
-    string *arguments = NULL;
     int nDims = 2;
     int placesSize[] = { size, size };
 
-    Mass::init(arguments);
+    Mass::init();
 
     // initialization parameters
     double a = 1.0;  // heat speed
@@ -301,12 +299,11 @@ void runMassSimTestImproved(int size, int max_time, int heat_time) {
 }
 
 void runSugarScapeTest(int size, int max_time) {
-    string *arguments = NULL;
     int nDims = 2;
     int placesSize[] = { size, size };
     int nAgents = size*size / 5;
 
-    Mass::init(arguments);
+    Mass::init();
 
     // initialize places and agents
     Places *places = Mass::createPlaces<SugarPlace, SugarPlaceState>(0 /*handle*/, NULL /*arguments*/,
@@ -383,12 +380,11 @@ void runSugarScapeTest(int size, int max_time) {
 }
 
 void runAgentSpawningTest(int size, int max_time) {
-    string *arguments = NULL;
     int nDims = 2;
     int placesSize[] = { size, size };
     int nAgents = size*size / 5;
 
-    Mass::init(arguments);
+    Mass::init();
 
     // initialize places and agents
     Places *places = Mass::createPlaces<TestPlace, TestPlaceState>(0 /*handle*/, NULL /*arguments*/,
@@ -430,7 +426,7 @@ void runAgentSpawningTest(int size, int max_time) {
 }
 
 int main() {
-    Logger::setLogFile("test_program_logs.txt");
+    Logger::setLogFile("test_program_results.txt");
 
     int size = 10;
     int max_time = 5;

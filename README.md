@@ -19,11 +19,11 @@
 
 * Running
 
-    To run the Heat2D app run the command: `./bin/heat2d`. The results of the execution will be saved in the text file called `perf_test_results.txt`.
+    To run the Heat2D app run the command: `./bin/heat2d`. The results of the execution will be saved in the text file called `heat2d_results.txt`.
 
-    To run the SugarScape app run the command `./bin/sugarscape`. The results of the execution will be saved in the file called `sugar_scape_test_results.txt`.
+    To run the SugarScape app run the command `./bin/sugarscape`. The results of the execution will be saved in the file called `sugar_scape_results.txt`.
 
-    To run the test program tun the command`./bin/test`. The results will be saved in file `test_program_logs.txt`.
+    To run the test program tun the command`./bin/test`. The results will be saved in file `test_program_results.txt`.
     
 
 

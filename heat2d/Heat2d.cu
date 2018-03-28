@@ -157,12 +157,11 @@ void Heat2d::runHostSim(int size, int max_time, int heat_time, int interval) {
 void Heat2d::runMassSim(int size, int max_time, int heat_time, int interval) {
 	Logger::debug("Starting MASS CUDA simulation\n");
 
-	string *arguments = NULL;
 	int nDims = 2;
 	int placesSize[] = { size, size };
 
 	// start a process at each computing node
-	Mass::init(arguments);
+	Mass::init();
 	Logger::debug("Finished Mass::init\n");
 
 	// initialization parameters

@@ -13,7 +13,7 @@ using namespace mass;
 
 int main() {
 	// test logging
-	Logger::setLogFile("perf_test_results.txt");
+	Logger::setLogFile("heat2d_results.txt");
 
 	const int nRuns = 1; // number of times to run each test
 	const int nSizes = 11;

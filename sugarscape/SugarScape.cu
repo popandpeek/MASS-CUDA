@@ -77,12 +77,11 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 void SugarScape::runMassSim(int size, int max_time, int interval) {
 	Logger::debug("Starting MASS CUDA simulation\n");
 
-	string *arguments = NULL;
 	int nDims = 2;
 	int placesSize[] = { size, size };
 
 	// start the MASS CUDA library processes
-	Mass::init(arguments);
+	Mass::init();
 
 	//initialization parameters
 	int nAgents = size*size / 5;

@@ -13,7 +13,7 @@ using namespace mass;
 
 int main() {
 	// test logging
-	Logger::setLogFile("sugar_scape_test_results.txt");
+	Logger::setLogFile("sugar_scape_results.txt");
 
 	const int nRuns = 1; // number of times to run each test
 	const int nSizes = 11;
