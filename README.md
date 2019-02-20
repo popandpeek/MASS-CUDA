@@ -14,7 +14,7 @@
     
     To tailor the library settings to a particular application, set the appropriate application-specific parameters in the src/settings.h file.
 
-    To optimize the kernel launch configuration for the particular GPU performance, the user can change the BLOCK_SIZE parameter in the src/sudaUtil.h file.
+    To optimize the kernel launch configuration for the particular GPU performance, the user can change the BLOCK_SIZE parameter in the src/cudaUtil.h file.
 
 
 * Running
