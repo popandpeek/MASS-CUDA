@@ -13,7 +13,7 @@ using namespace std;
 namespace mass {
 
 DeviceConfig::DeviceConfig() :
-		deviceNum(-1) {
+		activeDevices(-1) {
 	freeMem = 0;
 	allMem = 0;
 	Logger::warn("DeviceConfig::NoParam constructor");
@@ -23,9 +23,8 @@ DeviceConfig::DeviceConfig(int device) :
 		deviceNum(device) {
 	Logger::debug("DeviceConfig(int) constructor");
 	CATCH(cudaSetDevice(deviceNum));
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
-	CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, allMem * 3 / 4));
-	devPlacesMap = map<int, PlaceArray>{};
+	activeDevices.push_back(device);
+    devPlacesMap = map<int, PlaceArray>{};
 	devAgentsMap = map<int, AgentArray>{};
 }
 
@@ -57,7 +56,6 @@ void DeviceConfig::freeDevice() {
 }
 
 void DeviceConfig::load(void*& destination, const void* source, size_t bytes) {
-	CATCH(cudaMalloc((void** ) &destination, bytes));
 	CATCH(cudaMemcpy(destination, source, bytes, H2D));
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 }
@@ -105,6 +103,10 @@ int DeviceConfig::getNumAgentObjects(int handle) {
 
 int DeviceConfig::getMaxAgents(int handle) {
 	return devAgentsMap[handle].nObjects;
+}
+
+int DeviceConfig::getDeviceNum() {
+	return deviceNum;
 }
 
 dim3* DeviceConfig::getDims(int handle) {

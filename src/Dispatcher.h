@@ -41,7 +41,7 @@ public:
 	 * collection.
 	 * @param handle the handle of the places object to refresh.
 	 */
-	Place** refreshPlaces(int placeHandle);
+	//Place** refreshPlaces(int placeHandle);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -109,6 +109,7 @@ public:
 	void spawnAgents(int agentHandle);
 
 	int getNumAgents(int agentHandle);
+	
 	int getNumAgentObjects(int agentHandle);
 
 	/**
@@ -129,7 +130,7 @@ public:
 
 private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
-	DeviceConfig* deviceInfo;
+	std::vector<DeviceConfig> deviceInfo;
 
 	DataModel *model;
 	bool initialized;
@@ -145,13 +146,9 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int qty) {
 	Logger::debug("Inside Dispatcher::instantiatePlaces\n");
 
-	// modify host-side data model
-	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
-			qty);
-	
-	// modify GPU data model
-	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
-			qty);
+	// Create UMA DataModel
+	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size, qty);
+
 }
 
 template<typename AgentType, typename AgentStateType>
@@ -160,11 +157,7 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 
 	Logger::debug("Inside Dispatcher::instantiateAgents\n");
 
-	//create GPU data model
-	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents, placesHandle, maxAgents, placeIdxs);
-
-	//create host-side data model
+	//create UMA data model
 	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
 		argSize, deviceInfo->getMaxAgents(handle));
 

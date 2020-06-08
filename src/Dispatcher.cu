@@ -135,77 +135,79 @@ __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
 }
 
 Dispatcher::Dispatcher() {
-	model = NULL;
 	initialized = false;
 	neighborhood = NULL;
 }
 
-struct DeviceAndMajor {
-	DeviceAndMajor(int device, int major) {
-		this->device = device;
-		this->major = major;
-	}
-	int device;
-	int major;
-};
-bool compFunction (DeviceAndMajor i,DeviceAndMajor j) { return (i.major>j.major); }
-
 void Dispatcher::init() {
 	if (!initialized) {
-		initialized = true;
+		initialized = true; 
 		Logger::debug(("Initializing Dispatcher"));
-		int gpuCount;
-		cudaGetDeviceCount(&gpuCount);
 
 		if (gpuCount == 0) {
 			throw MassException("No GPU devices were found.");
 		}
 
-		vector<DeviceAndMajor> devices;
-		for (int d = 0; d < gpuCount; d++) {
-			cudaDeviceProp deviceProp;
-			cudaGetDeviceProperties(&deviceProp, d);
+        // Establish peerable device list
+        vector<int> devices;
+        // CUDA runtime places highest CC device in first position, no further ordering guaranteed
+        devices.push_back(0);
+        for (int d = 1; d < gpuCount; d++) {
+            int canAccessPeer = 0;
+            cudaDeviceCanAccessPeer(&canAccessPeer, 0, d);
+            if (canAccessPeer) {
+                devices.push_back(d);
+            }
+        }
 
-			Logger::debug("Device %d has compute capability %d.%d", d,
-					deviceProp.major, deviceProp.minor);
+        // instantiate DeviceConfig object for each device
+        for (int i = 0; i < devices.size(); i++) {
+            DeviceConfig d(devices[i]);
+            deviceInfo.push_back(d);
+        }
 
-			DeviceAndMajor deviceAndMajor = DeviceAndMajor(d, deviceProp.major);
-			devices.push_back(deviceAndMajor);
-		}
+        // Establish bi-directional peer relationships for all peerable devices
+        int peerCount = deviceInfo.size();
+        for (int x = 0; x < peerCount; x++) {
+            cudaSetDevice(devices.at(x));
+            for (int y = 0; y < peerCount; y++) {
+                if (x != y) {
+                    CATCH(cudaDeviceEnablePeerAccess(devices.at(y), 0));
+                }
+            }
+        }
 
-		//Sort devices by compute capability in descending order:
-		std::sort (devices.begin(), devices.end(), compFunction);
-
-		// Pick the device with the highest compute capability for simulation:
-		deviceInfo = new DeviceConfig(devices[0].device);
-		model = new DataModel();
+        model = DataModel(deviceInfo);
 	}
 }
 
 Dispatcher::~Dispatcher() {
 	Logger::debug("Freeing deviceConfig");
-	deviceInfo -> freeDevice();
+	for (int i = 0; i < deviceInfo.size(); i++) {
+        deviceInfo.at(i) -> freeDevice();
+    }
 }
 
+// TODO: Pass through to model?
 // Updates the Places stored on CPU
-Place** Dispatcher::refreshPlaces(int handle) {
-    Logger::debug("Entering Dispatcher::refreshPlaces");
-    PlacesModel *placesModel = model->getPlacesModel(handle);
+// Place** Dispatcher::refreshPlaces(int handle) {
+//     Logger::debug("Entering Dispatcher::refreshPlaces");
+//     PlacesModel *placesModel = model->getPlacesModel(handle);
 	
-    if (initialized) {
-        Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
+//     if (initialized) {
+//         Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
 
-		void *devPtr = deviceInfo->getPlaceState(handle);
+// 		void *devPtr = deviceInfo->getPlaceState(handle);
 
-        int stateSize = placesModel->getStateSize();
-		int qty = placesModel->getNumElements();
-		int bytes = stateSize * qty;
-		CATCH(cudaMemcpy(placesModel->getStatePtr(), devPtr, bytes, D2H));
-	}
+//         int stateSize = placesModel->getStateSize();
+// 		int qty = placesModel->getNumElements();
+// 		int bytes = stateSize * qty;
+// 		//CATCH(cudaMemcpy(placesModel->getStatePtr(), devPtr, bytes, D2H));
+// 	}
 
-    Logger::debug("Exiting Dispatcher::refreshPlaces");
-	return placesModel->getPlaceElements();
-}
+//     Logger::debug("Exiting Dispatcher::refreshPlaces");
+// 	return placesModel->getPlaceElements();
+// }
 
 void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, int argSize) {
 	if (initialized) {
@@ -219,6 +221,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
 		PlacesModel *pModel = model->getPlacesModel(placeHandle);
+        // TODO: Loop over devices, get PlacesPartition, and call kernel function using block/thread dim of PlacesPartition?
 		callAllPlacesKernel<<<pModel->blockDim(), pModel->threadDim()>>>(
 				deviceInfo->getDevPlaces(placeHandle), pModel->getNumElements(),
 				functionId, argPtr);
@@ -319,27 +322,28 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
     CHECK();
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
-}
+} 
 
-Agent** Dispatcher::refreshAgents(int handle) {
-    Logger::debug("Entering Dispatcher::refreshAgents");
-    AgentsModel *agentsModel = model->getAgentsModel(handle);
+// TODO: Pass through to model?
+// Agent** Dispatcher::refreshAgents(int handle) {
+//     Logger::debug("Entering Dispatcher::refreshAgents");
+//     AgentsModel *agentsModel = model->getAgentsModel(handle);
     
-    if (initialized) {
-        Logger::debug("Dispatcher::refreshAgents: Initialized -> copying info from GPU to CPU");
+//     if (initialized) {
+//         Logger::debug("Dispatcher::refreshAgents: Initialized -> copying info from GPU to CPU");
 
-        void *devPtr = deviceInfo->getAgentsState(handle);
-        int qty = deviceInfo->getMaxAgents(handle);
-        int stateSize = agentsModel->getStateSize();
+//         void *devPtr = deviceInfo->getAgentsState(handle);
+//         int qty = deviceInfo->getMaxAgents(handle);
+//         int stateSize = agentsModel->getStateSize();
 
-        int bytes = stateSize * qty;
+//         int bytes = stateSize * qty;
 
-        CATCH(cudaMemcpy(agentsModel->getStatePtr(), devPtr, bytes, D2H));
-    }
+//         //CATCH(cudaMemcpy(agentsModel->getStatePtr(), devPtr, bytes, D2H));
+//     }
 
-    Logger::debug("Exiting Dispatcher::refreshAgents");
-    return agentsModel->getAgentElements();
-}
+//     Logger::debug("Exiting Dispatcher::refreshAgents");
+//     return agentsModel->getAgentElements();
+// }
 
 void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
             int argSize) {
@@ -399,13 +403,13 @@ void Dispatcher::spawnAgents(int handle) {
     //allocate numAgentObjects on GPU:
     int* h_numAgentObjects = new int(getNumAgentObjects(handle));
     int* d_numAgentObjects;
-    CATCH(cudaMalloc(&d_numAgentObjects, sizeof(int)));
-    CATCH(cudaMemcpy(d_numAgentObjects, h_numAgentObjects, sizeof(int), H2D));
+    CATCH(cudaMallocManaged(&d_numAgentObjects, sizeof(int)));
+    //CATCH(cudaMemcpy(d_numAgentObjects, h_numAgentObjects, sizeof(int), H2D));
 
     spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs, d_numAgentObjects, deviceInfo->getMaxAgents(handle));
     CHECK();
 
-    CATCH(cudaMemcpy(h_numAgentObjects, d_numAgentObjects, sizeof(int), D2H));
+    //CATCH(cudaMemcpy(h_numAgentObjects, d_numAgentObjects, sizeof(int), D2H));
     if (*h_numAgentObjects > deviceInfo->getMaxAgents(handle)) {
         throw MassException("Trying to spawn more agents than the maximun set for the system");
     }

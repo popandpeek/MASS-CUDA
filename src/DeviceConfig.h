@@ -8,7 +8,7 @@
 #include "cudaUtil.h"
 #include "Logger.h"
 #include "DataModel.h"
-#include "GlobalConsts.h"
+// #include "GlobalConsts.h"
 #include "MassException.h"
 
 namespace mass {
@@ -24,14 +24,14 @@ struct PlaceArray {
 	int qty;  //size
 };
 
-// PlaceArray stores place pointers and state pointers on GPU
+// AgentArray stores agent pointers and state pointers on GPU
 struct AgentArray {
 	Agent** devPtr;
 	void *devState;
 	int nAgents;  //number of live agents
 	int nObjects; //number of all agent objects
 	int nextIdx;  //next available idx for allocation
-	dim3 dims[2]; //block and thread dimentions
+	dim3 dims[2]; //block and thread dimensions
 };
 
 /**
@@ -63,9 +63,10 @@ public:
 	int getNumAgentObjects(int handle);
 	int getMaxAgents(int handle);
 
-	/* Returns block and thread dimentions for the Agent collection 
-	   based on the number of elements beloging to the collection
-	*/
+	int getDeviceNum();
+	// Returns block and thread dimentions for the Agent collection 
+	//   based on the number of elements beloging to the collection
+	
 	dim3* getDims(int agentHandle);
 
 	template<typename P, typename S>
@@ -78,8 +79,12 @@ public:
 
 private:
 	int deviceNum;
+	std::vector<int> activeDevices;
 	std::map<int, PlaceArray> devPlacesMap;
 	std::map<int, AgentArray> devAgentsMap;
+
+	// TODO: Add Agents and Places partitioning?
+
 	size_t freeMem;
 	size_t allMem;
 
@@ -143,27 +148,27 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	// create state array on device
 	S* d_state = NULL;
 	int Sbytes = sizeof(S);
-	CATCH(cudaMalloc((void** ) &d_state, qty * Sbytes));
+	CATCH(cudaMallocManaged((void** ) &d_state, qty * Sbytes));
 	p.devState = d_state;
 
 	// allocate device pointers
 	Place** tmpPlaces = NULL;
 	int ptrbytes = sizeof(Place*);
-	CATCH(cudaMalloc((void** ) &tmpPlaces, qty * ptrbytes));
+	CATCH(cudaMallocManaged((void** ) &tmpPlaces, qty * ptrbytes));
 	p.devPtr = tmpPlaces;
 
 	// handle arg
 	void *d_arg = NULL;
 	if (NULL != argument) {
-		CATCH(cudaMalloc((void** ) &d_arg, argSize));
-		CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
+		CATCH(cudaMallocManaged((void** ) &d_arg, argument, argSize));
+		//CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 	}
 
 	// load places dimensions
 	int *d_dims;
 	int dimBytes = sizeof(int) * dimensions;
-	CATCH(cudaMalloc((void** ) &d_dims, dimBytes));
-	CATCH(cudaMemcpy(d_dims, size, dimBytes, H2D));
+	CATCH(cudaMallocManaged((void** ) &d_dims, dimBytes));
+	//CATCH(cudaMemcpy(d_dims, size, dimBytes, H2D));
 
 	// launch instantiation kernel
 	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
@@ -178,6 +183,7 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	if (NULL != argument) {
 		CATCH(cudaFree(d_arg));
 	}
+
 	CATCH(cudaFree(d_dims));
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 
@@ -238,20 +244,20 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	// create state array on device
 	AgentStateType* d_state = NULL;
 	int Sbytes = sizeof(AgentStateType);
-	CATCH(cudaMalloc((void** ) &d_state, a.nObjects * Sbytes));
+	CATCH(cudaMallocManaged((void** ) &d_state, a.nObjects * Sbytes));
 	a.devState = d_state;
 
 	// allocate device pointers
 	Agent** tmpAgents = NULL;
 	int ptrbytes = sizeof(Agent*);
-	CATCH(cudaMalloc((void** ) &tmpAgents, a.nObjects * ptrbytes));
+	CATCH(cudaMallocManaged((void** ) &tmpAgents, a.nObjects * ptrbytes));
 	a.devPtr = tmpAgents;
 
 	// handle arg
 	void *d_arg = NULL;
 	if (NULL != argument) {
-		CATCH(cudaMalloc((void** ) &d_arg, argSize));
-		CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
+		CATCH(cudaMallocManaged((void** ) &d_arg, argSize));
+		//CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 	}
 
 	// launch instantiation kernel
@@ -272,11 +278,11 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	}
 	
 	int* placeIdxs_d;
-	CATCH(cudaMalloc(&placeIdxs_d, nAgents*sizeof(int)));
-	CATCH(cudaMemcpy(placeIdxs_d, placeIdxs, nAgents*sizeof(int), H2D));
+	CATCH(cudaMallocManaged(&placeIdxs_d, nAgents*sizeof(int)));
+	//CATCH(cudaMemcpy(placeIdxs_d, placeIdxs, nAgents*sizeof(int), H2D));
 	delete []placeIdxs;
 
-	// launch map kernel using 1 thread per agent
+	// launch map kernel using 1 thread per agent 
 	if (nAgents / places.qty + 1 > MAX_AGENTS) {
 		throw MassException("Number of agents per places exceeds the maximum setting of the library. Please change the library setting MAX_AGENTS and re-compile the library.");
 	}

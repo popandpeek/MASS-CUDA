@@ -1,0 +1,10 @@
+
+
+Tue 2020/04/28 20:40:59  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+20:40:59  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,20:40:59  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in src/Dispatcher.cu at line 287
+

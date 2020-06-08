@@ -25,7 +25,7 @@ public:
 	int getHandle();
 	int getNumDims();
 	int* getDims();
-	unsigned getNumElements();
+	unsigned getNumElements();	
 
 	/**
 	 * Returns the ideal block dimension for this PlacesModel. Used for launching
@@ -45,7 +45,7 @@ public:
 
 	template<typename P, typename S>
 	static PlacesModel* createPlaces(int handle, void *argument, int argSize,
-			int dimensions, int size[], int qty);
+			int dimensions, int size[], int qty, std::vector<DeviceConfig> devices);
 
 private:
 
@@ -57,7 +57,7 @@ private:
 	 */
 	void setIdealDims();
 
-	// initialized in creatPlaces function
+	// initialized in createPlaces function
 	Place** places;
 	void* state;
 	int stateBytes;
@@ -75,21 +75,30 @@ private:
 };
 
 template<typename P, typename S>
-PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
-		int dimensions, int size[], int qty) {
+Place** PlacesModel::createPlaces(int handle, void *argument, int argSize,
+		int dimensions, int size[], int qty, std::vector<DeviceConfig> devices) {
 	Logger::debug("Entering PlacesModel::createPlaces");
 
+	// TODO: Should this be calling in a partition? As is, all devices will get same pointer from PlacesModel.
 	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
-	S* tmpPtr = new S[qty];
-	p->state = tmpPtr;
-	p->stateBytes = sizeof(S);
-
-	p->places = new Place*[qty];
-	for (int i = 0; i < qty; ++i) {
-		Place *pl = new P((PlaceState*) &(tmpPtr[i]), argument);
-		p->places[i] = pl;
+	std::vector<DeviceConfig>::iterator itr;
+	for (itr = devices.begin(); itr < devices.end(); itr++) {
+		cudaSetDevice(itr->getDeviceNum());
+		// TODO: handle quantity differently. Get from partition? 
+		// Also, store returned ptr from instantiatePlaces to partition and/or PlacesModel
+		itr->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size, qty / devices.size());
 	}
-	Logger::debug("Finished PlacesModel::createPlaces");
+
+	// S* tmpPtr = new S[qty];
+	// p->state = tmpPtr;
+	// p->stateBytes = sizeof(S);
+
+	// p->places = new Place*[qty];
+	// for (int i = 0; i < qty; ++i) {
+	// 	Place *pl = new P((PlaceState*) &(tmpPtr[i]), argument);
+	// 	p->places[i] = pl;
+	// }
+	// Logger::debug("Finished PlacesModel::createPlaces");
 	return p;
 }
 
