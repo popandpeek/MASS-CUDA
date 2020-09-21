@@ -42,7 +42,7 @@ class DeviceConfig {
 
 public:
 	DeviceConfig();
-	DeviceConfig(int device);
+	DeviceConfig(std::vector<int> devices);
 
 	virtual ~DeviceConfig();
 	void freeDevice();
@@ -65,9 +65,17 @@ public:
 
 	int getDeviceNum();
 	// Returns block and thread dimentions for the Agent collection 
-	//   based on the number of elements beloging to the collection
+	//   based on the number of elements belonging to the collection
 	
-	dim3* getDims(int agentHandle);
+	dim3* getBlockThreadDims(int agentHandle);
+	int* DeviceConfig::getSize();
+	int DeviceConfig::getDims();
+	void DeviceConfig::setSize(int *size);
+	void DeviceConfig::setDims(int dims);
+	std::vector<int> DeviceConfig::getDevices();
+
+	std::vector<int> getDevices();
+	// void setDevices(std::vector<int> devices);
 
 	template<typename P, typename S>
 	Place** instantiatePlaces(int handle, void *argument, int argSize,
@@ -78,7 +86,9 @@ public:
 		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs);
 
 private:
-	int deviceNum;
+	// int deviceNum;
+	int *size;
+	int dimensions;
 	std::vector<int> activeDevices;
 	std::map<int, PlaceArray> devPlacesMap;
 	std::map<int, AgentArray> devAgentsMap;
@@ -144,6 +154,10 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	// create places tracking
 	PlaceArray p;
 	p.qty = qty; //size
+
+	// set places dimensions
+	this->size = size;
+	this->dimensions = dimensions;
 
 	// create state array on device
 	S* d_state = NULL;

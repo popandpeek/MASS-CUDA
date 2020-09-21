@@ -40,7 +40,7 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 
 		if (acceptedAgent != NULL) {
 			state->agents[0] = acceptedAgent;
-			state->agentPop ++;
+			state->agentPop++;
 		}
 	} 
 
@@ -123,7 +123,7 @@ MASS_FUNCTION void Place::removeAgent(Agent* agent) {
 				state->agents[j] = state->agents[j+1];
 			}
 			state->agents[state->agentPop-1] = NULL;
-			state->agentPop --;
+			state->agentPop--;
 			return;
 		}
 	}

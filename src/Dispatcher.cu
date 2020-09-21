@@ -11,7 +11,7 @@
 #include "Place.h"
 #include "PlacesModel.h"
 #include "Places.h"
-#include "DataModel.h"
+// #include "DataModel.h"
 
 // using constant memory to optimize the performance of exchangeAllPlacesKernel():
 __constant__ int offsets_device[MAX_NEIGHBORS]; 
@@ -154,38 +154,29 @@ void Dispatcher::init() {
         devices.push_back(0);
         for (int d = 1; d < gpuCount; d++) {
             int canAccessPeer = 0;
+            // checks that each device can peer with first 
             cudaDeviceCanAccessPeer(&canAccessPeer, 0, d);
             if (canAccessPeer) {
                 devices.push_back(d);
             }
         }
 
-        // instantiate DeviceConfig object for each device
-        for (int i = 0; i < devices.size(); i++) {
-            DeviceConfig d(devices[i]);
-            deviceInfo.push_back(d);
-        }
-
         // Establish bi-directional peer relationships for all peerable devices
-        int peerCount = deviceInfo.size();
-        for (int x = 0; x < peerCount; x++) {
-            cudaSetDevice(devices.at(x));
-            for (int y = 0; y < peerCount; y++) {
-                if (x != y) {
-                    CATCH(cudaDeviceEnablePeerAccess(devices.at(y), 0));
+        for (std::size_t i = 0; i < devices.size(); ++i) {
+            cudaSetDevice(devices[i]);
+            for (std::size_t j = 0; j < devices.size(); ++j) {
+                if (i != j) {
+                    CATCH(cudaDeviceEnablePeerAccess(devices[j], 0));
                 }
             }
         }
 
-        model = DataModel(deviceInfo);
+        deviceInfo = new DeviceConfig(devices);
 	}
 }
 
 Dispatcher::~Dispatcher() {
-	Logger::debug("Freeing deviceConfig");
-	for (int i = 0; i < deviceInfo.size(); i++) {
-        deviceInfo.at(i) -> freeDevice();
-    }
+	deviceInfo->freeDevice();
 }
 
 // TODO: Pass through to model?
@@ -220,10 +211,12 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 		}
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
-		PlacesModel *pModel = model->getPlacesModel(placeHandle);
+		// PlacesModel *pModel = model->getPlacesModel(placeHandle);
         // TODO: Loop over devices, get PlacesPartition, and call kernel function using block/thread dim of PlacesPartition?
-		callAllPlacesKernel<<<pModel->blockDim(), pModel->threadDim()>>>(
-				deviceInfo->getDevPlaces(placeHandle), pModel->getNumElements(),
+		dim3* dims = deviceInfo->getThreadBlockDims();
+
+        callAllPlacesKernel<<<dims[0], dims[1]>>>(
+				deviceInfo->getDevPlaces(placeHandle), deviceInfo->getNumPlacePtrs(),
 				functionId, argPtr);
 		CHECK();
 
@@ -245,9 +238,12 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
 
     int *offsets = new int[nNeighbors]; 
 
-    PlacesModel *p = model->getPlacesModel(handle);
-    int nDims = p->getNumDims();
-    int *dimensions = p->getDims();
+    // PlacesModel *p = model->getPlacesModel(handle);
+    // int nDims = p->getNumDims();
+    // int *dimensions = p->getDims();
+
+    int nDims = deviceInfo->getDims();
+    int *dimensions = deviceInfo->getSize();
 
     // calculate an offset for each neighbor in vec
     for (int j = 0; j < vec->size(); ++j) {
@@ -291,10 +287,11 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
-	PlacesModel *p = model->getPlacesModel(handle);
+	// PlacesModel *p = model->getPlacesModel(handle);
+    dim3* dims = deviceInfo->getBlockThreadDims(handle);
 
 	Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel()");
-	exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size());
+	exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs, nptrs, destinations -> size());
 	CHECK();
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
 }
@@ -317,9 +314,10 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
 
     Place** ptrs = deviceInfo->getDevPlaces(handle);
     int nptrs = deviceInfo->countDevPlaces(handle);
-    PlacesModel *p = model->getPlacesModel(handle);
+    // PlacesModel *p = model->getPlacesModel(handle);
+    dim3* dims = deviceInfo->getBlockThreadDims(handle);
 
-    exchangeAllPlacesKernel<<<p->blockDim(), p->threadDim()>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
+    exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs, nptrs, destinations -> size(), functionId, argPtr);
     CHECK();
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 } 
@@ -358,7 +356,7 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
         }
 
         Logger::debug("Dispatcher::callAllAgents: Calling callAllAgentsKernel");
-        AgentsModel *aModel = model->getAgentsModel(agentHandle);
+        // AgentsModel *aModel = model->getAgentsModel(agentHandle);
         dim3* dims = deviceInfo->getDims(agentHandle);
 
         callAllAgentsKernel<<<dims[0], dims[1]>>>(
@@ -381,13 +379,16 @@ void Dispatcher::terminateAgents(int agentHandle) {
 
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     Place** p_ptrs = deviceInfo->getDevPlaces(placeHandle);
-    PlacesModel *p = model->getPlacesModel(placeHandle);
+    //PlacesModel *p = model->getPlacesModel(placeHandle);
 
-    resolveMigrationConflictsKernel<<<p->blockDim(), p->threadDim()>>>(p_ptrs, p->getNumElements());
+    dim3* dims = deviceInfo->getBlockThreadDims(agentHandle);
+
+    resolveMigrationConflictsKernel<<<dims[0], dims[1]>>>(p_ptrs, deviceInfo->countDevPlaces(place
+        ));
     CHECK();
 
     Agent **a_ptrs = deviceInfo->getDevAgents(agentHandle);
-    dim3* dims = deviceInfo->getDims(agentHandle);
+    dim3* dims = deviceInfo->getBlockThreadDims(agentHandle);
 
     Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel()");
     updateAgentLocationsKernel<<<dims[0], dims[1]>>>(a_ptrs, getNumAgentObjects(agentHandle));
@@ -398,7 +399,7 @@ void Dispatcher::spawnAgents(int handle) {
     
     Logger::debug("Inside Dispatcher::spawnAgents");
     Agent **a_ptrs = deviceInfo->getDevAgents(handle);
-    dim3* dims = deviceInfo->getDims(handle);
+    dim3* dims = deviceInfo->getBlockThreadDims(handle);
 
     //allocate numAgentObjects on GPU:
     int* h_numAgentObjects = new int(getNumAgentObjects(handle));

@@ -16,7 +16,7 @@ namespace mass {
 class DataModel {
 
 public:
-	DataModel(std::vector<DeviceConfig> devices, int boundary_width = 0);
+	DataModel(int boundary_width = 0);
 	~DataModel();
 
 	PlacesModel* getPlacesModel(int handle);
@@ -37,8 +37,6 @@ public:
 private:
 	int nParts; /**< The number of partitions in this data model.*/
 	int ghostWidth; /**< The width of the boundary.*/
-	std::vector<DeviceConfig> devices;
-	// std::vector<int> devices;
 	std::map<int, Partition*> partitions;
 
 	void addPlacesModel(PlacesModel *places);

@@ -5,15 +5,8 @@ using namespace std;
 
 namespace mass {
 
-DataModel::DataModel(vector<int> devices, int boundaryWidth = 0) {
+DataModel::DataModel(int boundaryWidth = 0) {
 	Logger::debug("DataModel constructor running\n");
-	nParts = devices.size();
-	devices = devices;
-	for (int i = 0; i < nParts; i++) {
-		Partition* p = new Partition(i);
-		partitions[i] = p;
-	}
-
 	ghostWidth = boundaryWidth;
 }
 

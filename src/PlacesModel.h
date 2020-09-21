@@ -75,19 +75,21 @@ private:
 };
 
 template<typename P, typename S>
-Place** PlacesModel::createPlaces(int handle, void *argument, int argSize,
+PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int qty, std::vector<DeviceConfig> devices) {
 	Logger::debug("Entering PlacesModel::createPlaces");
 
-	// TODO: Should this be calling in a partition? As is, all devices will get same pointer from PlacesModel.
+	// TODO: 
+	
 	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
-	std::vector<DeviceConfig>::iterator itr;
-	for (itr = devices.begin(); itr < devices.end(); itr++) {
+	
+/*	std::vector<DeviceConfig>::iterator itr;
+	for (itr = devices.begin(); itr != devices.end(); ++itr) {
 		cudaSetDevice(itr->getDeviceNum());
 		// TODO: handle quantity differently. Get from partition? 
 		// Also, store returned ptr from instantiatePlaces to partition and/or PlacesModel
 		itr->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size, qty / devices.size());
-	}
+	}*/
 
 	// S* tmpPtr = new S[qty];
 	// p->state = tmpPtr;
@@ -99,6 +101,9 @@ Place** PlacesModel::createPlaces(int handle, void *argument, int argSize,
 	// 	p->places[i] = pl;
 	// }
 	// Logger::debug("Finished PlacesModel::createPlaces");
+
+	//TODO: Need to update?
+	
 	return p;
 }
 

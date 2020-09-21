@@ -19,11 +19,8 @@ DeviceConfig::DeviceConfig() :
 	Logger::warn("DeviceConfig::NoParam constructor");
 }
 
-DeviceConfig::DeviceConfig(int device) :
-		deviceNum(device) {
-	Logger::debug("DeviceConfig(int) constructor");
-	CATCH(cudaSetDevice(deviceNum));
-	activeDevices.push_back(device);
+DeviceConfig::DeviceConfig(std::vector<int> devices) {
+	activeDevices = devices;
     devPlacesMap = map<int, PlaceArray>{};
 	devAgentsMap = map<int, AgentArray>{};
 }
@@ -51,7 +48,10 @@ void DeviceConfig::freeDevice() {
 	}
 	devPlacesMap.clear();
 
-	CATCH(cudaDeviceReset());
+	for (std::size_t i; i < activeDevices.size(); ++i) {
+		CATCH(cudaDeviceReset(activeDevices[i]));
+	}
+
 	Logger::debug("Done with deviceConfig freeDevice().");
 }
 
@@ -109,7 +109,7 @@ int DeviceConfig::getDeviceNum() {
 	return deviceNum;
 }
 
-dim3* DeviceConfig::getDims(int handle) {
+dim3* DeviceConfig::getBlockThreadDims(int handle) {
     int numBlocks = (getNumAgentObjects(handle) - 1) / BLOCK_SIZE + 1;
     dim3 blockDim(numBlocks);
 
@@ -133,7 +133,7 @@ __global__ void destroyAgentsKernel(Agent **agents, int qty) {
 void DeviceConfig::deleteAgents(int handle) {
 	AgentArray a = devAgentsMap[handle];
 
-	dim3* dims = getDims(handle);
+	dim3* dims = getBlockThreadDims(handle);
 	destroyAgentsKernel<<<dims[0], dims[1]>>>(a.devPtr, a.nObjects);
 	CHECK();
 	CATCH(cudaFree(a.devPtr));
@@ -157,8 +157,32 @@ void DeviceConfig::deletePlaces(int handle) {
 	destroyPlacesKernel<<<blockDim, threadDim>>>(p.devPtr, p.qty);
 	CHECK();
 	CATCH(cudaFree(p.devPtr));
-	CATCH(cudaFree(p.devState));
+	CATCH(cudaFree(p.devState));	
 	devPlacesMap.erase(handle);
 }
 
+int* DeviceConfig::getSize() {
+	return this->size;
+}
+
+int DeviceConfig::getDims() {
+	return this->dimensions;
+}
+
+void DeviceConfig::setSize(int *size) {
+	this->size = size;
+}
+
+void DeviceConfig::setDims(int dims) {
+	dimensions = dims;
+}
+
+std::vector<int> DeviceConfig::getDevices() {
+	return activeDevices;
+}
+
+// void DeviceConfig::setDevices(std::vector<int> devices) {
+// 	activeDevices = devices;
+
+// }
 } // end Mass namespace

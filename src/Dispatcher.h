@@ -1,4 +1,5 @@
 
+
 #pragma once
 
 #include <cuda_runtime.h>
@@ -130,9 +131,9 @@ public:
 
 private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
-	std::vector<DeviceConfig> deviceInfo;
+	DeviceConfig *deviceInfo;
 
-	DataModel *model;
+	// DataModel *model;
 	bool initialized;
 	bool deviceLoaded;
 
@@ -147,8 +148,13 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	Logger::debug("Inside Dispatcher::instantiatePlaces\n");
 
 	// Create UMA DataModel
-	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size, qty);
+	// modify GPU data model
+	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+			qty);
 
+	// // modify host-side data model
+	// model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+	// 		qty);
 }
 
 template<typename AgentType, typename AgentStateType>
@@ -158,9 +164,13 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 	Logger::debug("Inside Dispatcher::instantiateAgents\n");
 
 	//create UMA data model
-	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, deviceInfo->getMaxAgents(handle));
+	//create GPU data model
+	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+		argSize, nAgents, placesHandle, maxAgents, placeIdxs);
 
+	// //create host-side data model
+	// model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+	// 	argSize, deviceInfo->getMaxAgents(handle));
 }
 
 } // namespace mass

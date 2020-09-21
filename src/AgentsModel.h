@@ -42,12 +42,12 @@ AgentsModel* AgentsModel::createAgents(int handle, void *argument, int argSize,
 
     AgentsModel *am = new AgentsModel(handle, nAgents);
 
-    std::vector<int>::iterator itr;
+/*    std::vector<int>::iterator itr;
     for (itr = devices.begin(); itr < devices.end(); itr++) {
         cudaSetDevice(itr->getDeviceNum());
         itr->instantiateAgents<AgentType, AgentStateType>(handle, argument, argSize, 
             nAgents / devices.size(), placesHandle, placeIdxs);
-    }
+    }*/
 
     // AgentStateType* tmpPtr = new AgentStateType[nAgents];
     // am->state = tmpPtr;
@@ -59,6 +59,7 @@ AgentsModel* AgentsModel::createAgents(int handle, void *argument, int argSize,
     //     am->agents[i] = ag;
     // }
     // Logger::debug("Finished AgentsModel::createAgents");
+    
     return am;
 }
 
