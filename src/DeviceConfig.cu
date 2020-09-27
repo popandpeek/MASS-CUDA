@@ -55,11 +55,13 @@ void DeviceConfig::freeDevice() {
 	Logger::debug("Done with deviceConfig freeDevice().");
 }
 
+// TODO: Refactor for UVA memory - NO CHANGES NEEDED?
 void DeviceConfig::load(void*& destination, const void* source, size_t bytes) {
 	CATCH(cudaMemcpy(destination, source, bytes, H2D));
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 }
 
+// TODO: Refactor for UVA memory
 void DeviceConfig::unload(void* destination, void* source, size_t bytes) {
 	CATCH(cudaMemcpy(destination, source, bytes, D2H));
 	CATCH(cudaFree(source));
@@ -79,10 +81,6 @@ Place** DeviceConfig::getDevPlaces(int handle) {
 
 void* DeviceConfig::getPlaceState(int handle) {
 	return devPlacesMap[handle].devState;
-}
-
-int DeviceConfig::getNumPlacePtrs(int handle) {
-	return devPlacesMap[handle].qty;
 }
 
 Agent** DeviceConfig::getDevAgents(int handle) {
