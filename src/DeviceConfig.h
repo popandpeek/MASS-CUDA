@@ -54,8 +54,6 @@ public:
 	void* getPlaceState(int handle);
 	int countDevPlaces(int handle);
 
-	int getNumPlacePtrs(int handle);
-
 	Agent** getDevAgents(int handle);
 	void* getAgentsState(int handle);
 
