@@ -32,7 +32,7 @@ PlacesPartition::PlacesPartition(Place** hp, int handle, int rank, int numElemen
 	this->handle = handle;
 	this->rank = rank;
 	this->numElements = numElements;
-	// setGhostWidth(ghostWidth, n, dimensions);
+	setGhostWidth(ghostWidth, n, dimensions);
 	setIdealDims();
 }
 
@@ -52,22 +52,22 @@ int PlacesPartition::size() {
 /**
  *  Returns the number of place elements and ghost elements.
  */
-// int PlacesPartition::sizeWithGhosts() {
-// 	int numRanks = 1; //Mass::getPlaces(handle)->getNumPartitions();
-// 	if (1 == numRanks) {
-// 		return numElements;
-// 	}
+int PlacesPartition::sizeWithGhosts() {
+	int numRanks = 1; //Mass::getPlaces(handle)->getNumPartitions();
+	if (1 == numRanks) {
+		return numElements;
+	}
 
-// 	int retVal = numElements;
-// 	if (0 == rank || numRanks - 1 == rank) {
-// 		// there is only one ghost width on an edge rank
-// 		retVal += ghostWidth;
-// 	} else {
-// 		retVal += 2 * ghostWidth;
-// 	}
+	int retVal = numElements;
+	if (0 == rank || numRanks - 1 == rank) {
+		// there is only one ghost width on an edge rank
+		retVal += ghostWidth;
+	} else {
+		retVal += 2 * ghostWidth;
+	}
 
-// 	return retVal;
-// }
+	return retVal;
+}
 
 /**
  *  Gets the rank of this partition.
@@ -83,61 +83,61 @@ int PlacesPartition::getHandle() {
 	return handle;
 }
 
-// int PlacesPartition::getGhostWidth() {
-// 	return ghostWidth;
-// }
+int PlacesPartition::getGhostWidth() {
+	return ghostWidth;
+}
 
-// void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
-// 	ghostWidth = width;
-// 	Logger::debug("Setting ghost width in partition.");
-// 	// start at 1 because we never want to factor in x step
-// 	for (int i = 1; i < n; ++i) {
-// 		ghostWidth *= dimensions[i];
-// 	}
+void PlacesPartition::setGhostWidth(int width, int n, int *dimensions) {
+	ghostWidth = width;
+	Logger::debug("Setting ghost width in partition.");
+	// start at 1 because we never want to factor in x step
+	for (int i = 1; i < n; ++i) {
+		ghostWidth *= dimensions[i];
+	}
 
-// 	// prevent indexing out of bounds on thin sections with wide ghosts
-// 	if (ghostWidth > numElements) {
-// 		ghostWidth = numElements;
-// 	}
+	// prevent indexing out of bounds on thin sections with wide ghosts
+	if (ghostWidth > numElements) {
+		ghostWidth = numElements;
+	}
 
-// 	// set pointer
-// 	Places *places = 1;//Mass::getPlaces(handle);
-// 	if(NULL == places){
-// 		Logger::debug("Places not found under this handle.");
-// 	}
-// 	if (0 == rank) {
-// 		Logger::debug("Setting rank 0's hPtr.");
-// 		hPtr = places->dllClass->placeElements;
-// 	} else {
-// 		Logger::debug("Setting rank %d's hPtr.", getRank());
-// 		hPtr = shiftPtr(places->dllClass->placeElements, rank * numElements - ghostWidth, Tsize);
-// 	}
-// 	Logger::debug("Done setting ghost width in partition.");
-// }
+	// set pointer
+	Places *places = 1;//Mass::getPlaces(handle);
+	if(NULL == places){
+		Logger::debug("Places not found under this handle.");
+	}
+	if (0 == rank) {
+		Logger::debug("Setting rank 0's hPtr.");
+		hPtr = places->dllClass->placeElements;
+	} else {
+		Logger::debug("Setting rank %d's hPtr.", getRank());
+		hPtr = shiftPtr(places->dllClass->placeElements, rank * numElements - ghostWidth, Tsize);
+	}
+	Logger::debug("Done setting ghost width in partition.");
+}
 
-// Place *PlacesPartition::getLeftBuffer() {
-// 	return hPtr[ghostWidth];
-// }
+Place *PlacesPartition::getLeftBuffer() {
+	return hPtr[ghostWidth];
+}
 
-// Place *PlacesPartition::getRightBuffer() {
-// 	if (0 == rank) {
-// 		// there is no left ghost width, shift a negative direction
-// 		return hPtr[numElements - ghostWidth];
-// 	}
-// 	return hPtr[numElements];
-// }
+Place *PlacesPartition::getRightBuffer() {
+	if (0 == rank) {
+		// there is no left ghost width, shift a negative direction
+		return hPtr[numElements - ghostWidth];
+	}
+	return hPtr[numElements];
+}
 
-// Place *PlacesPartition::getLeftGhost() {
-// 	return hPtr[0]; // this is where hPtr starts
-// }
+Place *PlacesPartition::getLeftGhost() {
+	return hPtr[0]; // this is where hPtr starts
+}
 
-// Place *PlacesPartition::getRightGhost() {
-// 	if (0 == rank) {
-// 		// no left ghost width to skip
-// 		return hPtr[numElements];
-// 	}
-// 	return hPtr[numElements + ghostWidth];
-// }
+Place *PlacesPartition::getRightGhost() {
+	if (0 == rank) {
+		// no left ghost width to skip
+		return hPtr[numElements];
+	}
+	return hPtr[numElements + ghostWidth];
+}
 
 dim3 PlacesPartition::blockDim() {
 	return dims[0];
