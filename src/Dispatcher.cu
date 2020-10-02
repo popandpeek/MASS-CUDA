@@ -213,7 +213,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
         // PlacesModel *pModel = model->getPlacesModel(placeHandle);
 		dim3* dims = deviceInfo->getThreadBlockDims();
 
-        std::vector<int> devices = deviceInfo.getDevices();
+        std::vector<int> devices = deviceInfo->getDevices();
         int numPlaces = deviceInfo->countDevPlaces(placeHandle);
         place** devPtr = deviceInfo->getDevPlaces(placeHandle);
 
@@ -300,7 +300,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
     dim3* dims = deviceInfo->getBlockThreadDims(handle);
-    std::vector<int> devices = deviceInfo.getDevices();
+    std::vector<int> devices = deviceInfo->getDevices();
     int stride = numPlaces / devices.size();
 
     for (int i = 0; i < devices.size(); ++i) {
@@ -333,7 +333,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     Place** ptrs = deviceInfo->getDevPlaces(handle);
     int nptrs = deviceInfo->countDevPlaces(handle);
     dim3* dims = deviceInfo->getBlockThreadDims(handle);
-    std::vector<int> devices = deviceInfo.getDevices();
+    std::vector<int> devices = deviceInfo->getDevices();
     int stride = numPlaces / devices.size();
 
     for (int i = 0; i < devices.size(); ++i) {
@@ -389,7 +389,7 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
 
         // TODO: Loop over devices and call kernel function
         //       Get kernel params outside loop
-        std::vector<int> devices = deviceInfo.getDevices();
+        std::vector<int> devices = deviceInfo->getDevices();
         Agent** agtsPtr = deviceInfo->getDevAgents(agentHandle);
         int numAgentObjects = deviceInfo->getNumAgentObjects(agentHandle);
         for (int i = 0; i < devices.size(); ++i) {
@@ -455,7 +455,7 @@ void Dispatcher::spawnAgents(int handle) {
         
     // TODO: Loop over devices and call kernel function
     //       Need to implement even splitting algo and push all stride calculations to instantiation
-    std::vector<int> devices = deviceInfo.getDevices();
+    std::vector<int> devices = deviceInfo->getDevices();
     int numAgents = getNumAgents(handle);
     int stride = (numAgents / devices.size());
     int maxAgents = deviceInfo->getMaxAgents(handle);
