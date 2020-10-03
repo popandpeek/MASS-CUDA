@@ -153,7 +153,7 @@ void Dispatcher::init() {
         for (int d = 1; d < gpuCount; d++) {
             int canAccessPeer = 0;
             // checks that each device can peer with first 
-            cudaDeviceCanAccessPeer(&canAccessPeer, 0, d);
+            CATCH(cudaDeviceCanAccessPeer(&canAccessPeer, 0, d));
             if (canAccessPeer) {
                 devices.push_back(d);
             }
@@ -177,27 +177,6 @@ Dispatcher::~Dispatcher() {
 	deviceInfo->freeDevice();
 }
 
-// TODO: Pass through to model?
-// Updates the Places stored on CPU
-// Place** Dispatcher::refreshPlaces(int handle) {
-//     Logger::debug("Entering Dispatcher::refreshPlaces");
-//     PlacesModel *placesModel = model->getPlacesModel(handle);
-	
-//     if (initialized) {
-//         Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
-
-// 		void *devPtr = deviceInfo->getPlaceState(handle);
-
-//         int stateSize = placesModel->getStateSize();
-// 		int qty = placesModel->getNumElements();
-// 		int bytes = stateSize * qty;
-// 		//CATCH(cudaMemcpy(placesModel->getStatePtr(), devPtr, bytes, D2H));
-// 	}
-
-//     Logger::debug("Exiting Dispatcher::refreshPlaces");
-// 	return placesModel->getPlaceElements();
-// }
-
 void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, int argSize) {
 	if (initialized) {
         Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", 
@@ -210,7 +189,6 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 		}
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
-        // PlacesModel *pModel = model->getPlacesModel(placeHandle);
 		dim3* dims = deviceInfo->getThreadBlockDims();
 
         std::vector<int> devices = deviceInfo->getDevices();
@@ -222,19 +200,19 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
         for (int i = 0; i < devices.size(); ++i) {
             void *tempArgPtr = NULL;
             if (argPtr != NULL) {
-                tempArgPtr = argPtr + i * stride * sizeof(*argPtr);
+                tempArgPtr = argPtr + i * stride;
             }
 
             Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d", devices.at(i));
-            cudaSetDevice(devices.at(i));
-            callAllPlacesKernel<<<dims[0], dims[1]>>>(devPtr + i * stride * sizeof(*devPtr), 
-                    stride * sizeof(*devPtr), functionId, tempArgPtr);
+            CATCH(cudaSetDevice(devices.at(i)));
+            callAllPlacesKernel<<<dims[0], dims[1]>>>(devPtr + i * stride, 
+                    stride, functionId, tempArgPtr);
 		    CHECK();
         }
 
 		if (argPtr != NULL) {
 			Logger::debug("Dispatcher::callAllPlaces: Freeing device args.");
-			cudaFree(argPtr);
+			CATCH(cudaFree(argPtr));
 		}
 
 		Logger::debug("Exiting Dispatcher::callAllPlaces()");
@@ -249,10 +227,6 @@ bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
     Logger::debug("______new nNeighbors=%d", nNeighbors);
 
     int *offsets = new int[nNeighbors]; 
-
-    // PlacesModel *p = model->getPlacesModel(handle);
-    // int nDims = p->getNumDims();
-    // int *dimensions = p->getDims();
 
     int nDims = deviceInfo->getDims();
     int *dimensions = deviceInfo->getSize();
@@ -305,9 +279,8 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
-        cudaSetDevice(devices.at(i));
-        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride * sizeof(*ptrs), 
-                stride * sizeof(*ptrs), destinations->size());
+        CATCH(cudaSetDevice(devices.at(i)));
+        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, destinations->size());
         CHECK();
     }
 
@@ -339,39 +312,17 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     for (int i = 0; i < devices.size(); ++i) {
         void *tempArgPtr = NULL;
         if (argPtr != NULL) {
-            tempArgPtr = argPtr + i * stride * sizeof(argPtr);
+            tempArgPtr = argPtr + i * stride;
         }
 
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
-        cudaSetDevice(devices.at(i));
-        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride * sizeof(*ptrs), 
-                stride * sizeof(*ptrs), destinations->size(), functionId, tempArgPtr);
+        CATCH(cudaSetDevice(devices.at(i)));
+        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, destinations->size(), functionId, tempArgPtr);
         CHECK();
     }
 
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 } 
-
-// TODO: Pass through to model?
-// Agent** Dispatcher::refreshAgents(int handle) {
-//     Logger::debug("Entering Dispatcher::refreshAgents");
-//     AgentsModel *agentsModel = model->getAgentsModel(handle);
-    
-//     if (initialized) {
-//         Logger::debug("Dispatcher::refreshAgents: Initialized -> copying info from GPU to CPU");
-
-//         void *devPtr = deviceInfo->getAgentsState(handle);
-//         int qty = deviceInfo->getMaxAgents(handle);
-//         int stateSize = agentsModel->getStateSize();
-
-//         int bytes = stateSize * qty;
-
-//         //CATCH(cudaMemcpy(agentsModel->getStatePtr(), devPtr, bytes, D2H));
-//     }
-
-//     Logger::debug("Exiting Dispatcher::refreshAgents");
-//     return agentsModel->getAgentElements();
-// }
 
 void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
             int argSize) {
@@ -387,21 +338,19 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
 
         dim3* dims = deviceInfo->getDims(agentHandle);
 
-        // TODO: Loop over devices and call kernel function
-        //       Get kernel params outside loop
         std::vector<int> devices = deviceInfo->getDevices();
         Agent** agtsPtr = deviceInfo->getDevAgents(agentHandle);
         int numAgentObjects = deviceInfo->getNumAgentObjects(agentHandle);
+        int stride = numAgentObjects / devices.size();
         for (int i = 0; i < devices.size(); ++i) {
             void *tempArgPtr = NULL;
             if (argPtr != NULL) {
-                tempArgPtr = argPtr + i * stride * sizeof(*argPtr);
+                tempArgPtr = argPtr + i * stride;
             }
 
             Logger::debug("Launching Dispatcher::callAllAgentsKernel() on device: %d", devices.at(i));
-            cudaSetDevice(devices.at(i));
-            callAllAgentsKernel<<<dims[0], dims[1]>>>(agtsPtr + i * stride * sizeof(*agtsPtr),
-                numAgentObjects / stride, functionId, tempArgPtr);
+            CATCH(cudaSetDevice(devices.at(i)));
+            callAllAgentsKernel<<<dims[0], dims[1]>>>(agtsPtr + i * stride, stride, functionId, tempArgPtr);
             CHECK();
         }
         if (argPtr != NULL) {
@@ -423,10 +372,10 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     dim3* dims = deviceInfo->getBlockThreadDims(agentHandle);
     st::vector<int> devices = deviceInfo->getDevices();
     int placeStride = numPlaces / devices.size();
-    
-    // TODO: Loop over devices and call kernel function
+
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", devices.at(i));
+        CATCH(cudaSetDevice(devices.at(i)));
         resolveMigrationConflictsKernel<<<dims[0], dims[1]>>>(p_ptrs + i * placeStride, placeStride);
         CHECK();
     }
@@ -435,10 +384,10 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     int numAgts = getNumAgentObjects(agentHandle);
     int agentStride = numAgts / devices.size();    
 
-    // TODO: Loop over devices and call kernel function
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel() on device: %d", devices.at(i));
-        updateAgentLocationsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * agentStride, agentStride));
+        CATCH(cudaSetDevice(devices.at(i)));
+        updateAgentLocationsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * agentStride, agentStride);
         CHECK();
     }
 }
@@ -460,8 +409,8 @@ void Dispatcher::spawnAgents(int handle) {
     int stride = (numAgents / devices.size());
     int maxAgents = deviceInfo->getMaxAgents(handle);
     for (int i = 0; i < devices.size(); ++i) {
-        spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * stride * sizeof(*a_ptrs), 
-                numAgentObjects / stride, maxAgents / stride);
+        CATCH(cudaSetDevice(devices.at(i)));
+        spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * stride, numAgentObjects / stride, maxAgents / stride);
         CHECK();
     }
 
