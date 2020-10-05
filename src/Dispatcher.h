@@ -151,10 +151,6 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 	// modify GPU data model
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
-
-	// // modify host-side data model
-	// model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
-	// 		qty);
 }
 
 template<typename AgentType, typename AgentStateType>
@@ -167,10 +163,6 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 	//create GPU data model
 	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
 		argSize, nAgents, placesHandle, maxAgents, placeIdxs);
-
-	// //create host-side data model
-	// model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-	// 	argSize, deviceInfo->getMaxAgents(handle));
 }
 
 } // namespace mass

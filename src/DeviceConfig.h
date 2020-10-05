@@ -170,9 +170,9 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	p.devPtr = tmpPlaces;
 
 	// handle arg
-	void *d_arg = NULL;
+	// void *d_arg = NULL;
 	if (NULL != argument) {
-		CATCH(cudaMallocManaged((void** ) &d_arg, argument, argSize));
+		CATCH(cudaMallocManaged((void** ) &argument, argSize));
 		//CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 	}
 
@@ -182,22 +182,23 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	CATCH(cudaMallocManaged((void** ) &d_dims, dimBytes));
 	//CATCH(cudaMemcpy(d_dims, size, dimBytes, H2D));
 
+	int stride = qty / activeDevices.size();
 	// launch instantiation kernel
 	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
 	int threadDim = (qty - 1) / blockDim + 1;
-	Logger::debug("Launching instantiation kernel");
-	instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtr, d_state,
-			d_arg, d_dims, dimensions, qty);
-	CHECK();
-	Logger::debug("Finished instantiation kernel");
-	
-	// clean up memory
-	if (NULL != argument) {
-		CATCH(cudaFree(d_arg));
-	}
 
-	CATCH(cudaFree(d_dims));
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	// TODO: Loop over devices
+	for int i = 0; i < activeDevices.size(); ++i) {
+		cudaSetDevice(activeDevices.at(i));
+		Logger::debug("Launching instantiation kernel on device: %d", activeDevices.at(i));
+		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtr, d_state,
+				argument, d_dims, dimensions, qty);
+		CHECK();
+	}
+	Logger::debug("Finished instantiation kernel");
+
+	// CATCH(cudaFree(d_dims));
+	// CATCH(cudaMemGetInfo(&freeMem, &allMem));
 
 	devPlacesMap[handle] = p;
 	Logger::debug("Finished DeviceConfig::instantiatePlaces");
@@ -266,15 +267,17 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	a.devPtr = tmpAgents;
 
 	// handle arg
-	void *d_arg = NULL;
+	// void *d_arg = NULL;
 	if (NULL != argument) {
-		CATCH(cudaMallocManaged((void** ) &d_arg, argSize));
+		CATCH(cudaMallocManaged((void** ) &argument, argSize));
 		//CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 	}
 
 	// launch instantiation kernel
 	int blockDim = (a.nObjects - 1) / BLOCK_SIZE + 1;
 	int threadDim = (a.nObjects - 1) / blockDim + 1;
+
+	// TODO: Loop over devices
 	Logger::debug("Launching agent instantiation kernel");
 	instantiateAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(a.devPtr, d_state,
 			d_arg, a.nAgents, a.nObjects);
@@ -291,9 +294,9 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	
 	int* placeIdxs_d;
 	CATCH(cudaMallocManaged(&placeIdxs_d, nAgents*sizeof(int)));
-	//CATCH(cudaMemcpy(placeIdxs_d, placeIdxs, nAgents*sizeof(int), H2D));
 	delete []placeIdxs;
 
+	// TODO: Loop over devices
 	// launch map kernel using 1 thread per agent 
 	if (nAgents / places.qty + 1 > MAX_AGENTS) {
 		throw MassException("Number of agents per places exceeds the maximum setting of the library. Please change the library setting MAX_AGENTS and re-compile the library.");
@@ -304,11 +307,11 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	CHECK();
 	
 	// clean up memory
-	CATCH(cudaFree(placeIdxs_d));
-	if (NULL != argument) {
-		CATCH(cudaFree(d_arg));
-	}
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	// CATCH(cudaFree(placeIdxs_d));
+	// if (NULL != argument) {
+	// 	CATCH(cudaFree(d_arg));
+	// }
+	// CATCH(cudaMemGetInfo(&freeMem, &allMem));
 
 	devAgentsMap[handle] = a;
 	Logger::debug("Finished DeviceConfig::instantiateAgents");
