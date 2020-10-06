@@ -12,4 +12,4 @@
 // Maximum number of migration destinations for an agent from one place.
 // E.g. for the system where agent can only migrate 1 cell North, South, East or West 
 // N_DESTINATIONS will be 4.
-#define N_DESTINATIONS 6
+#define N_DESTINATIONS 4
