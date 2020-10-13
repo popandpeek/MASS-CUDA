@@ -343,6 +343,7 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	strideCount = 0;
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		int* placeIdxs_d;
+		cudaSetDevice(activeDevices.at(i));
 		CATCH(cudaMalloc(&placeIdxs_d, agtDevCount[i] * sizeof(int)));
 		CATCH(cudaMemcpy(placeIdxs_d, agtDevArr[i], agtDevCount[i] * sizeof(int), H2D));
 
