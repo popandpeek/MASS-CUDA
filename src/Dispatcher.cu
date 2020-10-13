@@ -193,7 +193,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 
         std::vector<int> devices = deviceInfo->getDevices();
         int numPlaces = deviceInfo->countDevPlaces(placeHandle);
-        place** devPtr = deviceInfo->getDevPlaces(placeHandle);
+        Place** devPtr = deviceInfo->getDevPlaces(placeHandle);
 
         // TODO: need to handle cases where places do not split even
         int stride = numPlaces / devices.size();
@@ -205,8 +205,8 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 
             Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d", devices.at(i));
             CATCH(cudaSetDevice(devices.at(i)));
-            callAllPlacesKernel<<<dims[0], dims[1]>>>(devPtr + i * stride, 
-                    stride, functionId, tempArgPtr);
+            callAllPlacesKernel<<<dims[0], dims[1]>>>(devPtr + i * stride, stride, 
+                    functionId, tempArgPtr);
 		    CHECK();
         }
 
@@ -280,7 +280,8 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         CATCH(cudaSetDevice(devices.at(i)));
-        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, destinations->size());
+        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, 
+                destinations->size());
         CHECK();
     }
 
@@ -317,7 +318,8 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
 
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         CATCH(cudaSetDevice(devices.at(i)));
-        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, destinations->size(), functionId, tempArgPtr);
+        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, 
+                destinations->size(), functionId, tempArgPtr);
         CHECK();
     }
 
@@ -345,12 +347,13 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
         for (int i = 0; i < devices.size(); ++i) {
             void *tempArgPtr = NULL;
             if (argPtr != NULL) {
-                tempArgPtr = argPtr + i * stride;
+                tempArgPtr = argPtr + i * stride * sizeof(void*);
             }
 
             Logger::debug("Launching Dispatcher::callAllAgentsKernel() on device: %d", devices.at(i));
             CATCH(cudaSetDevice(devices.at(i)));
-            callAllAgentsKernel<<<dims[0], dims[1]>>>(agtsPtr + i * stride, stride, functionId, tempArgPtr);
+            callAllAgentsKernel<<<dims[0], dims[1]>>>(agtsPtr + i * stride, stride, 
+                    functionId, tempArgPtr);
             CHECK();
         }
         if (argPtr != NULL) {
@@ -374,7 +377,8 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     int placeStride = numPlaces / devices.size();
 
     for (int i = 0; i < devices.size(); ++i) {
-        Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", devices.at(i));
+        Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", 
+                devices.at(i));
         CATCH(cudaSetDevice(devices.at(i)));
         resolveMigrationConflictsKernel<<<dims[0], dims[1]>>>(p_ptrs + i * placeStride, placeStride);
         CHECK();
@@ -406,11 +410,12 @@ void Dispatcher::spawnAgents(int handle) {
     //       Need to implement even splitting algo and push all stride calculations to instantiation
     std::vector<int> devices = deviceInfo->getDevices();
     int numAgents = getNumAgents(handle);
-    int stride = (numAgents / devices.size());
+    int stride = numAgents / devices.size();
     int maxAgents = deviceInfo->getMaxAgents(handle);
     for (int i = 0; i < devices.size(); ++i) {
         CATCH(cudaSetDevice(devices.at(i)));
-        spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * stride, numAgentObjects / stride, maxAgents / stride);
+        spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * stride, numAgentObjects / stride, 
+                maxAgents / stride);
         CHECK();
     }
 
