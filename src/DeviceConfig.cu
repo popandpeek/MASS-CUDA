@@ -48,8 +48,9 @@ void DeviceConfig::freeDevice() {
 	}
 	devPlacesMap.clear();
 
-	for (std::size_t i; i < activeDevices.size(); ++i) {
-		CATCH(cudaDeviceReset(activeDevices[i]));
+	for (std::size_t i = 0; i < activeDevices.size(); ++i) {
+		CATCH(cudaSetDevice(activeDevices.at(i)));
+		CATCH(cudaDeviceReset());
 	}
 
 	Logger::debug("Done with deviceConfig freeDevice().");
@@ -103,11 +104,11 @@ int DeviceConfig::getMaxAgents(int handle) {
 	return devAgentsMap[handle].nObjects;
 }
 
-int DeviceConfig::getDeviceNum() {
-	return deviceNum;
+int DeviceConfig::getDeviceNum(int device) {
+	return activeDevices.at(device);
 }
 
-dim3* DeviceConfig::getBlockThreadDims(int handle) {
+dim3* DeviceConfig::getThreadBlockDims(int handle) {
     int numBlocks = (getNumAgentObjects(handle) - 1) / BLOCK_SIZE + 1;
     dim3 blockDim(numBlocks);
 
@@ -131,7 +132,7 @@ __global__ void destroyAgentsKernel(Agent **agents, int qty) {
 void DeviceConfig::deleteAgents(int handle) {
 	AgentArray a = devAgentsMap[handle];
 
-	dim3* dims = getBlockThreadDims(handle);
+	dim3* dims = getThreadBlockDims(handle);
 	destroyAgentsKernel<<<dims[0], dims[1]>>>(a.devPtr, a.nObjects);
 	CHECK();
 	CATCH(cudaFree(a.devPtr));
@@ -179,8 +180,4 @@ std::vector<int> DeviceConfig::getDevices() {
 	return activeDevices;
 }
 
-// void DeviceConfig::setDevices(std::vector<int> devices) {
-// 	activeDevices = devices;
-
-// }
 } // end Mass namespace

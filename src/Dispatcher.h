@@ -6,7 +6,6 @@
 #include <vector>
 #include <queue>
 
-// #include "DataModel.h"
 #include "DeviceConfig.h"
 
 
@@ -42,7 +41,7 @@ public:
 	 * collection.
 	 * @param handle the handle of the places object to refresh.
 	 */
-	//Place** refreshPlaces(int placeHandle);
+	Place** refreshPlaces(int placeHandle);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -133,7 +132,6 @@ private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
 	DeviceConfig *deviceInfo;
 
-	// DataModel *model;
 	bool initialized;
 	bool deviceLoaded;
 

@@ -9,9 +9,9 @@
 
 #include "DeviceConfig.h"
 #include "Place.h"
-#include "PlacesModel.h"
 #include "Places.h"
-// #include "DataModel.h"
+#include "PlaceState.h"
+#include "AgentState.h"
 
 // using constant memory to optimize the performance of exchangeAllPlacesKernel():
 __constant__ int offsets_device[MAX_NEIGHBORS]; 
@@ -141,7 +141,9 @@ void Dispatcher::init() {
 	if (!initialized) {
 		initialized = true; 
 		Logger::debug(("Initializing Dispatcher"));
-
+        int gpuCount;
+        cudaGetDeviceCount(&gpuCount);
+        
 		if (gpuCount == 0) {
 			throw MassException("No GPU devices were found.");
 		}
@@ -177,6 +179,14 @@ Dispatcher::~Dispatcher() {
 	deviceInfo->freeDevice();
 }
 
+// PASSES THROUGH: (Updates the Places stored on CPU)
+Place** Dispatcher::refreshPlaces(int handle) {
+    Logger::debug("Entering Dispatcher::refreshPlaces");
+
+    Logger::debug("Exiting Dispatcher::refreshPlaces");
+    return deviceInfo->getDevPlaces(handle);
+}
+
 void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, int argSize) {
 	if (initialized) {
         Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", 
@@ -189,7 +199,8 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 		}
 
 		Logger::debug("Dispatcher::callAllPlaces: Calling callAllPlacesKernel");
-		dim3* dims = deviceInfo->getThreadBlockDims();
+        dim3* dims = deviceInfo->getThreadBlockDims(placeHandle);
+        Logger::debug("Kernel dims = gridDim %d and blockDim = %d", dims[0], dims[1]);
 
         std::vector<int> devices = deviceInfo->getDevices();
         int numPlaces = deviceInfo->countDevPlaces(placeHandle);
@@ -200,14 +211,15 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
         for (int i = 0; i < devices.size(); ++i) {
             void *tempArgPtr = NULL;
             if (argPtr != NULL) {
-                tempArgPtr = argPtr + i * stride;
+                tempArgPtr = argPtr;
             }
 
             Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d", devices.at(i));
             CATCH(cudaSetDevice(devices.at(i)));
-            callAllPlacesKernel<<<dims[0], dims[1]>>>(devPtr + i * stride, stride, 
+            callAllPlacesKernel<<<deviceInfo->pDims[0], deviceInfo->pDims[1]>>>(devPtr + i * stride, stride, 
                     functionId, tempArgPtr);
-		    CHECK();
+            CHECK();
+            cudaDeviceSynchronize();
         }
 
 		if (argPtr != NULL) {
@@ -219,7 +231,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 	}
 }
 
-bool Dispatcher::updateNeighborhood(int handle, vector<int*> *vec) {
+bool Dispatcher::updateNeighborhood(int handle, std::vector<int*> *vec) {
 	Logger::debug("Inside Dispatcher::updateNeighborhood");
 
     neighborhood = vec;
@@ -273,19 +285,27 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
 
 	Place** ptrs = deviceInfo->getDevPlaces(handle);
 	int nptrs = deviceInfo->countDevPlaces(handle);
-    dim3* dims = deviceInfo->getBlockThreadDims(handle);
+    dim3* dims = deviceInfo->getThreadBlockDims(handle);
+    Logger::debug("Kernel dims = gridDim %d and blockDim = %d", dims[0], dims[1]);
     std::vector<int> devices = deviceInfo->getDevices();
-    int stride = numPlaces / devices.size();
+    int stride = nptrs / devices.size();
 
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         CATCH(cudaSetDevice(devices.at(i)));
-        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, 
-                destinations->size());
+        exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, destinations->size());
         CHECK();
+        cudaDeviceSynchronize();
     }
 
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
+}
+
+Agent** Dispatcher::refreshAgents(int handle) {
+    Logger::debug("Entering Dispatcher::refreshAgents");
+    
+    Logger::debug("Exiting Dispatcher::refreshAgents");
+    return deviceInfo->getDevAgents(handle);
 }
 
 /* Collects data from neighbors and executes the 
@@ -306,14 +326,15 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
 
     Place** ptrs = deviceInfo->getDevPlaces(handle);
     int nptrs = deviceInfo->countDevPlaces(handle);
-    dim3* dims = deviceInfo->getBlockThreadDims(handle);
+    dim3* dims = deviceInfo->getThreadBlockDims(handle);
+    Logger::debug("Kernel dims = gridDim %d and blockDim = %d", dims[0], dims[1]);
     std::vector<int> devices = deviceInfo->getDevices();
-    int stride = numPlaces / devices.size();
+    int stride = nptrs / devices.size();
 
     for (int i = 0; i < devices.size(); ++i) {
         void *tempArgPtr = NULL;
         if (argPtr != NULL) {
-            tempArgPtr = argPtr + i * stride;
+            tempArgPtr = argPtr;
         }
 
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
@@ -321,6 +342,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
         exchangeAllPlacesKernel<<<dims[0], dims[1]>>>(ptrs + i * stride, stride, 
                 destinations->size(), functionId, tempArgPtr);
         CHECK();
+        cudaDeviceSynchronize();
     }
 
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
@@ -338,7 +360,8 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
             deviceInfo->load(argPtr, argument, argSize);
         }
 
-        dim3* dims = deviceInfo->getDims(agentHandle);
+        dim3* dims = deviceInfo->getThreadBlockDims(agentHandle);
+        Logger::debug("Kernel dims = gridDim %d and blockDim = %d", dims[0], dims[1]);
 
         std::vector<int> devices = deviceInfo->getDevices();
         Agent** agtsPtr = deviceInfo->getDevAgents(agentHandle);
@@ -347,7 +370,7 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
         for (int i = 0; i < devices.size(); ++i) {
             void *tempArgPtr = NULL;
             if (argPtr != NULL) {
-                tempArgPtr = argPtr + i * stride * sizeof(void*);
+                tempArgPtr = argPtr;
             }
 
             Logger::debug("Launching Dispatcher::callAllAgentsKernel() on device: %d", devices.at(i));
@@ -355,6 +378,7 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument,
             callAllAgentsKernel<<<dims[0], dims[1]>>>(agtsPtr + i * stride, stride, 
                     functionId, tempArgPtr);
             CHECK();
+            cudaDeviceSynchronize();
         }
         if (argPtr != NULL) {
             Logger::debug("Dispatcher::callAllAgents: Freeing device args.");
@@ -371,9 +395,10 @@ void Dispatcher::terminateAgents(int agentHandle) {
 
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     Place** p_ptrs = deviceInfo->getDevPlaces(placeHandle);
-    int numPlaces = deviceInfo->countDevPlaces(place));
-    dim3* dims = deviceInfo->getBlockThreadDims(agentHandle);
-    st::vector<int> devices = deviceInfo->getDevices();
+    int numPlaces = deviceInfo->countDevPlaces(placeHandle);
+    dim3* dims = deviceInfo->getThreadBlockDims(agentHandle);
+    Logger::debug("Kernel dims = gridDim %d and blockDim = %d", dims[0], dims[1]);
+    std::vector<int> devices = deviceInfo->getDevices();
     int placeStride = numPlaces / devices.size();
 
     for (int i = 0; i < devices.size(); ++i) {
@@ -381,7 +406,8 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
                 devices.at(i));
         CATCH(cudaSetDevice(devices.at(i)));
         resolveMigrationConflictsKernel<<<dims[0], dims[1]>>>(p_ptrs + i * placeStride, placeStride);
-        CHECK();
+        CHECK();		
+        cudaDeviceSynchronize();
     }
 
     Agent **a_ptrs = deviceInfo->getDevAgents(agentHandle);
@@ -393,6 +419,7 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
         CATCH(cudaSetDevice(devices.at(i)));
         updateAgentLocationsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * agentStride, agentStride);
         CHECK();
+        cudaDeviceSynchronize();
     }
 }
 
@@ -400,7 +427,8 @@ void Dispatcher::spawnAgents(int handle) {
     
     Logger::debug("Inside Dispatcher::spawnAgents");
     Agent **a_ptrs = deviceInfo->getDevAgents(handle);
-    dim3* dims = deviceInfo->getBlockThreadDims(handle);
+    dim3* dims = deviceInfo->getThreadBlockDims(handle);
+    Logger::debug("Kernel dims = gridDim %d and blockDim = %d", dims[0], dims[1]);
 
     //allocate numAgentObjects on in managed memory on GPU:
     int* numAgentObjects = new int(getNumAgentObjects(handle));
@@ -414,9 +442,9 @@ void Dispatcher::spawnAgents(int handle) {
     int maxAgents = deviceInfo->getMaxAgents(handle);
     for (int i = 0; i < devices.size(); ++i) {
         CATCH(cudaSetDevice(devices.at(i)));
-        spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * stride, numAgentObjects / stride, 
-                maxAgents / stride);
+        spawnAgentsKernel<<<dims[0], dims[1]>>>(a_ptrs + i * stride, numAgentObjects + i * stride, maxAgents / stride);
         CHECK();
+        cudaDeviceSynchronize();
     }
 
     // Is this necessary? If so, may need to accumulate count of results above

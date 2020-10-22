@@ -3,6 +3,8 @@
 #include <map>
 #include <cassert>
 #include <unordered_set>
+#include <vector>
+#include <algorithm>
 
 #include "iostream"
 #include "cudaUtil.h"
@@ -60,19 +62,16 @@ public:
 	int getNumAgentObjects(int handle);
 	int getMaxAgents(int handle);
 
-	int getDeviceNum();
+	int getDeviceNum(int device);
 	// Returns block and thread dimentions for the Agent collection 
 	//   based on the number of elements belonging to the collection
 	
-	dim3* getBlockThreadDims(int agentHandle);
-	int* DeviceConfig::getSize();
-	int DeviceConfig::getDims();
-	void DeviceConfig::setSize(int *size);
-	void DeviceConfig::setDims(int dims);
-	std::vector<int> DeviceConfig::getDevices();
-
+	dim3* getThreadBlockDims(int agentHandle);
+	int* getSize();
+	int getDims();
+	void setSize(int *size);
+	void setDims(int dims);
 	std::vector<int> getDevices();
-	// void setDevices(std::vector<int> devices);
 
 	template<typename P, typename S>
 	Place** instantiatePlaces(int handle, void *argument, int argSize,
@@ -89,7 +88,7 @@ private:
 	std::vector<int> activeDevices;
 	std::map<int, PlaceArray> devPlacesMap;
 	std::map<int, AgentArray> devAgentsMap;
-
+	dim3 pDims[2];
 	// TODO: Add Agents and Places partitioning?
 
 	size_t freeMem;
@@ -169,11 +168,14 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 	p.devPtr = tmpPlaces;
 
 	// launch instantiation kernel
-	int blockDim = (qty - 1) / BLOCK_SIZE + 1;
-	int threadDim = (qty - 1) / blockDim + 1;
+	int blockD = ((qty - 1) / BLOCK_SIZE + 1);
+	int threadD = ((qty - 1) / blockD + 1);
+	pDims[0] = blockD;
+	pDims[1] = threadD;
+	Logger::debug("Kernel dims = gridDim %d and blockDim = %d", pDims[0], pDims[1]);
 	int stride = qty / activeDevices.size();
 	for (int i = 0; i < activeDevices.size(); ++i) {
-		cudaSetDevice(activeDevices.at(i));
+		CATCH(cudaSetDevice(activeDevices.at(i)));
 
 		// handle arg - puts argument on each device
 		void *d_arg = NULL;
@@ -189,9 +191,10 @@ Place** DeviceConfig::instantiatePlaces(int handle, void *argument, int argSize,
 		CATCH(cudaMemcpy(d_dims, size, dimBytes, H2D));
 
 		Logger::debug("Launching instantiation kernel on device: %d", activeDevices.at(i));
-		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtr + i * stride,
+		instantiatePlacesKernel<P, S> <<<pDims[0], pDims[1]>>>(p.devPtr + i * stride,
 				d_state + i * stride, d_arg, d_dims, dimensions, stride);
 		CHECK();
+		cudaDeviceSynchronize();
 		CATCH(cudaFree(d_arg));
 		CATCH(cudaFree(d_dims));
 	}
@@ -210,7 +213,7 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 		void *arg, int nAgents, int maxAgents) {
 	unsigned idx = getGlobalIdx_1D_1D(); // does this work for MGPU?
 
-	if (idx < nAgents) {
+	if ((idx < nAgents)) {
 		// set pointer to corresponding state object
 		agents[idx] = new AgentType(&(state[idx]), arg);
 		agents[idx]->setIndex(idx);
@@ -224,7 +227,7 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 template<typename AgentType, typename AgentStateType>
 __global__ void mapAgentsKernel(Place **places, int placeQty, Agent **agents,
 		AgentStateType *state, int nAgents, int* placeIdxs) {
-	int idx = getGlobalIdx_1D_1D();  //agent index
+	unsigned idx = getGlobalIdx_1D_1D();  //agent index
 
 	if (idx < nAgents) {
 		int placeIdx = placeIdxs[idx];
@@ -266,26 +269,36 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 	CATCH(cudaMallocManaged((void** ) &tmpAgents, a.nObjects * ptrbytes));
 	a.devPtr = tmpAgents;
 
+	Logger::debug("DeviceConfig::instantiateAgents() finshed with agent memory initialization.");
+
 	PlaceArray places = devPlacesMap[placesHandle];
 	int placesStride = places.qty / activeDevices.size();
+
+	Logger::debug("DeviceConfig::instantiateAgents() - Successfully loads places from memory.");
 
 	// If no agent mapping provided, split agents evenly amongst devices/place chunks and randomly generate placeIdxs
 	int *agtDevArr[activeDevices.size()];
 	int agtDevCount[activeDevices.size()];
+	int agtDevMax[activeDevices.size()];
 	int strideSum = 0;
 	if (placeIdxs == NULL) {
+		Logger::debug("DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).");
 		for (int i = 0; i < activeDevices.size(); ++i) {
 			agtDevCount[i] = nAgents / activeDevices.size();
-			int tempPlaceIdxs[agtDevCount[i]];
-			getRandomPlaceIdxs(&tempPlaceIdxs, placesStride, agtDevCount[i], strideSum);
+			Logger::debug("DeviceConfig::instantiateAgents() - %d number of agents on device %d .", agtDevCount[i], activeDevices.at(i));
+			int *tempPlaceIdxs = new int[agtDevCount[i]];
+			getRandomPlaceIdxs(tempPlaceIdxs, placesStride, agtDevCount[i], strideSum);
+			Logger::debug("DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().");
 			agtDevArr[i] = tempPlaceIdxs;
 			strideSum += agtDevCount[i];
+			agtDevMax[i] = a.nObjects / activeDevices.size();
 		}
+		Logger::debug("DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).");
 	}
 
 	// If provided a map of agents split by placeIdx as mapped to devices
 	else {
-		std::sort(placeIdxs, sizeof(placeIdxs) / sizeof(placeIdxs[0]));
+		std::sort(placeIdxs, placeIdxs + (int)(sizeof(placeIdxs) / sizeof(placeIdxs[0])));
 		int count = 0;
 		int *ptr_end = placeIdxs;
 		int *ptr_begin = placeIdxs;
@@ -297,27 +310,38 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 
 			agtDevArr[i] = ptr_begin;
 			agtDevCount[i] = count;
-			ptr_begin += count * sizeof(int);
+			ptr_begin += count;
 			count = 0;
 		}
+		
+		int maxAgentsToShare = a.nObjects - a.nAgents;
+		int maxAgtAcc = 0;
+		for (int i = 0; i < activeDevices.size() - 1; ++i) {
+			int tempSum = agtDevCount[i] + (maxAgentsToShare / activeDevices.size());
+			agtDevMax[i] = tempSum;
+			maxAgtAcc += tempSum;
+		}
+
+		agtDevMax[activeDevices.size() - 1] = agtDevCount[activeDevices.size() - 1] + (maxAgentsToShare - maxAgtAcc);
+
+		Logger::debug("DeviceConfig::instantiateAgents() - Successfully completes placeIdxs != NULL init (split amongst devices based on providedd init location).");
 	}
 	
 	// launch map kernel using 1 thread per agent 
 	if (nAgents / places.qty + 1 > MAX_AGENTS) {
-		throw MassException("Number of agents per places exceeds the maximum setting 
-			of the library. Please change the library setting MAX_AGENTS and 
-			re-compile the library.");
+		throw MassException("Number of agents per places exceeds the maximum setting of the library. Please change the library setting MAX_AGENTS and re-compile the library.");
 	}
 
 	// launch instantiation kernel
 	int blockDim = (a.nObjects - 1) / BLOCK_SIZE + 1;
 	int threadDim = (a.nObjects - 1) / blockDim + 1;
+	Logger::debug("Kernel dims = gridDim %d and blockDim = %d", blockDim, threadDim);
 
 	int strideCount = 0;
 
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		Logger::debug("Launching agent instantiation kernel on device: %d", activeDevices.at(i));
-		cudaSetDevice(activeDevices.at(i));
+		CATCH(cudaSetDevice(activeDevices.at(i)));
 
 		// handle arg on each device
 		void *d_arg = NULL;
@@ -326,10 +350,10 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 			CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 		}
 
-		instantiateAgentsKernel<AgentType, AgentStateType> 
-				<<<blockDim, threadDim>>>(a.devPtr + strideCount, d_state + strideCount,
-				temp_arg, agtDevCount[i], a.nObjects);
+		instantiateAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(a.devPtr, d_state, 
+				d_arg, agtDevCount[i], agtDevMax[i]);
 		CHECK();
+		cudaDeviceSynchronize();
 		if (NULL != argument) {
 			CATCH(cudaFree(d_arg));
 		}
@@ -341,26 +365,27 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 
 	// Loop over devices and map agents to places on each device
 	strideCount = 0;
+	int placesStrideCount = 0;
 	for (int i = 0; i < activeDevices.size(); ++i) {
+		CATCH(cudaSetDevice(activeDevices.at(i)));
 		int* placeIdxs_d;
-		cudaSetDevice(activeDevices.at(i));
 		CATCH(cudaMalloc(&placeIdxs_d, agtDevCount[i] * sizeof(int)));
 		CATCH(cudaMemcpy(placeIdxs_d, agtDevArr[i], agtDevCount[i] * sizeof(int), H2D));
-
 		Logger::debug("Launching agent mapping kernel on device: %d", activeDevices.at(i));
-		mapAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(places.devPtr + strideCount, 
-				agtDevCount[i], a.devPtr, d_state, agtDevCount[i], placeIdxs_d);
+		mapAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(places.devPtr + placesStrideCount, 
+				placesStride, a.devPtr + strideCount, d_state + strideCount, 
+				agtDevCount[i], placeIdxs_d);
 		CHECK();
-
-		CATCH(cudaFree(placeIdxs_d));
-
+		cudaDeviceSynchronize();
 		strideCount += agtDevCount[i];
+		placesStrideCount += placesStride;
+		CATCH(cudaFree(placeIdxs_d));
 	}
 
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 
 	devAgentsMap[handle] = a;
-	Logger::debug("Finished DeviceConfig::instantiateAgents");
+	Logger::debug("Finished DeviceConfig::instantiateAgents.\n");
 	return a.devPtr;
 }
 

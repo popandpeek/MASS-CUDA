@@ -1,0 +1,505 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"get",
+				"getDims"
+			],
+			[
+				"dev",
+				"DeviceConfig"
+			],
+			[
+				"int",
+				"initialize"
+			],
+			[
+				"d",
+				"d_begin"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "src/Agents.h",
+			"settings":
+			{
+				"buffer_size": 2125,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/Agents.cu",
+			"settings":
+			{
+				"buffer_size": 1444,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/Dispatcher.cu",
+			"settings":
+			{
+				"buffer_size": 15370,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "#include <iostream>\n#include \"Timer.h\"\n#include <stdlib.h>   // atoi\n#include <math.h>\n#include <stdio.h>\n#include \"mpi.h\"\n#include <omp.h>\n\n// Globals\nint default_size = 100;  // the default system size\nint defaultCellWidth = 8;\ndouble c = 1.0;      // wave speed\ndouble dt = 0.1;     // time quantum\ndouble dd = 2.0;     // change in system\nint mpi_size = 1;\nint my_rank = 0;\n\n// helper function prototypes\nvoid print_simulation(int, int, double**);\nvoid allocate_memory(int, double***&);\nvoid calculate_wave_init(int, double**);\nvoid calculate_wave_one(int, double**, double**);\nvoid calculate_wave(int, int, int, double**, double**, double**);\nvoid send_boundary_data(double*, int, int);\nvoid recv_boundary_data(double*, int, int);\n\nint main(int argc, char* argv[]) {\n\t// verify arguments\n\tif (argc != 5) {\n\t\tstd::cerr << \"usage: Wave2D size, max_time, interval, and threads\" << std::endl;\n\t\treturn -1;\n\t}\n\n\tint size = atoi(argv[1]);\n\tint max_time = atoi(argv[2]);\n\tint interval = atoi(argv[3]);\n\tint threads = atoi(argv[4]);\n\n\tif (size < 100 || max_time < 3 || interval < 0 || threads < 1 || threads > 4) {\n\t\tstd::cerr << \"usage: Wave2D size, max_time, interval, and threads\" << std::endl;\n\t\tstd::cerr << \"       where size >= 100 && time >= 3 && interval >= 0 &&\" << std::endl;\n\t\tstd::cerr << \"       4 >= threads >= 1\" << std::endl;\n\t\treturn -1;\n\t}\n\n\t// Setup MPI and openMP\n\tMPI_Init(&argc, &argv);\n\tMPI_Bcast(&threads, 1, MPI_INT, 0, MPI_COMM_WORLD);\n\tomp_set_num_threads(threads);\n\n\t// allocate pointers\n\tdouble*** z = new double** [3]();\n\tdouble** cur = nullptr;\n\tdouble** prev = nullptr;\n\tdouble** prev_prev = nullptr;\n\tdouble** temp = nullptr;\n\n\t// Get rank and number of nodes\n\tMPI_Comm_rank(MPI_COMM_WORLD, &my_rank);\n\tMPI_Comm_size(MPI_COMM_WORLD, &mpi_size);\n\n\t// Calculate slice size\n\tint slice_size = size / mpi_size;\n\tint cols = size;\n\n\t// Initialize memory for 3D array and set each to 0.0\n\tallocate_memory(size, z);\n\n\t// start a timer\n\tTimer time;\n\tif (my_rank == 0) {\n\t\ttime.start();\n\t}\t\n\n\t// time = 0;\n\t// initialize the simulation space: calculate z[0][][]\n\tcalculate_wave_init(size, z[2]);\n\t\n\t// time = 1\n\t// calculate z[1][][] \n\t// cells not on edge\n\tcalculate_wave_one(size, z[2], z[1]);\n\n\tprev_prev = z[2];\n\tprev = z[1];\n\tcur = z[0];\n\n\t// simulate wave diffusion from time = 2\n\tfor (int t = 2; t < max_time; t++) {\n\t\t// if interval met combine all data from nodes on master and print simulation space\n\t\tif (interval != 0 && (t % interval == 0 || t == max_time - 1)) {\n\t\t\t// If master collect updated data from workers before printing sim\n\t\t\tif (my_rank == 0) {\n\t\t\t\tfor (int worker = 1; worker < mpi_size; worker++) {\n\t\t\t\t\tfor (int i = worker * slice_size; i < worker * slice_size + slice_size; i++){ \n\t\t\t\t\t\trecv_boundary_data(cur[i], worker, size);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tprint_simulation(size, t, cur);\n\t\t\t}\n\n\t\t\t// Workers send their data to master\n\t\t\telse {\n\t\t\t\tfor (int i = my_rank * slice_size; i < my_rank * slice_size + slice_size; i++) {\n\t\t\t\t\tsend_boundary_data(cur[i], 0, size);\n\t\t\t\t}\n\t\t\t}\n\t\t}\t\n\n\n\t\t// If MPI Cluster is more than one node exchange data\n\t\tif (mpi_size > 1) {\n\t\t\t// Master node\n\t\t\tif (my_rank == 0) {\n\t\t\t\t// std::cout << \"Got to line 115: \" << my_rank << std::endl;\n\t\t\t\trecv_boundary_data(prev[slice_size], my_rank + 1, size);\n\t\t\t\t// std::cout << \"Got to line 117: \" << my_rank << std::endl;\n\t\t\t\tsend_boundary_data(prev[  - 1], my_rank + 1, size);\n\t\t\t\t// std::cout << \"Got to line 119: \" << my_rank << std::endl;\n\t\t\t}\n\n\t\t\t// Last node communication: may border master, even, or odd ranked node\n\t\t\telse if (my_rank == mpi_size - 1) {\n\t\t\t\t// std::cout << \"Got to line 124: \" << my_rank << std::endl;\n\t\t\t\tif (my_rank % 2 == 0) {\n\t\t\t\t\trecv_boundary_data(prev[my_rank * slice_size - 1], my_rank - 1, size);\n\t\t\t\t\tsend_boundary_data(prev[my_rank * slice_size], my_rank - 1, size);\n\t\t\t\t}\n\t\t\t\telse {\n\t\t\t\t\tsend_boundary_data(prev[my_rank * slice_size], my_rank - 1, size);\n\t\t\t\t\trecv_boundary_data(prev[my_rank * slice_size - 1], my_rank - 1, size);\n\t\t\t\t}\n\t\t\t\t// std::cout << \"Got to line 131: \" << my_rank << std::endl;\n\t\t\t}\n\n\t\t\t// Even node communication\n\t\t\telse if (my_rank % 2 == 0) {\n\t\t\t\t// std::cout << \"Got to line 136: \" << my_rank << std::endl;\n\t\t\t\trecv_boundary_data(prev[my_rank * slice_size + slice_size], my_rank + 1, size);\n\t\t\t\t// std::cout << \"Got to line 138: \" << my_rank << std::endl;\n\t\t\t\tsend_boundary_data(prev[my_rank * slice_size], my_rank - 1, size);\n\t\t\t\t// std::cout << \"Got to line 140: \" << my_rank << std::endl;\n\t\t\t\trecv_boundary_data(prev[my_rank * slice_size - 1], my_rank - 1, size);\n\t\t\t\t// std::cout << \"Got to line 142: \" << my_rank << std::endl;\n\t\t\t\tsend_boundary_data(prev[my_rank * slice_size + slice_size - 1], my_rank + 1, size);\n\t\t\t\t// std::cout << \"Got to line 144: \" << my_rank << std::endl;\n\t\t\t}\n\n\t\t\t// Odd node communication\n\t\t\telse {\n\t\t\t\t// std::cout << \"Got to line 148: \" << my_rank << std::endl;\n\t\t\t\tsend_boundary_data(prev[my_rank * slice_size], my_rank - 1, size);\n\t\t\t\t// std::cout << \"Got to line 150: \" << my_rank << std::endl;\n\t\t\t\trecv_boundary_data(prev[my_rank * slice_size + slice_size], my_rank + 1, size);\n\t\t\t\t// std::cout << \"Got to line 152: \" << my_rank << std::endl;\n\t\t\t\tsend_boundary_data(prev[my_rank * slice_size + slice_size - 1], my_rank + 1, size);\n\t\t\t\t// std::cout << \"Got to line 154: \" << my_rank << std::endl;\n\t\t\t\trecv_boundary_data(prev[my_rank * slice_size - 1], my_rank - 1, size);\n\t\t\t\t// std::cout << \"Got to line 156: \" << my_rank << std::endl;\n\t\t\t}\n\t\t}\n\n\t\tcalculate_wave(my_rank * slice_size, my_rank * slice_size + slice_size, size, prev_prev, prev, cur);\n\t\n\t\t// swap pointers for next round\n\t\ttemp = cur;\n\t\tcur = prev_prev;\n\t\tprev_prev = prev;\n\t\tprev = temp;\n\t} // end of simulation\n\n\tstd::cerr << \"rank[\" << my_rank << \"]'s range = \" << my_rank * slice_size << \" ~ \" << my_rank * slice_size + slice_size - 1 << std::endl;\n\tMPI_Barrier(MPI_COMM_WORLD);\n\n\t// finish the timer\n\tif (my_rank == 0) {\n\t\tstd::cerr << \"Elapsed time = \" << time.lap() << std::endl;\n\t}\n\n\t// Deallocate\n\tfor (int p = 0; p < 3; p++) {\n\t\tfor (int i = 0; i < size; i++) {\n\t\t\tdelete[] z[p][i];\n\t\t}\n\t\tdelete[] z[p];\n\t}\n\tdelete[] z;\n\tz = nullptr;\n\n\tMPI_Finalize( ); // shut down MPI\n\n\treturn 0;\n}\n\n/*\n\n*/\nvoid print_simulation(int _size, int _time, double** _cur) {\n\tstd::cout << _time << std::endl;\n\tfor (int i = 0; i < _size; i++) {\n\t\tfor (int j = 0; j < _size; j++) {\n\t\t\tstd::cout << _cur[i][j] << \" \";\n\t\t}\n\t\tstd::cout << std::endl;\n\t}\n\tstd::cout << std::endl;\n}\n\n/*\n\tAllocates dynamic memory for 3 2D arrays\n*/\nvoid allocate_memory(int size, double***& z) {\n\tfor (int p = 0; p < 3; p++) {\n\t\tz[p] = new double*[size]();\n\t\tfor (int i = 0; i < size; i++) {\n\t\t\tz[p][i] = new double[size]();\n\t\t}\n\t}\n}\n\n/*\n\tCalculates initial state of simulation\n*/\nvoid calculate_wave_init(int _size, double** t_2) {\n\t// calculate master/left stripe\n\t// calculate right stripe\n\t// calcualte center stripes\n\tint weight = _size / default_size;\n\t#pragma omp parallel for schedule(guided)\n\tfor (int i = 0; i < _size; i++) {\n\t\tfor (int j = 0; j < _size; j++) {\n\t\t\tif (i > 40 * weight && i < 60 * weight && j > 40 * weight && j < 60 * weight) {\n\t\t\t\tt_2[i][j] = 20.0;\n\t\t\t}\n\t\t\telse {\n\t\t\t\tt_2[i][j] = 0.0;\n\t\t\t}\n\t\t}\n\t}\n}\n\n/*\n\tCalculates t == 1 state of wave simulation\n*/\nvoid calculate_wave_one(int _size, double** t_2, double** t_1) {\n\t// calculate master/left stripe\n\t// calculate right stripe\n\t// calcualte center stripes\n\t#pragma omp parallel for schedule(guided)\n\tfor (int i = 1; i < _size - 1; i++) {\n\t\tfor (int j = 1; j < _size - 1; j++) {\n\t\t\tt_1[i][j] = t_2[i][j] + (c * c) / 2 * pow((dt / dd), 2) * (t_2[i + 1][j] + t_2[i - 1][j] + t_2[i][j + 1] + t_2[i][j - 1] - (4.0 * t_2[i][j]));\n\t\t}\n\t}\n}\n\n/*\n\tCalculates wave state of simulation for all time > 1\n*/\nvoid calculate_wave(int row_start, int row_end, int _size, double** t_2, double** t_1, double** t_0) {\n\t// calculate master/left stripe\n\t// calculate right stripe\n\t// calcualte center stripes\n\t// if interval met print simulation space\n\t#pragma omp parallel for schedule(guided)\n\tfor (int i = row_start; i < row_end; i++) {\n\t\tfor (int j = 0; j < _size; j++) {\n\t\t\tif (j == 0 || i == 0 || i == _size - 1 || j == _size - 1) {\n\t\t\t\tt_0[i][j] = 0.0;\n\t\t\t}\n\t\t\telse {\n\t\t\t\tt_0[i][j] = 2.0 * t_1[i][j] - t_2[i][j] + (c * c) * pow((dt / dd), 2) * (t_1[i + 1][j] + t_1[i - 1][j] + t_1[i][j + 1] + t_1[i][j - 1] - (4.0 * t_1[i][j]));\n\t\t\t}\n\t\t}\n\t}\n}\n\nvoid send_boundary_data(double* data, int _rank, int _size) {\n\tMPI_Send(data, _size, MPI_DOUBLE, _rank, 0, MPI_COMM_WORLD);\n}\n\nvoid recv_boundary_data(double* data, int _rank, int _size) {\n\tMPI_Recv(data, _size, MPI_DOUBLE, _rank, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);\n}",
+			"file": "/home/ben/Dropbox/Education/UW/MSCSSE/CSS534/prog2/Wave2D_MPI.cpp",
+			"file_size": 8915,
+			"file_write_time": 132293697290000000,
+			"settings":
+			{
+				"buffer_size": 8622,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/Agent.h",
+			"settings":
+			{
+				"buffer_size": 3386,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/Agent.cu",
+			"settings":
+			{
+				"buffer_size": 1407,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/ben/MASS/Development/mass_cuda_core",
+		"/home/ben/MASS/Development/mass_cuda_core/src",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape"
+	],
+	"file_history":
+	[
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/Ant.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/Ant.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/SugarPlace.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/SugarPlace.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/SugarScape.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/SugarScape.cu",
+		"/home/ben/Dropbox/Education/UW/MSCSSE/CSS534/prog2/Wave2D.cpp",
+		"/home/ben/Dropbox/Education/UW/MSCSSE/CSS534/prog2/Wave2D_MPI.cpp",
+		"/home/ben/MASS/Development/mass_cuda_core/src/DeviceConfig.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/PlacesModel.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Dispatcher.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Dispatcher.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/PlaceState.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Place.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/DeviceConfig.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/AgentsModel.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/DataModel.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/DataModel.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/main.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Mass.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Mass.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/MassException.cpp",
+		"/home/ben/MASS/Development/mass_cuda_core/src/PlacesModel.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/AgentsModel.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Places.h",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/src/GlobalConsts.h",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/src/settings.h",
+		"/home/ben/Downloads/Ex_Files_SublimeText3_Basics/roux_website/index.htm",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Agents.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Agents.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/AgentState.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/AgentsPartition.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/AgentsPartition.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Agent.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Agent.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/SugarPlaceState.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Place.h",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/sugar_scape_results.txt",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Places.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/cudaUtil.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/src/cudaUtil.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/settings.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/AntState.h",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/Makefile",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/src/DeviceConfig.cu",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/src/Dispatcher.cu",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_MASS/src/DeviceConfig.h",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/AntState.cu",
+		"/home/ben/MASS/Development/mass_cuda_core/sugarscape/SugarPlaceState.cu",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_GPU/SugarScape.cu",
+		"/home/ben/MASS/Application/mass_cuda_appl/SugarScape/SugarScape_GPU/README.md",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Logger.h",
+		"/home/ben/MASS/Development/mass_cuda_core/src/Logger.cpp",
+		"/home/ben/MASS/Development/mass_cuda_core/src/MassException.h",
+		"/home/ben/cuda-samples/helper_string.h",
+		"/home/ben/cuda-samples/helper_cuda.h",
+		"/home/ben/cuda-samples/exception.h",
+		"/home/ben/cuda-samples/helper_image.h",
+		"/home/ben/cuda-samples/helper_functions.h",
+		"/home/ben/cuda-samples/helper_timer.h",
+		"/home/ben/cuda-samples/simpleP2P.cu",
+		"/home/ben/cuda-samples/p2pBandwidthLatencyTest.cu",
+		"/home/ben/cuda-samples/MakeFile",
+		"/home/ben/Dropbox (Wilde Rover)/Education/PyImageSourceCourse/Blogs/deep-belief-network-gpu-update/dbn.py",
+		"/home/ben/Dropbox (Wilde Rover)/Education/PyImageSourceCourse/17 Days Tutorial/cnn-keras-15of17/pyimagesearch/smallervggnet.py",
+		"/home/ben/Dropbox (Wilde Rover)/Education/PyImageSourceCourse/17 Days Tutorial/cnn-keras-15of17/pyimagesearch/__init__.py",
+		"/home/ben/Dropbox (Wilde Rover)/Education/PyImageSourceCourse/17 Days Tutorial/search-bing-api-14of17/search_bing_api.py",
+		"/home/ben/Dropbox (Wilde Rover)/Education/PyImageSourceCourse/17 Days Tutorial/simple-neural-network-12of17/simple_neural_network.py"
+	],
+	"find":
+	{
+		"height": 28.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"isAlive",
+			"deviceInfo",
+			"nObjects",
+			"updateNeighborhood",
+			"freeDevice",
+			"devState",
+			"DataModel",
+			"PlaceArray",
+			"getRandomPlaceIdxs",
+			"load",
+			"activeDevices",
+			"refreshPlaces",
+			"instantiateAgents",
+			"unload",
+			"getElements",
+			"refreshPlaces",
+			"freeMem",
+			"offsets_device",
+			"load"
+		],
+		"highlight": false,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 3,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/Agents.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2125,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "src/Agents.cu",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1444,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CUDA C++/cuda-c++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/Dispatcher.cu",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 15370,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								11870,
+								11870
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CUDA C++/cuda-c++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/home/ben/Dropbox/Education/UW/MSCSSE/CSS534/prog2/Wave2D_MPI.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8622,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3241,
+								3241
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 349.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "src/Agent.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3386,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "src/Agent.cu",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1407,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/CUDA C++/cuda-c++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 28.0
+	},
+	"input":
+	{
+		"height": 66.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "MASS_CUDA_MGPU.sublime-project",
+	"replace":
+	{
+		"height": 52.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 231.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

@@ -8,3 +8,1740 @@ Size,CPU,GPU,MASS
 	interval = 0
 5,20:40:59  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in src/Dispatcher.cu at line 287
 
+
+
+Sat 2020/10/17 09:02:21  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:02:21  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,
+
+Sat 2020/10/17 09:17:57  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:17:57  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,
+
+Sat 2020/10/17 09:25:28  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:25:28  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,
+
+Sat 2020/10/17 09:25:49  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:25:49  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,
+
+Sat 2020/10/17 09:34:18  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:34:18  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:34:18  [DEBUG]   Starting MASS CUDA simulation
+
+09:34:18  [DEBUG]   Initializing Mass
+09:34:18  [DEBUG]   Initializing Dispatcher
+09:34:19  [DEBUG]   Entering Mass::createPlaces
+
+09:34:19  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:34:19  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:34:19  [DEBUG]   Launching instantiation kernel on device: 0
+09:34:19  [DEBUG]   Launching instantiation kernel on device: 1
+09:34:19  [DEBUG]   Finished instantiation kernel
+09:34:19  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:34:19  [DEBUG]   Exiting Mass::createPlaces
+
+09:34:19  [DEBUG]   Entering callAll(int functionId)
+09:34:19  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:34:19  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:34:19  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:34:19  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:34:19  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:34:19  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:34:19  [DEBUG]   Entering Mass::createAgents
+
+09:34:19  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:34:19  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+
+
+Sun 2020/10/18 10:57:41  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+10:57:41  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,10:57:41  [DEBUG]   Starting MASS CUDA simulation
+
+10:57:41  [DEBUG]   Initializing Mass
+10:57:41  [DEBUG]   Initializing Dispatcher
+10:57:42  [DEBUG]   Entering Mass::createPlaces
+
+10:57:42  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+10:57:42  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+10:57:42  [DEBUG]   Launching instantiation kernel on device: 0
+10:57:42  [DEBUG]   Launching instantiation kernel on device: 1
+10:57:42  [DEBUG]   Finished instantiation kernel
+10:57:42  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+10:57:42  [DEBUG]   Exiting Mass::createPlaces
+
+10:57:42  [DEBUG]   Entering callAll(int functionId)
+10:57:42  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+10:57:42  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+10:57:42  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+10:57:42  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+10:57:42  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+10:57:42  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+10:57:42  [DEBUG]   Entering Mass::createAgents
+
+10:57:42  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+10:57:42  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+
+
+Sun 2020/10/18 11:02:54  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+11:02:54  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,11:02:54  [DEBUG]   Starting MASS CUDA simulation
+
+11:02:54  [DEBUG]   Initializing Mass
+11:02:54  [DEBUG]   Initializing Dispatcher
+11:02:55  [DEBUG]   Entering Mass::createPlaces
+
+11:02:55  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+11:02:55  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+11:02:55  [DEBUG]   Launching instantiation kernel on device: 0
+11:02:55  [DEBUG]   Launching instantiation kernel on device: 1
+11:02:55  [DEBUG]   Finished instantiation kernel
+11:02:55  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+11:02:55  [DEBUG]   Exiting Mass::createPlaces
+
+11:02:55  [DEBUG]   Entering callAll(int functionId)
+11:02:55  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+11:02:55  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+11:02:55  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+11:02:55  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+11:02:55  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+11:02:55  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+11:02:55  [DEBUG]   Entering Mass::createAgents
+
+11:02:55  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+11:02:55  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+
+
+Sun 2020/10/18 11:15:21  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+11:15:21  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,11:15:21  [DEBUG]   Starting MASS CUDA simulation
+
+11:15:21  [DEBUG]   Initializing Mass
+11:15:21  [DEBUG]   Initializing Dispatcher
+11:15:22  [DEBUG]   Entering Mass::createPlaces
+
+11:15:22  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+11:15:22  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+11:15:22  [DEBUG]   Launching instantiation kernel on device: 0
+11:15:22  [DEBUG]   Launching instantiation kernel on device: 1
+11:15:22  [DEBUG]   Finished instantiation kernel
+11:15:22  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+11:15:22  [DEBUG]   Exiting Mass::createPlaces
+
+11:15:22  [DEBUG]   Entering callAll(int functionId)
+11:15:22  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+11:15:22  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+11:15:22  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+11:15:22  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+11:15:22  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+11:15:22  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+11:15:22  [DEBUG]   Entering Mass::createAgents
+
+11:15:22  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+11:15:22  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+
+
+Sun 2020/10/18 11:22:20  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+11:22:20  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,11:22:20  [DEBUG]   Starting MASS CUDA simulation
+
+11:22:20  [DEBUG]   Initializing Mass
+11:22:20  [DEBUG]   Initializing Dispatcher
+11:22:21  [DEBUG]   Entering Mass::createPlaces
+
+11:22:21  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+11:22:21  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+11:22:21  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+11:22:21  [DEBUG]   Launching instantiation kernel on device: 0
+11:22:21  [DEBUG]   Launching instantiation kernel on device: 1
+11:22:21  [DEBUG]   Finished instantiation kernel
+11:22:21  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+11:22:21  [DEBUG]   Exiting Mass::createPlaces
+
+11:22:21  [DEBUG]   Entering callAll(int functionId)
+11:22:21  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+11:22:21  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+11:22:21  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+11:22:21  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+11:22:21  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+11:22:21  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+11:22:21  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+11:22:21  [DEBUG]   Entering Mass::createAgents
+
+11:22:21  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+11:22:21  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+
+
+Sun 2020/10/18 22:16:10  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+22:16:10  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,22:16:10  [DEBUG]   Starting MASS CUDA simulation
+
+22:16:10  [DEBUG]   Initializing Mass
+22:16:10  [DEBUG]   Initializing Dispatcher
+22:16:11  [DEBUG]   Entering Mass::createPlaces
+
+22:16:11  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+22:16:11  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+22:16:11  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+22:16:11  [DEBUG]   Launching instantiation kernel on device: 0
+22:16:11  [DEBUG]   Launching instantiation kernel on device: 1
+22:16:11  [DEBUG]   Finished instantiation kernel
+22:16:11  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+22:16:11  [DEBUG]   Exiting Mass::createPlaces
+
+22:16:11  [DEBUG]   Entering callAll(int functionId)
+22:16:11  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+22:16:11  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+22:16:11  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+22:16:11  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+22:16:11  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+22:16:11  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+22:16:11  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+22:16:11  [DEBUG]   Entering Mass::createAgents
+
+22:16:11  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+22:16:11  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+
+
+Mon 2020/10/19 09:06:10  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:06:10  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:06:10  [DEBUG]   Starting MASS CUDA simulation
+
+09:06:10  [DEBUG]   Initializing Mass
+09:06:10  [DEBUG]   Initializing Dispatcher
+09:06:11  [DEBUG]   Entering Mass::createPlaces
+
+09:06:11  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:06:11  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:06:11  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:06:11  [DEBUG]   Launching instantiation kernel on device: 0
+09:06:11  [DEBUG]   Launching instantiation kernel on device: 1
+09:06:11  [DEBUG]   Finished instantiation kernel
+09:06:11  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:06:11  [DEBUG]   Exiting Mass::createPlaces
+
+09:06:11  [DEBUG]   Entering callAll(int functionId)
+09:06:11  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:06:11  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:06:11  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:06:11  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:06:11  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:06:11  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:06:11  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:06:11  [DEBUG]   Entering Mass::createAgents
+
+09:06:11  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:06:11  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:06:11  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+
+
+Mon 2020/10/19 09:07:41  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:07:41  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:07:41  [DEBUG]   Starting MASS CUDA simulation
+
+09:07:41  [DEBUG]   Initializing Mass
+09:07:41  [DEBUG]   Initializing Dispatcher
+09:07:42  [DEBUG]   Entering Mass::createPlaces
+
+09:07:42  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:07:42  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:07:42  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:07:42  [DEBUG]   Launching instantiation kernel on device: 0
+09:07:42  [DEBUG]   Launching instantiation kernel on device: 1
+09:07:42  [DEBUG]   Finished instantiation kernel
+09:07:42  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:07:42  [DEBUG]   Exiting Mass::createPlaces
+
+09:07:42  [DEBUG]   Entering callAll(int functionId)
+09:07:42  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:07:42  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:07:42  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:07:42  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:07:42  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:07:42  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:07:42  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:07:42  [DEBUG]   Entering Mass::createAgents
+
+09:07:42  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:07:42  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:07:42  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+09:07:42  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+
+
+
+Mon 2020/10/19 09:11:00  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:11:00  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:11:00  [DEBUG]   Starting MASS CUDA simulation
+
+09:11:00  [DEBUG]   Initializing Mass
+09:11:00  [DEBUG]   Initializing Dispatcher
+09:11:01  [DEBUG]   Entering Mass::createPlaces
+
+09:11:01  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:11:01  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:11:01  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:11:01  [DEBUG]   Launching instantiation kernel on device: 0
+09:11:01  [DEBUG]   Launching instantiation kernel on device: 1
+09:11:01  [DEBUG]   Finished instantiation kernel
+09:11:01  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:11:01  [DEBUG]   Exiting Mass::createPlaces
+
+09:11:01  [DEBUG]   Entering callAll(int functionId)
+09:11:01  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:11:01  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:11:01  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:11:01  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:11:01  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:11:01  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:11:01  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:11:01  [DEBUG]   Entering Mass::createAgents
+
+09:11:01  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:11:01  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:11:01  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+09:11:01  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+
+
+
+Mon 2020/10/19 09:37:52  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:37:52  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:37:52  [DEBUG]   Starting MASS CUDA simulation
+
+09:37:52  [DEBUG]   Initializing Mass
+09:37:52  [DEBUG]   Initializing Dispatcher
+09:37:53  [DEBUG]   Entering Mass::createPlaces
+
+09:37:53  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:37:53  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:37:53  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:37:53  [DEBUG]   Launching instantiation kernel on device: 0
+09:37:53  [DEBUG]   Launching instantiation kernel on device: 1
+09:37:53  [DEBUG]   Finished instantiation kernel
+09:37:53  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:37:53  [DEBUG]   Exiting Mass::createPlaces
+
+09:37:53  [DEBUG]   Entering callAll(int functionId)
+09:37:53  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:37:53  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:37:53  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:37:53  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:37:53  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:37:53  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:37:53  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:37:53  [DEBUG]   Entering Mass::createAgents
+
+09:37:53  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:37:53  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:37:53  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+09:37:53  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+
+09:37:53  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+
+
+
+Mon 2020/10/19 09:39:28  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:39:28  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:39:28  [DEBUG]   Starting MASS CUDA simulation
+
+09:39:28  [DEBUG]   Initializing Mass
+09:39:28  [DEBUG]   Initializing Dispatcher
+09:39:29  [DEBUG]   Entering Mass::createPlaces
+
+09:39:29  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:39:29  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:39:29  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:39:29  [DEBUG]   Launching instantiation kernel on device: 0
+09:39:29  [DEBUG]   Launching instantiation kernel on device: 1
+09:39:29  [DEBUG]   Finished instantiation kernel
+09:39:29  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:39:29  [DEBUG]   Exiting Mass::createPlaces
+
+09:39:29  [DEBUG]   Entering callAll(int functionId)
+09:39:29  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:39:29  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:39:29  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:39:29  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:39:29  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:39:29  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:39:29  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:39:29  [DEBUG]   Entering Mass::createAgents
+
+09:39:29  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:39:29  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:39:29  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+09:39:29  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+
+09:39:29  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+
+
+
+Mon 2020/10/19 09:40:38  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:40:38  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:40:38  [DEBUG]   Starting MASS CUDA simulation
+
+09:40:38  [DEBUG]   Initializing Mass
+09:40:38  [DEBUG]   Initializing Dispatcher
+09:40:39  [DEBUG]   Entering Mass::createPlaces
+
+09:40:39  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:40:39  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:40:39  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:40:39  [DEBUG]   Launching instantiation kernel on device: 0
+09:40:39  [DEBUG]   Launching instantiation kernel on device: 1
+09:40:39  [DEBUG]   Finished instantiation kernel
+09:40:39  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:40:39  [DEBUG]   Exiting Mass::createPlaces
+
+09:40:39  [DEBUG]   Entering callAll(int functionId)
+09:40:39  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:40:39  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:40:39  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:40:39  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:40:39  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:40:39  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:40:39  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:40:39  [DEBUG]   Entering Mass::createAgents
+
+09:40:39  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:40:39  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:40:39  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+09:40:39  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+
+09:40:39  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+
+09:40:39  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully inits int* temPlaceIdxs.
+
+
+
+Mon 2020/10/19 09:52:39  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:52:39  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:52:39  [DEBUG]   Starting MASS CUDA simulation
+
+09:52:39  [DEBUG]   Initializing Mass
+09:52:39  [DEBUG]   Initializing Dispatcher
+09:52:40  [DEBUG]   Entering Mass::createPlaces
+
+09:52:40  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:52:40  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:52:40  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:52:40  [DEBUG]   Launching instantiation kernel on device: 0
+09:52:40  [DEBUG]   Launching instantiation kernel on device: 1
+09:52:40  [DEBUG]   Finished instantiation kernel
+09:52:40  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:52:40  [DEBUG]   Exiting Mass::createPlaces
+
+09:52:40  [DEBUG]   Entering callAll(int functionId)
+09:52:40  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:52:40  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:52:40  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:52:40  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:52:40  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:52:40  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:52:40  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:52:40  [DEBUG]   Entering Mass::createAgents
+
+09:52:40  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:52:40  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+
+09:52:40  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+
+09:52:40  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+09:52:40  [DEBUG]   Launching agent instantiation kernel on device: 0
+09:52:40  [DEBUG]   Launching agent instantiation kernel on device: 1
+09:52:40  [DEBUG]   Finished agent instantiation kernel
+09:52:40  [DEBUG]   Launching agent mapping kernel on device: 0
+09:52:40  [DEBUG]   Launching agent mapping kernel on device: 1
+09:52:40  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 367
+
+
+
+Mon 2020/10/19 10:59:53  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+10:59:53  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,10:59:53  [DEBUG]   Starting MASS CUDA simulation
+
+10:59:53  [DEBUG]   Initializing Mass
+10:59:53  [DEBUG]   Initializing Dispatcher
+10:59:53  [DEBUG]   Entering Mass::createPlaces
+
+10:59:53  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+10:59:53  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+10:59:53  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+10:59:53  [DEBUG]   Launching instantiation kernel on device: 0
+10:59:53  [DEBUG]   Launching instantiation kernel on device: 1
+10:59:53  [DEBUG]   Finished instantiation kernel
+10:59:53  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+10:59:53  [DEBUG]   Exiting Mass::createPlaces
+
+10:59:53  [DEBUG]   Entering callAll(int functionId)
+10:59:53  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+10:59:53  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+10:59:53  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+10:59:53  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+10:59:53  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+10:59:53  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+10:59:53  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+10:59:53  [DEBUG]   Entering Mass::createAgents
+
+10:59:53  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+10:59:53  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+10:59:53  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+10:59:53  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+10:59:53  [DEBUG]   Launching agent instantiation kernel on device: 0
+10:59:53  [DEBUG]   Launching agent instantiation kernel on device: 1
+10:59:53  [DEBUG]   Finished agent instantiation kernel
+10:59:53  [DEBUG]   Launching agent mapping kernel on device: 0
+10:59:53  [DEBUG]   Launching agent mapping kernel on device: 1
+10:59:53  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 367
+
+
+
+Mon 2020/10/19 11:02:44  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+11:02:44  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,11:02:44  [DEBUG]   Starting MASS CUDA simulation
+
+11:02:44  [DEBUG]   Initializing Mass
+11:02:44  [DEBUG]   Initializing Dispatcher
+11:02:45  [DEBUG]   Entering Mass::createPlaces
+
+11:02:45  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+11:02:45  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+11:02:45  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+11:02:45  [DEBUG]   Launching instantiation kernel on device: 0
+11:02:45  [DEBUG]   Launching instantiation kernel on device: 1
+11:02:45  [DEBUG]   Finished instantiation kernel
+11:02:45  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+11:02:45  [DEBUG]   Exiting Mass::createPlaces
+
+11:02:45  [DEBUG]   Entering callAll(int functionId)
+11:02:45  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+11:02:45  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+11:02:45  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+11:02:45  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+11:02:45  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+11:02:45  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+11:02:45  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+11:02:45  [DEBUG]   Entering Mass::createAgents
+
+11:02:45  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+11:02:45  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+11:02:45  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+11:02:45  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+11:02:45  [DEBUG]   Launching agent instantiation kernel on device: 0
+11:02:45  [DEBUG]   Launching agent instantiation kernel on device: 1
+11:02:45  [DEBUG]   Finished agent instantiation kernel
+11:02:45  [DEBUG]   Inside agent mapping instantiation loop: size of memory need = 8
+11:02:45  [DEBUG]   Launching agent mapping kernel on device: 0
+11:02:45  [DEBUG]   Inside agent mapping instantiation loop: size of memory need = 8
+11:02:45  [DEBUG]   Launching agent mapping kernel on device: 1
+11:02:45  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 368
+
+
+
+Mon 2020/10/19 17:14:22  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:14:22  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:14:22  [DEBUG]   Starting MASS CUDA simulation
+
+17:14:22  [DEBUG]   Initializing Mass
+17:14:22  [DEBUG]   Initializing Dispatcher
+17:14:23  [DEBUG]   Entering Mass::createPlaces
+
+17:14:23  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:14:23  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:14:23  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:14:23  [DEBUG]   Launching instantiation kernel on device: 0
+17:14:23  [DEBUG]   Launching instantiation kernel on device: 1
+17:14:23  [DEBUG]   Finished instantiation kernel
+17:14:23  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:14:23  [DEBUG]   Exiting Mass::createPlaces
+
+17:14:23  [DEBUG]   Entering callAll(int functionId)
+17:14:23  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:14:23  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:14:23  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:14:23  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:14:23  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:14:23  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:14:23  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:14:23  [DEBUG]   Entering Mass::createAgents
+
+17:14:23  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:14:23  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:14:23  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:14:23  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:14:23  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:14:23  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:14:23  [DEBUG]   Finished agent instantiation kernel
+
+
+Mon 2020/10/19 17:17:11  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:17:11  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:17:11  [DEBUG]   Starting MASS CUDA simulation
+
+17:17:11  [DEBUG]   Initializing Mass
+17:17:11  [DEBUG]   Initializing Dispatcher
+17:17:12  [DEBUG]   Entering Mass::createPlaces
+
+17:17:12  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:17:12  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:17:12  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:17:12  [DEBUG]   Launching instantiation kernel on device: 0
+17:17:12  [DEBUG]   Launching instantiation kernel on device: 1
+17:17:12  [DEBUG]   Finished instantiation kernel
+17:17:12  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:17:12  [DEBUG]   Exiting Mass::createPlaces
+
+17:17:12  [DEBUG]   Entering callAll(int functionId)
+17:17:12  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:17:12  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:17:12  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:17:12  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:17:12  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:17:12  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:17:12  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:17:12  [DEBUG]   Entering Mass::createAgents
+
+17:17:12  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:17:12  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:17:12  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:17:12  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:17:12  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:17:12  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:17:12  [DEBUG]   Finished agent instantiation kernel
+17:17:12  [DEBUG]   Launching agent mapping kernel on device: 0
+17:17:12  [DEBUG]   Launching agent mapping kernel on device: 1
+17:17:12  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 366
+
+
+
+Mon 2020/10/19 17:18:08  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:18:08  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:18:08  [DEBUG]   Starting MASS CUDA simulation
+
+17:18:08  [DEBUG]   Initializing Mass
+17:18:08  [DEBUG]   Initializing Dispatcher
+17:18:09  [DEBUG]   Entering Mass::createPlaces
+
+17:18:09  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:18:09  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:18:09  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:18:09  [DEBUG]   Launching instantiation kernel on device: 0
+17:18:09  [DEBUG]   Launching instantiation kernel on device: 1
+17:18:09  [DEBUG]   Finished instantiation kernel
+17:18:09  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:18:09  [DEBUG]   Exiting Mass::createPlaces
+
+17:18:09  [DEBUG]   Entering callAll(int functionId)
+17:18:09  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:18:09  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:18:09  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:18:09  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:18:09  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:18:09  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:18:09  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:18:09  [DEBUG]   Entering Mass::createAgents
+
+17:18:09  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:18:09  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:18:09  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:18:09  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:18:09  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:18:09  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:18:09  [DEBUG]   Finished agent instantiation kernel
+17:18:09  [DEBUG]   Launching agent mapping kernel on device: 0
+17:18:09  [DEBUG]   Launching agent mapping kernel on device: 1
+17:18:09  [DEBUG]   Finished DeviceConfig::instantiateAgents.
+
+17:18:09  [DEBUG]   Exiting Mass::createAgents
+
+17:18:09  [DEBUG]   Entering Agents::callAll(int functionId, void *argument, int argSize)
+17:18:09  [DEBUG]   Dispatcher::callAllAgents: Calling all on agents[1]. Function id = 1
+17:18:09  [ERROR]   MASS Cuda Util: invalid argument in src/DeviceConfig.cu at line 61
+
+
+
+Mon 2020/10/19 17:29:24  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:29:24  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:29:24  [DEBUG]   Starting MASS CUDA simulation
+
+17:29:24  [DEBUG]   Initializing Mass
+17:29:24  [DEBUG]   Initializing Dispatcher
+17:29:25  [DEBUG]   Entering Mass::createPlaces
+
+17:29:25  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:29:25  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:29:25  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:29:25  [DEBUG]   Launching instantiation kernel on device: 0
+17:29:25  [DEBUG]   Launching instantiation kernel on device: 1
+17:29:25  [DEBUG]   Finished instantiation kernel
+17:29:25  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:29:25  [DEBUG]   Exiting Mass::createPlaces
+
+17:29:25  [DEBUG]   Entering callAll(int functionId)
+17:29:25  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:29:25  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:29:25  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:29:25  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:29:25  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:29:25  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:29:25  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:29:25  [DEBUG]   Entering Mass::createAgents
+
+17:29:25  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:29:25  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:29:25  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:29:25  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:29:25  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:29:25  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:29:25  [DEBUG]   Finished agent instantiation kernel
+17:29:25  [DEBUG]   Launching agent mapping kernel on device: 0
+17:29:25  [DEBUG]   Launching agent mapping kernel on device: 1
+17:29:25  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 366
+
+
+
+Mon 2020/10/19 17:30:26  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:30:26  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:30:26  [DEBUG]   Starting MASS CUDA simulation
+
+17:30:26  [DEBUG]   Initializing Mass
+17:30:26  [DEBUG]   Initializing Dispatcher
+17:30:26  [DEBUG]   Entering Mass::createPlaces
+
+17:30:26  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:30:26  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:30:26  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:30:26  [DEBUG]   Launching instantiation kernel on device: 0
+17:30:26  [DEBUG]   Launching instantiation kernel on device: 1
+17:30:26  [DEBUG]   Finished instantiation kernel
+17:30:26  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:30:26  [DEBUG]   Exiting Mass::createPlaces
+
+17:30:26  [DEBUG]   Entering callAll(int functionId)
+17:30:26  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:30:26  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:30:26  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:30:26  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:30:26  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:30:26  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:30:26  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:30:26  [DEBUG]   Entering Mass::createAgents
+
+17:30:26  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:30:26  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:30:26  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:30:26  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:30:26  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:30:26  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:30:26  [DEBUG]   Finished agent instantiation kernel
+17:30:26  [DEBUG]   Launching agent mapping kernel on device: 0
+17:30:26  [DEBUG]   Launching agent mapping kernel on device: 1
+17:30:26  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 366
+
+
+
+Mon 2020/10/19 17:31:00  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:31:00  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:31:00  [DEBUG]   Starting MASS CUDA simulation
+
+17:31:00  [DEBUG]   Initializing Mass
+17:31:00  [DEBUG]   Initializing Dispatcher
+17:31:00  [DEBUG]   Entering Mass::createPlaces
+
+17:31:00  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:31:00  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:31:00  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:31:00  [DEBUG]   Launching instantiation kernel on device: 0
+17:31:00  [DEBUG]   Launching instantiation kernel on device: 1
+17:31:00  [DEBUG]   Finished instantiation kernel
+17:31:00  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:31:00  [DEBUG]   Exiting Mass::createPlaces
+
+17:31:00  [DEBUG]   Entering callAll(int functionId)
+17:31:00  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:31:00  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:31:00  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:31:00  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:31:00  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:31:00  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:31:00  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:31:00  [DEBUG]   Entering Mass::createAgents
+
+17:31:00  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:31:00  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:31:00  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:31:00  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:31:00  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:31:00  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:31:00  [DEBUG]   Finished agent instantiation kernel
+17:31:00  [DEBUG]   Launching agent mapping kernel on device: 0
+17:31:00  [DEBUG]   Launching agent mapping kernel on device: 1
+17:31:00  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 367
+
+
+
+Mon 2020/10/19 17:59:33  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:59:33  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:59:33  [DEBUG]   Starting MASS CUDA simulation
+
+17:59:33  [DEBUG]   Initializing Mass
+17:59:33  [DEBUG]   Initializing Dispatcher
+17:59:34  [DEBUG]   Entering Mass::createPlaces
+
+17:59:34  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:59:34  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:59:34  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:59:34  [DEBUG]   Launching instantiation kernel on device: 0
+17:59:34  [DEBUG]   Launching instantiation kernel on device: 1
+17:59:34  [DEBUG]   Finished instantiation kernel
+17:59:34  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:59:34  [DEBUG]   Exiting Mass::createPlaces
+
+17:59:34  [DEBUG]   Entering callAll(int functionId)
+17:59:34  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:59:34  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:59:34  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:59:34  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:59:34  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:59:34  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:59:34  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:59:34  [DEBUG]   Entering Mass::createAgents
+
+17:59:34  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:59:34  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:59:34  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:59:34  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:59:34  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:59:34  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:59:34  [DEBUG]   Finished agent instantiation kernel
+17:59:34  [DEBUG]   Launching agent mapping kernel on device: 0
+17:59:34  [DEBUG]   Launching agent mapping kernel on device: 1
+17:59:34  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 370
+
+
+
+Mon 2020/10/19 18:47:58  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+18:47:58  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,18:47:58  [DEBUG]   Starting MASS CUDA simulation
+
+18:47:58  [DEBUG]   Initializing Mass
+18:47:58  [DEBUG]   Initializing Dispatcher
+18:47:59  [DEBUG]   Entering Mass::createPlaces
+
+18:47:59  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+18:47:59  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+18:47:59  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+18:47:59  [DEBUG]   Launching instantiation kernel on device: 0
+18:47:59  [DEBUG]   Launching instantiation kernel on device: 1
+18:47:59  [DEBUG]   Finished instantiation kernel
+18:47:59  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+18:47:59  [DEBUG]   Exiting Mass::createPlaces
+
+18:47:59  [DEBUG]   Entering callAll(int functionId)
+18:47:59  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+18:47:59  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+18:47:59  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+18:47:59  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+18:47:59  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+18:47:59  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+18:47:59  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+18:47:59  [DEBUG]   Entering Mass::createAgents
+
+18:47:59  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+18:47:59  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+18:47:59  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+18:47:59  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+18:47:59  [DEBUG]   Launching agent instantiation kernel on device: 0
+18:47:59  [DEBUG]   Launching agent instantiation kernel on device: 1
+18:47:59  [DEBUG]   Finished agent instantiation kernel
+18:47:59  [DEBUG]   Launching agent mapping kernel on device: 0
+18:47:59  [DEBUG]   Launching agent mapping kernel on device: 1
+18:47:59  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 367
+
+
+
+Tue 2020/10/20 08:45:36  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+08:45:36  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,08:45:36  [DEBUG]   Starting MASS CUDA simulation
+
+08:45:36  [DEBUG]   Initializing Mass
+08:45:36  [DEBUG]   Initializing Dispatcher
+08:45:37  [DEBUG]   Entering Mass::createPlaces
+
+08:45:37  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+08:45:37  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+08:45:37  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+08:45:37  [DEBUG]   Launching instantiation kernel on device: 0
+08:45:37  [DEBUG]   Launching instantiation kernel on device: 1
+08:45:37  [DEBUG]   Finished instantiation kernel
+08:45:37  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+08:45:37  [DEBUG]   Exiting Mass::createPlaces
+
+08:45:37  [DEBUG]   Entering callAll(int functionId)
+08:45:37  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+08:45:37  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+08:45:37  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+08:45:37  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+08:45:37  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+08:45:37  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+08:45:37  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+08:45:37  [DEBUG]   Entering Mass::createAgents
+
+08:45:37  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+08:45:37  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+08:45:37  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+08:45:37  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+08:45:37  [DEBUG]   Launching agent instantiation kernel on device: 0
+08:45:37  [DEBUG]   Launching agent instantiation kernel on device: 1
+08:45:37  [DEBUG]   Finished agent instantiation kernel
+08:45:37  [DEBUG]   Launching agent mapping kernel on device: 0
+08:45:37  [DEBUG]   Launching agent mapping kernel on device: 1
+08:45:37  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 367
+
+
+
+Tue 2020/10/20 11:27:25  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+11:27:25  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,11:27:25  [DEBUG]   Starting MASS CUDA simulation
+
+11:27:25  [DEBUG]   Initializing Mass
+11:27:25  [DEBUG]   Initializing Dispatcher
+11:27:26  [DEBUG]   Entering Mass::createPlaces
+
+11:27:26  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+11:27:26  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+11:27:26  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+11:27:26  [DEBUG]   Launching instantiation kernel on device: 0
+11:27:26  [DEBUG]   Launching instantiation kernel on device: 1
+11:27:26  [DEBUG]   Finished instantiation kernel
+11:27:26  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+11:27:26  [DEBUG]   Exiting Mass::createPlaces
+
+11:27:26  [DEBUG]   Entering callAll(int functionId)
+11:27:26  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+11:27:26  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+11:27:26  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+11:27:26  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+11:27:26  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+11:27:26  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+11:27:26  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+11:27:26  [DEBUG]   Entering Mass::createAgents
+
+11:27:26  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+11:27:26  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+11:27:26  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+11:27:26  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+11:27:26  [DEBUG]   Launching agent instantiation kernel on device: 0
+11:27:26  [DEBUG]   Launching agent instantiation kernel on device: 1
+11:27:26  [DEBUG]   Finished agent instantiation kernel
+11:27:26  [DEBUG]   Launching agent mapping kernel on device: 0
+11:27:26  [DEBUG]   Launching agent mapping kernel on device: 1
+11:27:26  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 367
+
+
+
+Wed 2020/10/21 17:25:36  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:25:36  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:25:36  [DEBUG]   Starting MASS CUDA simulation
+
+17:25:36  [DEBUG]   Initializing Mass
+17:25:36  [DEBUG]   Initializing Dispatcher
+17:25:37  [DEBUG]   Entering Mass::createPlaces
+
+17:25:37  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:25:37  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:25:37  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:25:37  [DEBUG]   Launching instantiation kernel on device: 0
+17:25:37  [DEBUG]   Launching instantiation kernel on device: 1
+17:25:37  [DEBUG]   Finished instantiation kernel
+17:25:37  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:25:37  [DEBUG]   Exiting Mass::createPlaces
+
+17:25:37  [DEBUG]   Entering callAll(int functionId)
+17:25:37  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:25:37  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:25:37  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:25:37  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:25:37  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:25:37  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:25:37  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:25:37  [DEBUG]   Entering Mass::createAgents
+
+17:25:37  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:25:37  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:25:37  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:25:37  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:25:37  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:25:37  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:25:37  [DEBUG]   Finished agent instantiation kernel
+17:25:37  [DEBUG]   Launching agent mapping kernel on device: 0
+17:25:37  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 377
+
+
+
+Wed 2020/10/21 17:29:23  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+17:29:23  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,17:29:23  [DEBUG]   Starting MASS CUDA simulation
+
+17:29:23  [DEBUG]   Initializing Mass
+17:29:23  [DEBUG]   Initializing Dispatcher
+17:29:24  [DEBUG]   Entering Mass::createPlaces
+
+17:29:24  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+17:29:24  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+17:29:24  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+17:29:24  [DEBUG]   Launching instantiation kernel on device: 0
+17:29:24  [DEBUG]   Launching instantiation kernel on device: 1
+17:29:24  [DEBUG]   Finished instantiation kernel
+17:29:24  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+17:29:24  [DEBUG]   Exiting Mass::createPlaces
+
+17:29:24  [DEBUG]   Entering callAll(int functionId)
+17:29:24  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+17:29:24  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+17:29:24  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+17:29:24  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+17:29:24  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+17:29:24  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+17:29:24  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+17:29:24  [DEBUG]   Entering Mass::createAgents
+
+17:29:24  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+17:29:24  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+17:29:24  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+17:29:24  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+17:29:24  [DEBUG]   Launching agent instantiation kernel on device: 0
+17:29:24  [DEBUG]   Launching agent instantiation kernel on device: 1
+17:29:24  [DEBUG]   Finished agent instantiation kernel
+17:29:24  [DEBUG]   Launching agent mapping kernel on device: 0
+17:29:24  [DEBUG]   Launching agent mapping kernel on device: 1
+17:29:24  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 382
+
+
+
+Thu 2020/10/22 08:39:00  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+08:39:00  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,08:39:00  [DEBUG]   Starting MASS CUDA simulation
+
+08:39:00  [DEBUG]   Initializing Mass
+08:39:00  [DEBUG]   Initializing Dispatcher
+08:39:00  [DEBUG]   Entering Mass::createPlaces
+
+08:39:00  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+08:39:00  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+08:39:00  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+08:39:00  [DEBUG]   Launching instantiation kernel on device: 0
+08:39:00  [DEBUG]   Launching instantiation kernel on device: 1
+08:39:00  [DEBUG]   Finished instantiation kernel
+08:39:00  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+08:39:00  [DEBUG]   Exiting Mass::createPlaces
+
+08:39:00  [DEBUG]   Entering callAll(int functionId)
+08:39:00  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+08:39:00  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+08:39:00  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+08:39:00  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+08:39:00  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+08:39:00  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+08:39:00  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+08:39:00  [DEBUG]   Entering Mass::createAgents
+
+08:39:00  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+08:39:00  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+08:39:00  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+08:39:00  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+08:39:00  [DEBUG]   Launching agent instantiation kernel on device: 0
+08:39:00  [DEBUG]   Launching agent instantiation kernel on device: 1
+08:39:00  [DEBUG]   Finished agent instantiation kernel
+08:39:00  [DEBUG]   Launching agent mapping kernel on device: 0
+08:39:01  [DEBUG]   Launching agent mapping kernel on device: 1
+08:39:01  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 383
+
+
+
+Thu 2020/10/22 08:46:23  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+08:46:23  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,08:46:23  [DEBUG]   Starting MASS CUDA simulation
+
+08:46:23  [DEBUG]   Initializing Mass
+08:46:23  [DEBUG]   Initializing Dispatcher
+08:46:23  [DEBUG]   Entering Mass::createPlaces
+
+08:46:23  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+08:46:23  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+08:46:23  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+08:46:23  [DEBUG]   Launching instantiation kernel on device: 0
+08:46:23  [DEBUG]   Launching instantiation kernel on device: 1
+08:46:23  [DEBUG]   Finished instantiation kernel
+08:46:23  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+08:46:23  [DEBUG]   Exiting Mass::createPlaces
+
+08:46:23  [DEBUG]   Entering callAll(int functionId)
+08:46:23  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+08:46:23  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+08:46:23  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+08:46:23  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+08:46:23  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+08:46:23  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+08:46:23  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+08:46:23  [DEBUG]   Entering Mass::createAgents
+
+08:46:23  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+08:46:23  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+08:46:23  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+08:46:23  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+08:46:23  [DEBUG]   Launching agent instantiation kernel on device: 0
+08:46:23  [DEBUG]   Launching agent instantiation kernel on device: 1
+08:46:23  [DEBUG]   Finished agent instantiation kernel
+08:46:23  [DEBUG]   Launching agent mapping kernel on device: 0
+08:46:23  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 378
+
+
+
+Thu 2020/10/22 09:15:21  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+09:15:21  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,09:15:21  [DEBUG]   Starting MASS CUDA simulation
+
+09:15:21  [DEBUG]   Initializing Mass
+09:15:21  [DEBUG]   Initializing Dispatcher
+09:15:21  [DEBUG]   Entering Mass::createPlaces
+
+09:15:21  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+09:15:21  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+09:15:21  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+09:15:21  [DEBUG]   Launching instantiation kernel on device: 0
+09:15:21  [DEBUG]   Launching instantiation kernel on device: 1
+09:15:21  [DEBUG]   Finished instantiation kernel
+09:15:21  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+09:15:21  [DEBUG]   Exiting Mass::createPlaces
+
+09:15:21  [DEBUG]   Entering callAll(int functionId)
+09:15:21  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+09:15:21  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+09:15:21  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+09:15:21  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+09:15:21  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+09:15:21  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+09:15:21  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+09:15:21  [DEBUG]   Entering Mass::createAgents
+
+09:15:21  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+09:15:21  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+09:15:21  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+09:15:21  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+09:15:21  [DEBUG]   Launching agent instantiation kernel on device: 0
+09:15:21  [DEBUG]   Launching agent instantiation kernel on device: 1
+09:15:21  [DEBUG]   Finished agent instantiation kernel
+09:15:21  [DEBUG]   Launching agent mapping kernel on device: 0
+09:15:21  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 379
+
+
+
+Thu 2020/10/22 15:49:17  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+15:49:17  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,15:49:17  [DEBUG]   Starting MASS CUDA simulation
+
+15:49:17  [DEBUG]   Initializing Mass
+15:49:17  [DEBUG]   Initializing Dispatcher
+15:49:18  [DEBUG]   Entering Mass::createPlaces
+
+15:49:18  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+15:49:18  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+15:49:18  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+15:49:18  [DEBUG]   Launching instantiation kernel on device: 0
+15:49:18  [DEBUG]   Launching instantiation kernel on device: 1
+15:49:18  [DEBUG]   Finished instantiation kernel
+15:49:18  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+15:49:18  [DEBUG]   Exiting Mass::createPlaces
+
+15:49:18  [DEBUG]   Entering callAll(int functionId)
+15:49:18  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+15:49:18  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+15:49:18  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+15:49:18  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+15:49:18  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+15:49:18  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+15:49:18  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+15:49:18  [DEBUG]   Entering Mass::createAgents
+
+15:49:18  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+15:49:18  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+15:49:18  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+15:49:18  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+15:49:18  [DEBUG]   Launching agent instantiation kernel on device: 0
+15:49:18  [DEBUG]   Launching agent instantiation kernel on device: 1
+15:49:18  [DEBUG]   Finished agent instantiation kernel
+15:49:18  [DEBUG]   Launching agent mapping kernel on device: 0
+15:49:18  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 381
+
+
+
+Thu 2020/10/22 15:55:23  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+15:55:23  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,15:55:23  [DEBUG]   Starting MASS CUDA simulation
+
+15:55:23  [DEBUG]   Initializing Mass
+15:55:23  [DEBUG]   Initializing Dispatcher
+15:55:24  [DEBUG]   Entering Mass::createPlaces
+
+15:55:24  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+15:55:24  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+15:55:24  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+15:55:24  [DEBUG]   Launching instantiation kernel on device: 0
+15:55:24  [DEBUG]   Launching instantiation kernel on device: 1
+15:55:24  [DEBUG]   Finished instantiation kernel
+15:55:24  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+15:55:24  [DEBUG]   Exiting Mass::createPlaces
+
+15:55:24  [DEBUG]   Entering callAll(int functionId)
+15:55:24  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+15:55:24  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+15:55:24  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+15:55:24  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+15:55:24  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+15:55:24  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+15:55:24  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+15:55:24  [DEBUG]   Entering Mass::createAgents
+
+15:55:24  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+15:55:24  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+15:55:24  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+15:55:24  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+15:55:24  [DEBUG]   Launching agent instantiation kernel on device: 0
+15:55:24  [DEBUG]   Launching agent instantiation kernel on device: 1
+15:55:24  [DEBUG]   Finished agent instantiation kernel
+15:55:24  [DEBUG]   Launching agent mapping kernel on device: 0
+15:55:24  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 381
+
+
+
+Thu 2020/10/22 15:59:00  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+15:59:00  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,15:59:00  [DEBUG]   Starting MASS CUDA simulation
+
+15:59:00  [DEBUG]   Initializing Mass
+15:59:00  [DEBUG]   Initializing Dispatcher
+15:59:01  [DEBUG]   Entering Mass::createPlaces
+
+15:59:01  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+15:59:01  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+15:59:01  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+15:59:01  [DEBUG]   Launching instantiation kernel on device: 0
+15:59:01  [DEBUG]   Launching instantiation kernel on device: 1
+15:59:01  [DEBUG]   Finished instantiation kernel
+15:59:01  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+15:59:01  [DEBUG]   Exiting Mass::createPlaces
+
+15:59:01  [DEBUG]   Entering callAll(int functionId)
+15:59:01  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+15:59:01  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+15:59:01  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+15:59:01  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+15:59:01  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+15:59:01  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+15:59:01  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+15:59:01  [DEBUG]   Entering Mass::createAgents
+
+15:59:01  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+15:59:01  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+15:59:01  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+15:59:01  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+15:59:01  [DEBUG]   Launching agent instantiation kernel on device: 0
+15:59:01  [DEBUG]   Launching agent instantiation kernel on device: 1
+15:59:01  [DEBUG]   Finished agent instantiation kernel
+15:59:01  [DEBUG]   Launching agent mapping kernel on device: 0
+15:59:01  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 382
+
+
+
+Thu 2020/10/22 16:51:10  [INFO] Logger initialized.
+Size,CPU,GPU,MASS
+16:51:10  [INFO]    Running SugarScape with params:
+	size = 5
+	time = 100
+	interval = 0
+5,16:51:10  [DEBUG]   Starting MASS CUDA simulation
+
+16:51:10  [DEBUG]   Initializing Mass
+16:51:10  [DEBUG]   Initializing Dispatcher
+16:51:11  [DEBUG]   Entering Mass::createPlaces
+
+16:51:11  [DEBUG]   Inside Dispatcher::instantiatePlaces
+
+16:51:11  [DEBUG]   Entering DeviceConfig::instantiatePlaces
+
+16:51:11  [DEBUG]   Kernel dims = gridDim 2 and blockDim = 1
+16:51:11  [DEBUG]   Launching instantiation kernel on device: 0
+16:51:11  [DEBUG]   Launching instantiation kernel on device: 1
+16:51:11  [DEBUG]   Finished instantiation kernel
+16:51:11  [DEBUG]   Finished DeviceConfig::instantiatePlaces
+16:51:11  [DEBUG]   Exiting Mass::createPlaces
+
+16:51:11  [DEBUG]   Entering callAll(int functionId)
+16:51:11  [DEBUG]   Entering callAll(int functionId, void *argument, int argSize)
+16:51:11  [DEBUG]   Dispatcher::callAllPlaces: Calling all on places[0]. Function id = 0
+16:51:11  [DEBUG]   Dispatcher::callAllPlaces: Calling callAllPlacesKernel
+16:51:11  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 1
+16:51:11  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 0
+16:51:11  [DEBUG]   Launching Dispatcher::callAllPlacesKernel() on device: 1
+16:51:11  [DEBUG]   Exiting Dispatcher::callAllPlaces()
+16:51:11  [DEBUG]   Entering Mass::createAgents
+
+16:51:11  [DEBUG]   Inside Dispatcher::instantiateAgents
+
+16:51:11  [DEBUG]   Entering DeviceConfig::instantiateAgents
+
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() finshed with agent memory initialization.
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully loads places from memory.
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 0 .
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - 2 number of agents on device 1 .
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().
+16:51:11  [DEBUG]   DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).
+16:51:11  [DEBUG]   Kernel dims = gridDim 1 and blockDim = 10
+16:51:11  [DEBUG]   Launching agent instantiation kernel on device: 0
+16:51:11  [DEBUG]   Launching agent instantiation kernel on device: 1
+16:51:11  [DEBUG]   Finished agent instantiation kernel
+16:51:11  [DEBUG]   Launching agent mapping kernel on device: 0
+16:51:11  [ERROR]   MASS Cuda Util: an illegal memory access was encountered in sugarscape/../src/DeviceConfig.h at line 382
+

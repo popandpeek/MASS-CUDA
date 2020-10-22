@@ -7,9 +7,9 @@
 #include <string>
 #include "string.h"
 
-// #define DEBUG
-#undef DEBUG
-#define TEST
+#define DEBUG
+// #undef DEBUG
+// #define TEST
 
 
 namespace mass {
