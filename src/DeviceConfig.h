@@ -365,20 +365,18 @@ Agent** DeviceConfig::instantiateAgents (int handle, void *argument,
 
 	// Loop over devices and map agents to places on each device
 	strideCount = 0;
-	int placesStrideCount = 0;
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		CATCH(cudaSetDevice(activeDevices.at(i)));
 		int* placeIdxs_d;
 		CATCH(cudaMalloc(&placeIdxs_d, agtDevCount[i] * sizeof(int)));
 		CATCH(cudaMemcpy(placeIdxs_d, agtDevArr[i], agtDevCount[i] * sizeof(int), H2D));
 		Logger::debug("Launching agent mapping kernel on device: %d", activeDevices.at(i));
-		mapAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(places.devPtr + placesStrideCount, 
+		mapAgentsKernel<AgentType, AgentStateType> <<<blockDim, threadDim>>>(places.devPtr + i * placesStride, 
 				placesStride, a.devPtr + strideCount, d_state + strideCount, 
 				agtDevCount[i], placeIdxs_d);
 		CHECK();
 		cudaDeviceSynchronize();
 		strideCount += agtDevCount[i];
-		placesStrideCount += placesStride;
 		CATCH(cudaFree(placeIdxs_d));
 	}
 

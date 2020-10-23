@@ -435,6 +435,7 @@ int main() {
     Logger::print("Running intergation test using Heat2D program\n");
 
     runMassSimTest(size, max_time, heat_time);
+    
     runMassSimTestImproved(size, max_time, heat_time);
 
     runSugarScapeTest(size, max_time);
