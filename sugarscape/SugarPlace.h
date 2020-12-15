@@ -32,7 +32,6 @@ public:
 	MASS_FUNCTION bool isGoodForMigration();
 	MASS_FUNCTION SugarPlace* getMigrationDest();
 	MASS_FUNCTION int getMigrationDestRelIdx();
-	
 
 private:
 
