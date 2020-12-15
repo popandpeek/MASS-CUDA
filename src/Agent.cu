@@ -8,7 +8,8 @@ namespace mass {
 /**
  *  A contiguous space of arguments is passed
  *  to the constructor.
- */MASS_FUNCTION Agent::Agent(AgentState *state, void *args) {
+ */
+ MASS_FUNCTION Agent::Agent(AgentState *state, void *args) {
     this->state = state;
     this->state->index = 0;
 }
