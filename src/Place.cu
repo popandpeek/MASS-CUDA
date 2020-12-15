@@ -8,7 +8,8 @@ namespace mass {
 /**
  *  A contiguous space of arguments is passed
  *  to the constructor.
- */MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
+ */
+ MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
 	this->state = state;
 	this->state->index = 0;
 	memset(this->state->neighbors, 0, MAX_NEIGHBORS);
@@ -18,7 +19,6 @@ namespace mass {
 		state->potentialNextAgents[i] = NULL;
 	}
 }
-
 
 MASS_FUNCTION PlaceState* Place::getState() {
 	return state;
