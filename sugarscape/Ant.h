@@ -19,7 +19,6 @@ public:
 
     MASS_FUNCTION Ant(mass::AgentState *state, void *argument);
     MASS_FUNCTION ~Ant();
-
     MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
     MASS_FUNCTION virtual AntState* getState();
 
