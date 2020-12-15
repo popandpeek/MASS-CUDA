@@ -61,29 +61,29 @@ MASS_FUNCTION void SugarPlace::incSugarAndPollution() {
 MASS_FUNCTION void SugarPlace::avePollutions() { 
     
     int idx = myState -> index;
-    int size = myState -> size[0];
+    int* size = myState -> size;
 
     double top, right, bottom, left;
 
-    if (idx - size >= 0) { //top
+    if (idx - size[0] >= 0) { //top
     	top = ((SugarPlace*)myState->neighbors[0])->getPollution();
     } else {
     	top = 0.0;
     }
 	
-	if ((idx +1) % size != 0) { //right
+	if ((idx + 1) % size[0] != 0) { //right
     	right = ((SugarPlace*)myState->neighbors[1])->getPollution();
     } else {
     	right = 0.0;
     }
 
-    if (idx + size < size*size) { //bottom
+    if ((idx + size[0]) < (size[0] * size[1])) { //bottom
     	bottom = ((SugarPlace*)myState->neighbors[2])->getPollution();
     } else {
     	bottom = 0.0;
     }
 
-    if (idx % size != 0) { //left
+    if (idx % size[0] != 0) { //left
     	left = ((SugarPlace*)myState->neighbors[3])->getPollution();
     } else {
     	left = 0.0;
@@ -133,6 +133,7 @@ MASS_FUNCTION SugarPlace::~SugarPlace() {
 }
 
 MASS_FUNCTION int SugarPlace::getCurSugar() {
+    // Logger::debug("SugarPlace:: inside getCurSugar()");
 	return myState->curSugar;
 }
 
