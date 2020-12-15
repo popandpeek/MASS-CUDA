@@ -12,4 +12,8 @@
 // Maximum number of migration destinations for an agent from one place.
 // E.g. for the system where agent can only migrate 1 cell North, South, East or West 
 // N_DESTINATIONS will be 4.
-#define N_DESTINATIONS 4
+#define N_DESTINATIONS 6
+
+// Maximum agent travel distance in one time step to dictate size of DS  
+// to store pointer to neighboring device(s) place pointers
+#define MAX_AGENT_TRAVEL 3
