@@ -12,7 +12,10 @@ using namespace std;
 namespace mass {
 
 Places::~Places() {
-	delete[] elemPtrs;
+	for (int i = 0; i < elemPtrs.size(); ++i) {
+		delete[] elemPtrs.at(i);
+	}
+
 	delete[] dimensions;
 }
 
@@ -26,6 +29,12 @@ int *Places::size() {
 
 int Places::getNumPlaces() {
 	return numElements;
+}
+
+
+int Places::getPlacesStride() {
+	placesStride = dispatcher->getPlacesStride(handle);
+	return placesStride;
 }
 
 int Places::getHandle() {
@@ -62,8 +71,39 @@ void Places::exchangeAll(std::vector<int*> *destinations, int functionId, void *
 }
 
 Place** Places::getElements() {
-	elemPtrs = dispatcher->refreshPlaces(handle);
-	return elemPtrs;
+	std::vector<Place**> elemPtrsVec = dispatcher->refreshPlaces(handle);
+	mass::Place** retVals = new Place*[numElements];
+	int placesStride = this->getPlacesStride();
+	Logger::debug("Places::getElements(): placesStride = %d; total places = %d; placesVec.size() = %d", 
+			placesStride, numElements, elemPtrsVec.size());
+	int count = 0;
+
+	for (int i = 0; i < elemPtrsVec.size(); ++i) {
+		mass::Place** tmp_ptr = elemPtrsVec.at(i);
+		int j = 0;
+		int temp = 0;
+		if (i > 0) {
+			j += dimensions[1];
+			temp = dimensions[1];
+		}
+
+		for (; j < placesStride + temp; ++j) {
+			retVals[count] = tmp_ptr[j];
+			//Logger::debug("retVals[count] location is %d; tmp_ptr[j] location is == %d", count, j);
+			count++;
+		}
+	}
+
+	if (elemPtrs.size() > 0) {
+		for (int i = 0; i < elemPtrs.size(); ++i) {
+			delete[] elemPtrs.at(i);
+		}
+		elemPtrs = {};
+	}
+
+	elemPtrs = elemPtrsVec;
+	Logger::debug("Places::getElements: Finished.");
+	return retVals;
 }
 
 int Places::getRowMajorIdx(int *indices) {
@@ -73,7 +113,6 @@ int Places::getRowMajorIdx(int *indices) {
 	// size of each index's "step"
 	int multiplier = (int) numElements;
 	int rmi = 0; // accumulater for row major index
-
 	for (int i = 0; i < numDims; i++) {
 		multiplier /= dimensions[i]; // remove dimension from multiplier
 		int idx = indices[i]; // get an index and check validity
@@ -82,7 +121,7 @@ int Places::getRowMajorIdx(int *indices) {
 		}
 		rmi += multiplier * idx; // calculate step
 	}
-
+	
 	return rmi;
 }
 
@@ -116,11 +155,12 @@ vector<int> Places::getIndexVector(int rowMajorIdx) {
 }
 
 Places::Places(int handle, int dimensions, int size[], Dispatcher *d) {
+	Logger::debug("Inside Places private constructor.");
 	this->handle = handle;
 	this->dispatcher = d;
 	this->dimensions = size;
 	this->numDims = dimensions;
-	this->elemPtrs = NULL;
+	this->elemPtrs = {};
 	this->numElements = 1;
 	for (int i = 0; i < dimensions; ++i) {
 		this->numElements *= size[i];
