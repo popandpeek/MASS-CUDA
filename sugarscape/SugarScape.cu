@@ -11,6 +11,7 @@
 #include "SugarPlace.h"
 #include "Ant.h"
 #include "Timer.h"
+#include "SugarPlaceState.h"
 
 using namespace std;
 using namespace mass;
@@ -26,14 +27,17 @@ SugarScape::~SugarScape() {
 }
 
 void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
-	Logger::debug("Entering SugarScape::displayResults");
+	Logger::debug("Entering SugarScape::displaySugar");
 	ostringstream ss;
 	ostringstream agents;
 
 	ss << "time = " << time << "\n";
-	Place ** retVals = places->getElements();
+	Place** retVals = places->getElements();
+	//Logger::debug("SugarScape: Returns from places->getElements()");
 	int indices[2];
+	int outerCount = 0;
 	for (int row = 0; row < placesSize[0]; row++) {
+		//Logger::debug("SugarScape: Enters outer loop: Count = %d out of %d.", row, placesSize[0]);
 		indices[0] = row;
 		for (int col = 0; col < placesSize[1]; col++) {
 			indices[1] = col;
@@ -46,8 +50,9 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 			int n_agents = retVals[rmi]->getAgentPopulation();
 			ss << curSugar << " ";
 			agents << n_agents << " ";
+			//Logger::debug("SugarScape: Exits inner loop: Count = %d out of %d.", col, placesSize[1]);
 		}
-
+		
 		ss << "\n";
 		agents << "\n";
 	}
@@ -55,6 +60,7 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 	agents << "\n";
 	Logger::print(ss.str());
 	Logger::print(agents.str());
+	delete[] retVals;
 }
 
 void SugarScape::displayAgents(Agents* agents, int time) {
@@ -62,7 +68,7 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 	ostringstream ss;
 	ss << "time = " << time << "\n";
 	mass::Agent** retVals = agents->getElements();
-	int nAgentObjects = agents->getNumAgentObjects();
+	int nAgentObjects = agents->getNumAgentObjects(); 
 	for (int i =0; i< nAgentObjects; i++) {
 		if (retVals[i] -> isAlive()) {
 			int placeIdx = retVals[i] -> getPlaceIndex();
@@ -71,6 +77,7 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 			ss << "Agent[" << i << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
 		}
 	}
+
 	Logger::print(ss.str());
 }
 
@@ -79,23 +86,26 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	int nDims = 2;
 	int placesSize[] = { size, size };
-
+	Logger::debug("placesSize[0] = %d, placesSize[1] = %d", placesSize[0], placesSize[1]);
 	// start the MASS CUDA library processes
 	Mass::init();
 
 	//initialization parameters
 	int nAgents = size*size / 5;
+	Logger::debug("Number of agents: %d", nAgents);
 
 	// initialize places
 	Places *places = Mass::createPlaces<SugarPlace, SugarPlaceState>(0 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nDims, placesSize);
-
-	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar
-
-
-	//initialize agents:
+	
+	Logger::debug("placesSize[0] = %d, placesSize[1] = %d", placesSize[0], placesSize[1]);
+	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar	
+	displaySugar(places, 0, placesSize);
+	
+	// initialize agents:
 	Agents *agents = Mass::createAgents<Ant, AntState> (1 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nAgents, 0 /*placesHandle*/);
+	displaySugar(places, 0, placesSize);
 
 	//create an array of random agentSugar and agentMetabolism values
 	int agentSugarArray[nAgents];
@@ -108,6 +118,8 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	//set proper initial amounts of sugar and metabolism for agents
 	agents->callAll(Ant::SET_INIT_SUGAR, agentSugarArray, sizeof(int) * nAgents);
 	agents->callAll(Ant::SET_INIT_METABOLISM, agentMetabolismArray, sizeof(int) * nAgents);
+
+	displayAgents(agents, 0);
 
 	// create neighborhood for average pollution calculations
 	vector<int*> neighbors;
@@ -122,7 +134,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	// create a vector of possible target destination places for an ant
     vector<int*> migrationDestinations;
-    for(int i=1;i<=maxVisible; i++ ) //going right
+    for(int i=1;i<=maxVisible; i++) //going right
     {
         int *hDest = new int[2];
         hDest[0] = i;
