@@ -16,7 +16,7 @@
 
 namespace mass {
 
-#define BLOCK_SIZE 24  // max threads per block
+#define BLOCK_SIZE 32  // max threads per block
 #define H2D cudaMemcpyHostToDevice
 #define D2H cudaMemcpyDeviceToHost
 #define CERR
