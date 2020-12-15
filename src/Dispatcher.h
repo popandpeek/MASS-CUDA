@@ -7,7 +7,7 @@
 #include <queue>
 
 #include "DeviceConfig.h"
-
+#include "DataModel.h"
 
 namespace mass {
 
@@ -41,7 +41,7 @@ public:
 	 * collection.
 	 * @param handle the handle of the places object to refresh.
 	 */
-	Place** refreshPlaces(int placeHandle);
+	std::vector<Place**> refreshPlaces(int placeHandle);
 
 	/**
 	 * Call the specified function on the specified places object with the given
@@ -109,15 +109,25 @@ public:
 	void spawnAgents(int agentHandle);
 
 	int getNumAgents(int agentHandle);
+
+	int* getMaxAgents(int agentHandle);
 	
-	int getNumAgentObjects(int agentHandle);
+	int* getNumAgentsInstantiated(int handle);
+
+	int* getNAgentsDev(int handle);
+
+	int getNumPlaces(int handle);
+
+	int getPlacesStride(int handle);
+
+	int* getGhostPlaceMultiples(int handle);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This
 	 * will extract the most current data from the GPU for the specified agents
 	 * collection. It will also update the numAgents reference with the current agent count.
 	 */
-	Agent** refreshAgents(int agentHandle);
+	std::vector<Agent**> refreshAgents(int agentHandle);
 
 
 	template<typename P, typename S>
@@ -131,7 +141,7 @@ public:
 private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
 	DeviceConfig *deviceInfo;
-
+	DataModel *model;
 	bool initialized;
 	bool deviceLoaded;
 
@@ -145,10 +155,17 @@ void Dispatcher::instantiatePlaces(int handle, void *argument, int argSize,
 		int dimensions, int size[], int qty) {
 	Logger::debug("Inside Dispatcher::instantiatePlaces\n");
 
-	// Create UMA DataModel
-	// modify GPU data model
+	// create host-side data model
+	model->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
+			qty);
+
+	Logger::debug("Dispatcher::instantiatePlaces: after host model - placesSize[0] = %d, placesSize[1] = %d", size[0], size[1]);
+
+	// create GPU data model
 	deviceInfo->instantiatePlaces<P, S>(handle, argument, argSize, dimensions, size,
 			qty);
+
+	Logger::debug("Dispatcher::instantiatePlaces: after device model - placesSize[0] = %d, placesSize[1] = %d", size[0], size[1]);
 }
 
 template<typename AgentType, typename AgentStateType>
@@ -157,10 +174,15 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 
 	Logger::debug("Inside Dispatcher::instantiateAgents\n");
 
-	//create UMA data model
 	//create GPU data model
 	deviceInfo->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
 		argSize, nAgents, placesHandle, maxAgents, placeIdxs);
+
+	//create host-side data model
+	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
+		argSize, nAgents, deviceInfo->getnAgentsDev(handle));
+	
+	Logger::debug("Exiting Dispatcher::instantiateAgents\n");
 }
 
 } // namespace mass
