@@ -33,6 +33,9 @@ public:
      */
     int getNumAgents();
 
+
+    int* getNumAgentsInstantiated();
+    
     /*
     Returns the number of all agent objects present in this agents collection (some can be terminated).
     */
@@ -78,8 +81,8 @@ private:
     int placesHandle;   // Places collection associated with these Agents
     Dispatcher *dispatcher; // the GPU dispatcher
 
-    //int numElements;
-    Agent **elemPtrs;
+    int* numAgents;
+    std::vector<Agent**> elemPtrs;
 
 };
 
