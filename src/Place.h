@@ -26,7 +26,7 @@ public:
 	A contiguous space of arguments is passed to the constructor.
 	*/
 	MASS_FUNCTION Place(PlaceState* state, void *args = NULL);
-
+	
 	/**
 	Called by MASS while executing Places.callAll(). 
 	This is intended to be a switch statement where each user-implemented 
