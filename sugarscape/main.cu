@@ -17,7 +17,7 @@ int main() {
 
 	const int nRuns = 1; // number of times to run each test
 	const int nSizes = 11;
-	int size[nSizes] = { 5, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
+	int size[nSizes] = { 100 }; //, 200, 300, 400, 500, 600, 700, 800, 900, 1000};
 	int max_time = 100;
 	int interval = 0;
 
