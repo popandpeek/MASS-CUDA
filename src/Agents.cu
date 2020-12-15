@@ -12,14 +12,18 @@ Agents::Agents(int handle, Dispatcher *d, int placesHandle) {
     this->handle = handle;
     this->dispatcher = d;
 
-    this->elemPtrs = NULL;
-    //this->numElements = nAgents;
+    this->elemPtrs = {};
+    // BAD: No device Agents instantiated yet when this is called, causes Agent array in 
+    // DeviceConfig to get set to NULL
+    // this->numAgents = this->dispatcher->getNumAgentsInstantiated(handle);
     this->placesHandle = placesHandle;
 }
 
 
 Agents::~Agents() {
-    delete[] elemPtrs;
+    for (int i = 0; i < elemPtrs.size(); ++i) {
+        delete[] elemPtrs.at(i);
+    }
 }
 
 
@@ -27,8 +31,19 @@ int Agents::getNumAgents() {
     return dispatcher->getNumAgents(handle);
 }
 
+int* Agents::getNumAgentsInstantiated() {
+    return dispatcher->getNumAgentsInstantiated(handle);
+}
+
 int Agents::getNumAgentObjects() {
-    return dispatcher->getNumAgentObjects(handle);
+    int totalAgents = 0;
+    int* tmpAgentArr = dispatcher->getNAgentsDev(handle);
+    for (int i = 0; i < (sizeof(tmpAgentArr) / sizeof(tmpAgentArr[0])); ++i) {
+        totalAgents += tmpAgentArr[i];
+    }
+
+    numAgents = tmpAgentArr;
+    return totalAgents;
 }
 
 int Agents::getHandle() {
@@ -58,10 +73,26 @@ void Agents::manageAll() {
     dispatcher->spawnAgents(handle);
 }
 
-
 Agent** Agents::getElements() {
-    elemPtrs = dispatcher->refreshAgents(handle);
-    return elemPtrs;
+    std::vector<Agent**> elemPtrsVec = dispatcher->refreshAgents(handle); 
+    mass::Agent** retVals = new Agent*[dispatcher->getNumAgents(handle)];
+    int* numAgentsDev = dispatcher->getNAgentsDev(handle);
+    int count = 0;
+    for (int i = 0; i < elemPtrsVec.size(); ++i) {
+        mass::Agent** tmp_ptr = elemPtrsVec.at(i);
+        for (int j = 0; j < numAgentsDev[i]; ++j) {
+            retVals[count++] = tmp_ptr[j];
+        }
+    }
+
+    if (elemPtrs.size() > 0) {
+        for (int i = 0; i < elemPtrs.size(); ++i) {
+            delete[] elemPtrs.at(i);
+        }
+    }
+
+    elemPtrs = elemPtrsVec;
+    return retVals;
 }
 
 } /* namespace mass */
