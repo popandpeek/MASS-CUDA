@@ -11,7 +11,7 @@ class Place;
 class Agent {
 
 public:
-
+    
     /**
     The default constructor. A contiguous space of arguments is 
     passed to the constructor of the derived classes.
