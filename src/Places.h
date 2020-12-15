@@ -39,6 +39,9 @@ public:
 	 */
 	int getNumPlaces();
 
+
+	int getPlacesStride();
+	
 	/**
 	 *  Returns the handle associated with this Places_Base object that was set at construction.
 	 */
@@ -152,7 +155,8 @@ private:
 	int numDims; // the number of dimensions for this Places_Base (i.e. 1D, 2D, 3D, etc...)
 	int *dimensions; // dimensions of the grid in which these places are located. It must be numDims long
 	unsigned numElements;
-	Place **elemPtrs;
+	int placesStride;
+	std::vector<Place**> elemPtrs;
 
 };
 
