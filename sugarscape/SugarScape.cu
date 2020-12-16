@@ -35,7 +35,7 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 	Place** retVals = places->getElements();
 	//Logger::debug("SugarScape: Returns from places->getElements()");
 	int indices[2];
-	int outerCount = 0;
+	// int outerCount = 0;
 	for (int row = 0; row < placesSize[0]; row++) {
 		//Logger::debug("SugarScape: Enters outer loop: Count = %d out of %d.", row, placesSize[0]);
 		indices[0] = row;
