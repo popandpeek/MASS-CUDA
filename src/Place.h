@@ -53,10 +53,18 @@ public:
 	MASS_FUNCTION int getIndex();
 
 	/**
+	Return relative index of this place
+	*/
+	MASS_FUNCTION int getRelIndex();
+	/**
 	Sets the index of this place to the specified integer value.
 	*/
 	MASS_FUNCTION void setIndex(int index);
 
+	/**
+	Sets the index of this place relative to the entire space of Place objects
+	*/
+	MASS_FUNCTION void setRelIndex(int relIndex);
 	/**
 	Adds a resident Agent to this place. Returns true if the adding was successful. 
 	Adding can fail if the place has reached its maximum occupancy.
