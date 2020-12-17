@@ -13,7 +13,8 @@ class PlaceState {
 
 public:
 	Place *neighbors[MAX_NEIGHBORS];  // my neighbors
-	unsigned index;            // the row-major index of this place
+	unsigned index;            // the row-major index of this place on a device
+	unsigned relIndex;		   // the row-major index of this place over the entire space
 	int size[MAX_DIMS];   // the size of the Places matrix
 
     Agent *agents[MAX_AGENTS]; //agents residing on this place
