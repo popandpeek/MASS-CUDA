@@ -94,8 +94,16 @@ MASS_FUNCTION int Place::getIndex() {
 	return state->index;
 }
 
+MASS_FUNCTION int Place::getRelIndex() {
+	return state->relIndex;
+}
+
 MASS_FUNCTION void Place::setIndex(int index) {
 	state->index = index;
+}
+
+MASS_FUNCTION void Place::setRelIndex(int relIndex) {
+	state->relIndex = relIndex;
 }
 
 MASS_FUNCTION void Place::setSize(int *dimensions, int nDims) {
