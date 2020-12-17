@@ -58,6 +58,7 @@ void DeviceConfig::freeDevice() {
 
 // // TODO: Refactor for UVA memory - NO CHANGES NEEDED?
 // void DeviceConfig::load(void*& destination, const void* source, size_t bytes) {
+//	CATCH(cudaMalloc((void** ) &destination, bytes));
 // 	CATCH(cudaMemcpy(destination, source, bytes, H2D));
 // 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 // }
