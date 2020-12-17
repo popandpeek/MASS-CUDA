@@ -147,7 +147,8 @@ __global__ void instantiatePlacesKernel(Place** places, StateType *state,
 	if (idx < qty + (ghostPlaceQty * ghostSpaceMult)) {
 		// set pointer to corresponding state object
 		places[idx] = new PlaceType(&(state[idx]), arg);
-		places[idx]->setIndex(idx); // + (device * qty - (flip * ghostPlaceQty)));
+		places[idx]->setIndex(idx);
+		places[idx]->setRelIndex(idx + (device * qty - (flip * ghostPlaceQty)));
 		places[idx]->setSize(dims, nDims);
 	}
 }
@@ -175,11 +176,11 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	p.ghostSpaceMultiple = new int[activeDevices.size()];
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		if (i == 0 || i == activeDevices.size() - 1) {
-			p.ghostSpaceMultiple[i] = 1;
+			p.ghostSpaceMultiple[i] = MAX_AGENT_TRAVEL;
 		}	
 
 		else {
-			p.ghostSpaceMultiple[i] = 2;
+			p.ghostSpaceMultiple[i] = MAX_AGENT_TRAVEL * 2;
 		}
 	}
 
@@ -200,9 +201,11 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 
 	multip += p.ghostSpaceMultiple[0];
 	chunkSize[dimensions - 1] = multip;
-	Logger::debug("chunkSize[0] = %d and chunkSize[1] = %d", chunkSize[0], chunkSize[1]);
+	Logger::debug("chunkSize[0] = %d and chunkSize[1] = %d and multip = %d", chunkSize[0], chunkSize[1], multip);
 	// set places dimensions
 	this->setDimensions(dimensions);
+
+	// TODO: To expand to more than two devices need to set two DimSize/ChunkSize for begin/end and middle ranks
 	this->setDimSize(chunkSize);
 
 	// create state vector of arrays on device
