@@ -25,8 +25,8 @@ MASS_FUNCTION void SugarPlace::setSugar() {
     mtCoord[0] = size/3;
     mtCoord[1] = size - size/3 - 1;
     
-    int mt1 = initSugarAmount(myState ->index, size, mtCoord[0], mtCoord[1], maxMtSugar);
-    int mt2 = initSugarAmount(myState ->index, size, mtCoord[1], mtCoord[0], maxMtSugar);
+    int mt1 = initSugarAmount(myState ->relIndex, size, mtCoord[0], mtCoord[1], maxMtSugar);
+    int mt2 = initSugarAmount(myState ->relIndex, size, mtCoord[1], mtCoord[0], maxMtSugar);
     
     myState -> curSugar = mt1 > mt2 ? mt1 : mt2;
     myState -> maxSugar = mt1 > mt2 ? mt1 : mt2;
