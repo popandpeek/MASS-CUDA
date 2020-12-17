@@ -219,13 +219,13 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
         dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
         int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(placeHandle);
         int* dims = deviceInfo->getDimSize();
-        void *argPtr = NULL;
         for (int i = 0; i < devices.size(); ++i) {
             Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d with params: placesStride == %d and ghostPlaceSize = %d", 
                     devices.at(i), stride, ghostPlaceMult[i] * dims[0]);
             cudaSetDevice(devices.at(i));
 
             // load any necessary arguments
+            void *argPtr = NULL;
             if (argument != NULL) {
                 CATCH(cudaMalloc((void** ) &argPtr, argSize));
                 CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
@@ -233,7 +233,7 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
             // pass params to kernel function to allow for ghost places processing
             callAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride + ghostPlaceMult[i] * dims[0], functionId, argPtr);
             CHECK();
-            cudaDeviceSynchronize();
+            //cudaDeviceSynchronize();
             if (argPtr != NULL) {
                 Logger::debug("Dispatcher::callAllPlaces: Freeing device args.");
                 cudaFree(argPtr);
@@ -312,7 +312,6 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         cudaSetDevice(devices.at(i));
-        // TODO: Need to pass params to kernel function to allow for ghost places processing
         Logger::debug("DispatcherExchangeAllPlaces: nptrs = %d", stride + (dims[0] * ghostPlaceMult[i]));
         exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride + (dims[0] * ghostPlaceMult[i]), destinations->size());
         CHECK();
