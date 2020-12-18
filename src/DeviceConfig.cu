@@ -174,15 +174,14 @@ __global__ void destroyAgentsKernel(Agent **agents, int qty) {
 
 void DeviceConfig::deleteAgents(int handle) {
 	AgentArray a = devAgentsMap[handle];
-	std::vector<Agent**> devPtrs = getDevAgents(handle);
-	std::vector<void*> devStates = getAgentsState(handle);
 	dim3* aDims = getAgentsThreadBlockDims(handle);
 
-	for (int i = 0; i < devPtrs.size(); ++i) {
-	destroyAgentsKernel<<<a.aDims[0], a.aDims[1]>>>(devPtrs.at(i), a.maxAgents[i]);
+	for (int i = 0; i < a.devPtrs.size(); ++i) {
+		destroyAgentsKernel<<<a.aDims[0], a.aDims[1]>>>(a.devPtrs.at(i), a.nAgentsDev[i]);
 		CHECK();
-		CATCH(cudaFree(devPtrs.at(i)));
-		CATCH(cudaFree(devStates.at(i)));
+		CATCH(cudaFree(a.devPtrs.at(i)));
+		CATCH(cudaFree(a.devStates.at(i)));
+		cudaDeviceSynchronize();
 	}
 
 	devAgentsMap.erase(handle);
@@ -198,17 +197,14 @@ __global__ void destroyPlacesKernel(Place **places, int qty) {
 
 void DeviceConfig::deletePlaces(int handle) {
 	PlaceArray p = devPlacesMap[handle];
-	std::vector<Place**> devPtrs = getDevPlaces(handle);
 	dim3* pDims = getPlacesThreadBlockDims(handle);
-	std::vector<void*> devStates = getPlaceStates(handle);
-	//int blockDim = (p.qty - 1) / BLOCK_SIZE + 1;
-	//int threadDim = (p.qty - 1) / blockDim + 1;
+
 	
-	for (int i = 0; i < devPtrs.size(); ++i) {
-		destroyPlacesKernel<<<p.pDims[0], p.pDims[1]>>>(devPtrs.at(i), p.qty / getNumDevices());
+	for (int i = 0; i < p.devPtrs.size(); ++i) {
+		destroyPlacesKernel<<<p.pDims[0], p.pDims[1]>>>(p.devPtrs.at(i), p.placesStride);
 		CHECK();
-		CATCH(cudaFree(devPtrs.at(i)));
-		CATCH(cudaFree(devStates.at(i)));
+		CATCH(cudaFree(p.devPtrs.at(i)));
+		CATCH(cudaFree(p.devStates.at(i)));
 	}
 
 	devPlacesMap.erase(handle);
