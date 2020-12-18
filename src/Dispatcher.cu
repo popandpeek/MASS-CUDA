@@ -6,6 +6,7 @@
 
 #include "Dispatcher.h"
 #include "cudaUtil.h"
+#include "settings.h"
 #include "Logger.h"
 
 #include "DeviceConfig.h"
@@ -78,6 +79,14 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors,
     }
 }
 
+__global__ void exchangeGhostPlacesKernel(Place** ptrs, Place** neighbr_ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        PlaceState *state = ptrs[idx]->getState();
+
+    }
+}
+
 __global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
     int idx = getGlobalIdx_1D_1D();
     if (idx < nptrs) {
@@ -106,12 +115,15 @@ __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
     }
 }
 
+__global__ void terminateAgentsCount(Agent** ptrs, int* count) {
+
+}
+
 __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
     int idx = getGlobalIdx_1D_1D();
     if (idx < *nextIdx) {
         if ((ptrs[idx]->isAlive()) && (ptrs[idx]->state->nChildren > 0)) {
             // find a spot in Agents array:
-            // TODO: Doesn't this result in empty spaces in array == to nChildren?
             int idxStart = atomicAdd(nextIdx, ptrs[idx]->state->nChildren);
             if (idxStart+ptrs[idx]->state->nChildren >= maxAgents) {
                 return;
