@@ -24,13 +24,13 @@ public:
 	/**
 	Default constructor
 	*/
-	MASS_FUNCTION Place();
+	MASS_FUNCTION Place(PlaceState* state);
 	
 	/**
 	The constructor called on the GPU device.
 	A contiguous space of arguments is passed to the constructor.
 	*/
-	MASS_FUNCTION Place(PlaceState* state, void *args = NULL);
+	MASS_FUNCTION Place(PlaceState* state, void *args);
 	
 	/**
 	Called by MASS while executing Places.callAll(). 
@@ -38,11 +38,6 @@ public:
 	function is mapped to a funcID, and is passed ‘args’ when called.
 	*/
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
-
-	/**
-	Sets state pointer
-	*/
-	MASS_FUNCTION void setState(PlaceState *pState) ;
 
 	/**
 	Returns the PlaceState object pointed associated with this Place

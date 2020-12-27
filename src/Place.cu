@@ -5,8 +5,8 @@
 
 namespace mass {
 
-MASS_FUNCTION Place::Place() {
-	this->state = NULL;
+MASS_FUNCTION Place::Place(PlaceState* state) { 
+	this->state = state;
 }
 
 /**
@@ -22,10 +22,6 @@ MASS_FUNCTION Place::Place() {
 	for (int i=0; i< N_DESTINATIONS; i++) {
 		state->potentialNextAgents[i] = NULL;
 	}
-}
-
-MASS_FUNCTION void Place::setState(PlaceState *pState) {
-	this->state = pState;
 }
 
 MASS_FUNCTION PlaceState* Place::getState() {

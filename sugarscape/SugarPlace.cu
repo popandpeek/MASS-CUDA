@@ -7,11 +7,11 @@ static const int maxMtSugar = 4; //max level of sugar in mountain peak
 using namespace std;
 using namespace mass;
 
-MASS_FUNCTION SugarPlace::SugarPlace() {
-    myState = NULL;
+MASS_FUNCTION SugarPlace::SugarPlace(PlaceState *state) : Place(state) { 
+    myState = (SugarPlaceState*) state;
 }
 
-MASS_FUNCTION SugarPlace::SugarPlace(PlaceState* state, void *argument) :
+MASS_FUNCTION SugarPlace::SugarPlace(PlaceState *state, void *argument) :
 		Place(state, argument) {
 	myState = (SugarPlaceState*) state;
 
@@ -64,8 +64,8 @@ MASS_FUNCTION void SugarPlace::incSugarAndPollution() {
 // Calculates average pollution between 4 neighbors
 MASS_FUNCTION void SugarPlace::avePollutions() { 
     
-    int idx = myState -> index;
-    int* size = myState -> size;
+    int idx = myState -> devIndex;
+    int* size = myState -> devSize;
 
     double top, right, bottom, left;
 

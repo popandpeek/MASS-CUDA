@@ -43,13 +43,13 @@ __global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
 __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, int idxEnd, int nNeighbors) {
-	int idx = getGlobalIdx_1D_1D() + idxStart;
+	int idx = getGlobalIdx_1D_1D();
 
-    if (idx < nptrs + idxStart) {
-        PlaceState *state = ptrs[idx]->getState();
+    if (idx < nptrs) {
+        PlaceState *state = ptrs[idx + idxStart]->getState();
 
         for (int i = 0; i < nNeighbors; ++i) {
-            int j = idx + offsets_device[i];
+            int j = idx + idxStart + offsets_device[i];
             if (j >= 0 && j < nptrs + idxStart + idxEnd) {
                 state->neighbors[i] = ptrs[j];
             } else {
@@ -68,13 +68,13 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, i
 
         for (int i = 0; i < nNeighbors; ++i) {
             int j = idx + idxStart + offsets_device[i];
-            if (j >= 0 && j < nptrs) {
+            if (j >= 0 && j < nptrs + idxStart + idxEnd) {
                 state->neighbors[i] = ptrs[j];
             } else {
                 state->neighbors[i] = NULL;
             }
         }
-        cudaDeviceSynchronize();
+
         ptrs[idx + idxStart]->callMethod(functionId, argPtr);
     }
 }
@@ -291,7 +291,6 @@ bool Dispatcher::updateNeighborhood(int handle, std::vector<int*> *vec) {
         CHECK();
         Logger::debug("Copied constant memory to device %d", i);
     }
-    cudaDeviceSynchronize();
 
     delete [] offsets;
     Logger::debug("Exiting Dispatcher::updateNeighborhood");

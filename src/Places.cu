@@ -68,6 +68,8 @@ void Places::exchangeAll(std::vector<int*> *destinations) {
  */
 void Places::exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize) {
 	dispatcher->exchangeAllPlaces(handle, destinations, functionId, argument, argSize);
+	// dispatcher->exchangeAllPlaces(handle, destinations);
+	// dispatcher->callAllPlaces(handle, functionId, argument, argSize);
 }
 
 Place** Places::getElements() {

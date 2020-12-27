@@ -162,8 +162,7 @@ __global__ void instantiateGhostPlacesKernel(Place** places, StateType* state,
 
 	unsigned idx = getGlobalIdx_1D_1D();
 	if (idx < qty) {
-		places[idx + placeStride] = new PlaceType();
-		places[idx + placeStride]->setState(&(state[idx + stateStride]));
+		places[idx + placeStride] = new PlaceType(&(state[idx + stateStride]));
 	}
 }
 

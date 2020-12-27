@@ -1,46 +1,4 @@
 ========= CUDA-MEMCHECK
-========= Out-of-range Shared or Local Address
-=========     at 0x000000d0 in __cuda_syscall_mc_dyn_globallock_check
-=========     by thread (0,0,0) in block (153,0,0)
-=========
-========= Program hit cudaErrorLaunchFailure (error 719) due to "unspecified launch failure" on CUDA API call to cudaDeviceSynchronize.
-=========     Saved host backtrace up to driver entry point at error
-=========     Host Frame:/usr/lib/x86_64-linux-gnu/libcuda.so.1 [0x379b43]
-=========     Host Frame:./bin/sugarscape [0x6c317]
-=========     Host Frame:./bin/sugarscape [0x2d684]
-=========     Host Frame:./bin/sugarscape [0x32ac2]
-=========     Host Frame:./bin/sugarscape [0xcb52]
-=========     Host Frame:./bin/sugarscape [0x23ee2]
-=========     Host Frame:/lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main + 0xe7) [0x21b97]
-=========     Host Frame:./bin/sugarscape [0xa5ca]
-=========
-========= Program hit cudaErrorLaunchFailure (error 719) due to "unspecified launch failure" on CUDA API call to cudaLaunchKernel.
-=========     Saved host backtrace up to driver entry point at error
-=========     Host Frame:/usr/lib/x86_64-linux-gnu/libcuda.so.1 [0x379b43]
-=========     Host Frame:./bin/sugarscape [0x8b6ef]
-=========     Host Frame:./bin/sugarscape [0x30084]
-=========     Host Frame:./bin/sugarscape [0x2f1d8]
-=========     Host Frame:./bin/sugarscape [0x2f232]
-=========     Host Frame:./bin/sugarscape [0x2c024]
-=========     Host Frame:./bin/sugarscape [0x32a03]
-=========     Host Frame:./bin/sugarscape [0x32924]
-=========     Host Frame:./bin/sugarscape [0xcb66]
-=========     Host Frame:./bin/sugarscape [0x23ee2]
-=========     Host Frame:/lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main + 0xe7) [0x21b97]
-=========     Host Frame:./bin/sugarscape [0xa5ca]
-=========
-========= Program hit cudaErrorLaunchFailure (error 719) due to "unspecified launch failure" on CUDA API call to cudaGetLastError.
-=========     Saved host backtrace up to driver entry point at error
-=========     Host Frame:/usr/lib/x86_64-linux-gnu/libcuda.so.1 [0x379b43]
-=========     Host Frame:./bin/sugarscape [0x6e4a4]
-=========     Host Frame:./bin/sugarscape [0x34eac]
-=========     Host Frame:./bin/sugarscape [0x2c035]
-=========     Host Frame:./bin/sugarscape [0x32a03]
-=========     Host Frame:./bin/sugarscape [0x32924]
-=========     Host Frame:./bin/sugarscape [0xcb66]
-=========     Host Frame:./bin/sugarscape [0x23ee2]
-=========     Host Frame:/lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main + 0xe7) [0x21b97]
-=========     Host Frame:./bin/sugarscape [0xa5ca]
-=========
 ========= Error: process didn't terminate successfully
+=========        The application may have hit an error when dereferencing Unified Memory from the host. Please rerun the application under cuda-gdb or Nsight Eclipse Edition to catch host side errors.
 ========= No CUDA-MEMCHECK results found
