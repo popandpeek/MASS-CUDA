@@ -380,7 +380,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     Logger::debug("Kernel dims = gridDim { %d, %d, %d } and blockDim = { %d, %d, %d }", pDims[0].x, pDims[0].y, pDims[0].z, pDims[1].x, pDims[1].y, pDims[1].z);
     int idxStart;
     int idxEnd;
-    for (int i = 0; i < devices.size() - 1; ++i) {
+    for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         cudaSetDevice(devices.at(i));
         // load any necessary arguments
@@ -393,7 +393,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
         if (i == 0) { 
             idxStart = 0;
             idxEnd = dims[0] * MAX_AGENT_TRAVEL;
-        } else if (i == devices.size()) { // update params for last device
+        } else if (i == devices.size() - 1) { // update params for last device
             idxStart = dims[0] * MAX_AGENT_TRAVEL;
             idxEnd = 0;
         } else  { // update params for middle ranks
