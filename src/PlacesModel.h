@@ -10,6 +10,7 @@
 #include "Place.h"
 #include "PlaceState.h"
 #include "Logger.h"
+#include "settings.h"
 
 namespace mass {
 
@@ -86,22 +87,11 @@ PlacesModel* PlacesModel::createPlaces(int handle, void *argument, int argSize,
 	PlacesModel *p = new PlacesModel(handle, dimensions, size, qty);
 	p->placesStride = qty / nDevices;
 	p->stateBytes = sizeof(S);
-	p->ghostSpaceMultiple = new int[nDevices];
 	Logger::debug("PlacesModel::createPlaces: nDevices = %d; placesStride = %d, stateBytes = %d", nDevices, p->placesStride, p->stateBytes);
 	for (int i = 0; i < nDevices; ++i) {
-		if (i == 0 || i == nDevices - 1 ) {
-			p->ghostSpaceMultiple[i] = 1;
-		}
-
-		else {
-			p->ghostSpaceMultiple[i] = 2;
-		}
-	}
-
-	for (int i = 0; i < nDevices; ++i) {
-		Place** p_ptrs = new Place*[p->placesStride + p->ghostSpaceMultiple[i] * size[1]];
-		S* tmpPtr = new S[p->placesStride + p->ghostSpaceMultiple[i] * size[1]];
-		for (int j = 0; j < (p->placesStride + p->ghostSpaceMultiple[i] * size[1]); ++j) {
+		Place** p_ptrs = new Place*[p->placesStride];
+		S* tmpPtr = new S[p->placesStride];
+		for (int j = 0; j < (p->placesStride); ++j) {
 			Place *pl = new P((PlaceState*) &(tmpPtr[j]), argument);
 			p_ptrs[j] = pl;
 		}

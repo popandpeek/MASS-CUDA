@@ -5,6 +5,10 @@
 
 namespace mass {
 
+MASS_FUNCTION Place::Place() {
+	this->state = NULL;
+}
+
 /**
  *  A contiguous space of arguments is passed
  *  to the constructor.
@@ -20,8 +24,12 @@ namespace mass {
 	}
 }
 
+MASS_FUNCTION void Place::setState(PlaceState *pState) {
+	this->state = pState;
+}
+
 MASS_FUNCTION PlaceState* Place::getState() {
-	return state;
+	return this->state;
 }
 
 MASS_FUNCTION void Place::resolveMigrationConflicts() {
@@ -94,22 +102,24 @@ MASS_FUNCTION int Place::getIndex() {
 	return state->index;
 }
 
-MASS_FUNCTION int Place::getRelIndex() {
-	return state->relIndex;
+MASS_FUNCTION int Place::getDevIndex() {
+	return state->devIndex;
 }
 
 MASS_FUNCTION void Place::setIndex(int index) {
 	state->index = index;
 }
 
-MASS_FUNCTION void Place::setRelIndex(int relIndex) {
-	state->relIndex = relIndex;
+MASS_FUNCTION void Place::setDevIndex(int devIndex) {
+	state->devIndex = devIndex;
 }
 
-MASS_FUNCTION void Place::setSize(int *dimensions, int nDims) {
+MASS_FUNCTION void Place::setSize(int *placesDimensions, int *devDimensions, int nDims) {
 	for (int i = 0; i < nDims; ++i) {
-		int dim = dimensions[i];
-		state->size[i] = dim;
+		int pDim = placesDimensions[i];
+		int dDim = devDimensions[i];
+		state->size[i] = pDim;
+		state->devSize[i] = dDim;
 	}
 }
 

@@ -7,6 +7,10 @@ static const int maxMtSugar = 4; //max level of sugar in mountain peak
 using namespace std;
 using namespace mass;
 
+MASS_FUNCTION SugarPlace::SugarPlace() {
+    myState = NULL;
+}
+
 MASS_FUNCTION SugarPlace::SugarPlace(PlaceState* state, void *argument) :
 		Place(state, argument) {
 	myState = (SugarPlaceState*) state;
@@ -25,8 +29,8 @@ MASS_FUNCTION void SugarPlace::setSugar() {
     mtCoord[0] = size/3;
     mtCoord[1] = size - size/3 - 1;
     
-    int mt1 = initSugarAmount(myState ->relIndex, size, mtCoord[0], mtCoord[1], maxMtSugar);
-    int mt2 = initSugarAmount(myState ->relIndex, size, mtCoord[1], mtCoord[0], maxMtSugar);
+    int mt1 = initSugarAmount(myState ->index, size, mtCoord[0], mtCoord[1], maxMtSugar);
+    int mt2 = initSugarAmount(myState ->index, size, mtCoord[1], mtCoord[0], maxMtSugar);
     
     myState -> curSugar = mt1 > mt2 ? mt1 : mt2;
     myState -> maxSugar = mt1 > mt2 ? mt1 : mt2;
@@ -104,11 +108,11 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     myState ->  migrationDestRelativeIdx = -1;
 
     int idx = myState -> index;
-    int size = myState -> size[0];
+    int* size = myState -> size;
 
     for(int i=0; i< maxVisible; i++) { //displacement to the right
         // TODO: fix the possibility to migrate across the plane border to next line
-        if (idx + i + 1< size*size) {
+        if (idx + i + 1 < size[0] * (size[1] + maxVisible)) {
             if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
                 myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
                 myState -> migrationDestRelativeIdx = i;
@@ -118,7 +122,7 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     }
 
     for (int i=maxVisible; i<maxVisible*2; i++) { //displacement up
-        if (idx - (i-maxVisible+1)*size > 0) {
+        if (idx - (i-maxVisible+1) * (size[1] + maxVisible) > 0) {
             if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
                 myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
                 myState -> migrationDestRelativeIdx = i;

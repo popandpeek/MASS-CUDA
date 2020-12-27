@@ -33,19 +33,19 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 
 	ss << "time = " << time << "\n";
 	Place** retVals = places->getElements();
-	//Logger::debug("SugarScape: Returns from places->getElements()");
+	Logger::debug("SugarScape: Returns from places->getElements()");
 	int indices[2];
-	// int outerCount = 0;
 	for (int row = 0; row < placesSize[0]; row++) {
-		//Logger::debug("SugarScape: Enters outer loop: Count = %d out of %d.", row, placesSize[0]);
 		indices[0] = row;
 		for (int col = 0; col < placesSize[1]; col++) {
 			indices[1] = col;
 			int rmi = places->getRowMajorIdx(indices);
+			
 			if (rmi != (row % placesSize[0]) * placesSize[0] + col) {
 				Logger::error("Row Major Index is incorrect: [%d][%d] != %d",
 						row, col, rmi);
 			}
+
 			int curSugar = ((SugarPlace*)retVals[rmi])->getCurSugar();
 			int n_agents = retVals[rmi]->getAgentPopulation();
 			ss << curSugar << " ";
@@ -53,6 +53,7 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 			//Logger::debug("SugarScape: Exits inner loop: Count = %d out of %d.", col, placesSize[1]);
 		}
 		
+		//Logger::debug("SugarScape: Exits outer loop: Count = %d out of %d.", row, placesSize[0]);
 		ss << "\n";
 		agents << "\n";
 	}

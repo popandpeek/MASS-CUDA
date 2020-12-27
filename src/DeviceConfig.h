@@ -26,10 +26,10 @@ class PlaceState;
 struct PlaceArray {
 	std::vector<Place**> devPtrs;
 	std::vector<void*> devStates;
-
+	std::vector<int*> devDims; //dimension size of each device Places chunk 
 	int qty;  //size
 	int placesStride;
-	int* ghostSpaceMultiple; //multipled by dimSize[0] to find num of ghost places on each device
+	int* ghostSpaceMultiple; //multipled by dimSize[0] and MAX_AGENT_TRAVEL to find num of ghost places on each device
 	dim3 pDims[2];
 };
 
@@ -141,15 +141,29 @@ inline void getRandomPlaceIdxs(int* idxs, int nPlaces, int nAgents) {
 
 template<typename PlaceType, typename StateType>
 __global__ void instantiatePlacesKernel(Place** places, StateType *state,
-		void *arg, int *dims, int nDims, int qty, int ghostSpaceMult, int ghostPlaceQty, int device, int flip) {
+		void *arg, int *dims, int *devDims, int nDims, int qty, int ghostPlaceQty,
+		int device, int flip) {
+
 	unsigned idx = getGlobalIdx_1D_1D();
 
-	if (idx < qty + (ghostPlaceQty * ghostSpaceMult)) {
+	if (idx < qty) {
 		// set pointer to corresponding state object
-		places[idx] = new PlaceType(&(state[idx]), arg);
-		places[idx]->setIndex(idx);
-		places[idx]->setRelIndex(idx + (device * qty - (flip * ghostPlaceQty)));
-		places[idx]->setSize(dims, nDims);
+		int pIdx = idx + (flip * ghostPlaceQty);
+		places[pIdx] = new PlaceType(&(state[idx]), arg);
+		places[pIdx]->setDevIndex(idx);
+		places[pIdx]->setIndex(idx + (device * qty));
+		places[pIdx]->setSize(dims, devDims, nDims);
+	}
+}
+
+template<typename PlaceType, typename StateType>
+__global__ void instantiateGhostPlacesKernel(Place** places, StateType* state, 
+		int qty, int placeStride, int stateStride) {
+
+	unsigned idx = getGlobalIdx_1D_1D();
+	if (idx < qty) {
+		places[idx + placeStride] = new PlaceType();
+		places[idx + placeStride]->setState(&(state[idx + stateStride]));
 	}
 }
 
@@ -158,7 +172,7 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		int dimensions, int size[], int qty) {
 
 	Logger::debug("Entering DeviceConfig::instantiatePlaces\n");
-
+	Logger::debug("Places size == size[0] = %d : size[1] = %d", size[0], size[1]);
 	if (devPlacesMap.count(handle) > 0) {
 		Logger::debug("DeviceConfig::instantiatePlaces: Places already there.");
 		return {};
@@ -176,66 +190,70 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	p.ghostSpaceMultiple = new int[activeDevices.size()];
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		if (i == 0 || i == activeDevices.size() - 1) {
-			p.ghostSpaceMultiple[i] = MAX_AGENT_TRAVEL;
+			p.ghostSpaceMultiple[i] = 1 * MAX_AGENT_TRAVEL;
 		}	
 
 		else {
-			p.ghostSpaceMultiple[i] = MAX_AGENT_TRAVEL * 2;
+			p.ghostSpaceMultiple[i] = 2 * MAX_AGENT_TRAVEL;
 		}
 	}
 
-	// set dimensions for each devices places NOT including ghost spaces
-	int* chunkSize = new int[dimensions];
-	int multip = p.placesStride;
-	int ghostChunkSize = 1;
+	// Calculates the size of one ghost row
+	int ghostRowSize = 1;
 	for (int i = 1; i < dimensions; ++i) {
-		ghostChunkSize *= size[i];
+		ghostRowSize *= size[i];
 	}
 
-	Logger::debug("ghostChunkSize = %d", ghostChunkSize);
-
-	for (int i = 0; i < dimensions - 1; ++i) {
-		chunkSize[i] = size[i];
-		multip /= size[i];
+	// calculates the dimensional size of each devices places chunk
+	for (int i = 0; i < activeDevices.size(); i++) {
+		int* chunkSize = new int[dimensions];
+		for (int j = 0; j < dimensions - 1; j++) {
+			chunkSize[j] = size[j];
+		}
+		if (i != activeDevices.size() - 1) {
+			chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size() + p.ghostSpaceMultiple[i];
+		}
+		else {
+			chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size();
+		}
+		p.devDims.push_back(chunkSize);
+		Logger::debug("chunkSize for device: %d == %d X %d", i, chunkSize[0], chunkSize[1]);
 	}
+	
+	Logger::debug("ghostRowSize = %d", ghostRowSize);
 
-	multip += p.ghostSpaceMultiple[0];
-	chunkSize[dimensions - 1] = multip;
-	Logger::debug("chunkSize[0] = %d and chunkSize[1] = %d and multip = %d", chunkSize[0], chunkSize[1], multip);
 	// set places dimensions
 	this->setDimensions(dimensions);
+	this->setDimSize(size);
 
-	// TODO: To expand to more than two devices need to set two DimSize/ChunkSize for begin/end and middle ranks
-	this->setDimSize(chunkSize);
-
-	// create state vector of arrays on device
+	// create state vector of arrays to represent data on each device
 	int Sbytes = sizeof(S);
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		S* d_state = NULL;
-		CATCH(cudaMalloc(&d_state, (p.placesStride + (ghostChunkSize * p.ghostSpaceMultiple[i])) * Sbytes));
+		CATCH(cudaMalloc(&d_state, p.placesStride * Sbytes));
 		Logger::debug("DeviceConfig::instantiatePlaces: size of d_state = %d; size of sbytes = %d; placesStride = %d", sizeof(*d_state), Sbytes, p.placesStride);
 		p.devStates.push_back((d_state));
 	}
 
 	Logger::debug("DeviceConfig::InstantiatePlaces: Places State loaded into vector.");
 
-	// allocate device pointers
+	// create place vector for device pointers on each device - includes ghost places
 	int ptrbytes = sizeof(Place*);
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		Place** tmpPlaces;
-		CATCH(cudaMalloc(&tmpPlaces, (p.placesStride + (ghostChunkSize * p.ghostSpaceMultiple[i])) * ptrbytes));
+		CATCH(cudaMalloc(&tmpPlaces, (p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[i])) * ptrbytes));
 		p.devPtrs.push_back(tmpPlaces);
 	}
 
-	int blockDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostChunkSize) / BLOCK_SIZE + 1;
-	int threadDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostChunkSize) / blockDim + 1;
+	int blockDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostRowSize) / BLOCK_SIZE + 1;
+	int threadDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostRowSize) / blockDim + 1;
 	Logger::debug("Kernel dims = gridDim %d, and blockDim = %d, ", blockDim, threadDim);
 	
 	// int to ensure we don't put ghost places[idx] < 0 when assigning indices in kernel function
 	int flip = 0;
 	
 	for (int i = 0; i < activeDevices.size(); ++i) {
-		Logger::debug("Launching instantiation kernel on device: %d with params: placesStride = %d, ghostChunkSize = %d, ghostMult = %d", activeDevices.at(i), p.placesStride, ghostChunkSize, p.ghostSpaceMultiple[i]);
+		Logger::debug("Launching instantiation kernel on device: %d with params: placesStride = %d, ghostRowSize = %d, ghostMult = %d", activeDevices.at(i), p.placesStride, ghostRowSize, p.ghostSpaceMultiple[i]);
 		CATCH(cudaSetDevice(activeDevices.at(i)));
 		// handle arg 
 		void *d_arg = NULL;
@@ -246,14 +264,17 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 
 		// load places dimensions 
 		int *d_dims = NULL;
+		int *d_devDims = NULL;
 		int dimBytes = sizeof(int) * dimensions;
 		CATCH(cudaMalloc((void** ) &d_dims, dimBytes));
+		CATCH(cudaMalloc((void** ) &d_devDims, dimBytes));
 		CATCH(cudaMemcpy(d_dims, this->getDimSize(), dimBytes, H2D));
-		Logger::debug("DeviceConfig::instantiatePlace: placesStride = %d, ghostPlaceMult = %d, ghostChunkSize = %d, device = %d, flip = %d", p.placesStride, 
-				p.ghostSpaceMultiple[i], ghostChunkSize, i, flip);
+		CATCH(cudaMemcpy(d_devDims, p.devDims.at(i), dimBytes, H2D));
+		Logger::debug("DeviceConfig::instantiatePlace: placesStride = %d, ghostPlaceMult = %d, ghostRowSize = %d, device = %d, flip = %d", p.placesStride, 
+				p.ghostSpaceMultiple[i], ghostRowSize, i, flip);
 		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtrs[i], 
-				(S*)(p.devStates[i]), d_arg, d_dims, dimensions, p.placesStride, 
-				p.ghostSpaceMultiple[i], ghostChunkSize, i, flip);
+				(S*)(p.devStates[i]), d_arg, d_dims, d_devDims, dimensions, 
+				p.placesStride, ghostRowSize * MAX_AGENT_TRAVEL, i, flip);
 		CHECK();
 		if (NULL != argument) {
 			CATCH(cudaFree(d_arg));
@@ -264,6 +285,34 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		}
 
 		CATCH(cudaFree(d_dims));
+	}
+
+	cudaDeviceSynchronize();
+	for (int i = 0; i < activeDevices.size(); ++i) {
+		cudaSetDevice(activeDevices.at(i));
+		Logger::debug("Launching ghost Places instantiation kernel on device: %d ", activeDevices.at(i));
+		if (i % 2 == 0) {
+			// do right ghost stripe
+			instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i + 1]), 
+					ghostRowSize * MAX_AGENT_TRAVEL, p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[i]) - (ghostRowSize * MAX_AGENT_TRAVEL), 0);
+			if (i != 0) {
+				// do left ghost stripe
+				instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i - 1]), 
+						ghostRowSize * MAX_AGENT_TRAVEL, 0, p.placesStride - (ghostRowSize * MAX_AGENT_TRAVEL));
+			}
+		}
+
+		else {
+			// do left ghost stripe
+			instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i - 1]), 
+					ghostRowSize * MAX_AGENT_TRAVEL, 0, p.placesStride - (ghostRowSize * MAX_AGENT_TRAVEL));
+			if (i != activeDevices.size() - 1) {
+				// do right ghost stripe
+				instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i + 1]), 
+						ghostRowSize * MAX_AGENT_TRAVEL, p.placesStride + (ghostRowSize * MAX_AGENT_TRAVEL), 0);
+			}
+		}
+
 	}
 
 	Logger::debug("Finished instantiation kernel");
@@ -307,7 +356,6 @@ template<typename AgentType, typename AgentStateType>
 std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument, 
 		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs) {
 	Logger::debug("Entering DeviceConfig::instantiateAgents\n");
-	// Logger::debug("DeviceConfig::instantiateAgents: %d", devAgentsMap.count(handle));
 	if (devAgentsMap.count(handle) > 0 /* && devAgentsMap[handle].nAgents != NULL*/) {
 		Logger::debug("DeviceConfig::instantiatePlaces: Agents already there.");
 		return {};
@@ -454,7 +502,7 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 		CHECK();
 		CATCH(cudaFree(placeIdxs_d));
 		if (ghostPlaceChunkSize == 0) {
-			ghostPlaceChunkSize = dimSize[0];
+			ghostPlaceChunkSize = dimSize[0] * MAX_AGENT_TRAVEL;
 		}
 	}
 

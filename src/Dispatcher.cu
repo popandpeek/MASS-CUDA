@@ -21,11 +21,11 @@ __constant__ int offsets_device[MAX_NEIGHBORS];
 namespace mass {
 
 __global__ void callAllPlacesKernel(Place **ptrs, int nptrs, int functionId,
-		void *argPtr) {
+		void *argPtr, int indexBump) {
 	int idx = getGlobalIdx_1D_1D();
 
 	if (idx < nptrs) {
-		ptrs[idx]->callMethod(functionId, argPtr);
+		ptrs[idx + indexBump]->callMethod(functionId, argPtr);
 	}
 }
 
@@ -42,15 +42,15 @@ __global__ void callAllAgentsKernel(Agent **ptrs, int nptrs, int functionId,
 /**
  * neighbors is converted into a 1D offset of relative indexes before calling this function
  */
-__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors) {
-	int idx = getGlobalIdx_1D_1D();
+__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, int idxEnd, int nNeighbors) {
+	int idx = getGlobalIdx_1D_1D() + idxStart;
 
-    if (idx < nptrs) {
+    if (idx < nptrs + idxStart) {
         PlaceState *state = ptrs[idx]->getState();
 
         for (int i = 0; i < nNeighbors; ++i) {
             int j = idx + offsets_device[i];
-            if (j >= 0 && j < nptrs) {
+            if (j >= 0 && j < nptrs + idxStart + idxEnd) {
                 state->neighbors[i] = ptrs[j];
             } else {
                 state->neighbors[i] = NULL;
@@ -59,31 +59,23 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors)
     }
 }
 
-__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int nNeighbors, int functionId,
+__global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, int idxEnd, int nNeighbors, int functionId,
         void *argPtr) {
-    int idx = getGlobalIdx_1D_1D();
+    unsigned idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
-        PlaceState *state = ptrs[idx]->getState();
+        PlaceState *state = ptrs[idx + idxStart]->getState();
 
         for (int i = 0; i < nNeighbors; ++i) {
-            int j = idx + offsets_device[i];
+            int j = idx + idxStart + offsets_device[i];
             if (j >= 0 && j < nptrs) {
                 state->neighbors[i] = ptrs[j];
             } else {
                 state->neighbors[i] = NULL;
             }
         }
-
-        ptrs[idx]->callMethod(functionId, argPtr);
-    }
-}
-
-__global__ void exchangeGhostPlacesKernel(Place** ptrs, Place** neighbr_ptrs, int nptrs) {
-    int idx = getGlobalIdx_1D_1D();
-    if (idx < nptrs) {
-        PlaceState *state = ptrs[idx]->getState();
-
+        cudaDeviceSynchronize();
+        ptrs[idx + idxStart]->callMethod(functionId, argPtr);
     }
 }
 
@@ -113,10 +105,6 @@ __global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
             ptrs[idx]-> state->destPlace = NULL;
         }
     }
-}
-
-__global__ void terminateAgentsCount(Agent** ptrs, int* count) {
-
 }
 
 __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
@@ -210,7 +198,7 @@ std::vector<Place**> Dispatcher::refreshPlaces(int handle) {
         Logger::debug("Dispatcher::refreshPlaces: devPtrs size = %d; placesStrideDev = %d; stateSize = %d", devPtrs.size(), placesStrideDev, stateSize);
         for (int i = 0; i < devices.size(); ++i) {
             Logger::debug("Dispatcher::refreshPlaces: copy memory on device: %d", i);
-            int bytes = stateSize * (placesStrideDev + dims[1] * ghostPlaceMult[i]);
+            int bytes = stateSize * placesStrideDev;
             cudaSetDevice(devices.at(i));
             CATCH(cudaMemcpy(placesModel->getStatePtr(i), devPtrs.at(i), bytes, D2H));
         }
@@ -229,11 +217,11 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
         std::vector<Place**> devPtrs = deviceInfo->getDevPlaces(placeHandle); 
         int stride = deviceInfo->getPlacesStride(placeHandle);
         dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
-        int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(placeHandle);
         int* dims = deviceInfo->getDimSize();
+        int indexBump = 0;
         for (int i = 0; i < devices.size(); ++i) {
-            Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d with params: placesStride == %d and ghostPlaceSize = %d", 
-                    devices.at(i), stride, ghostPlaceMult[i] * dims[0]);
+            Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d", 
+                    devices.at(i));
             cudaSetDevice(devices.at(i));
 
             // load any necessary arguments
@@ -242,13 +230,17 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
                 CATCH(cudaMalloc((void** ) &argPtr, argSize));
                 CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
             }
-            // pass params to kernel function to allow for ghost places processing
-            callAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride + ghostPlaceMult[i] * dims[0], functionId, argPtr);
+
+            callAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride, functionId, argPtr, indexBump);
             CHECK();
-            //cudaDeviceSynchronize();
+            cudaDeviceSynchronize();
             if (argPtr != NULL) {
                 Logger::debug("Dispatcher::callAllPlaces: Freeing device args.");
                 cudaFree(argPtr);
+            }
+
+            if (indexBump == 0) {
+                indexBump = MAX_AGENT_TRAVEL * dims[0];
             }
         }
 
@@ -321,11 +313,23 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
     int stride = deviceInfo->getPlacesStride(handle);
     int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(handle);
     int* dims = deviceInfo->getDimSize();
+    int idxStart;
+    int idxEnd;
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         cudaSetDevice(devices.at(i));
-        Logger::debug("DispatcherExchangeAllPlaces: nptrs = %d", stride + (dims[0] * ghostPlaceMult[i]));
-        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride + (dims[0] * ghostPlaceMult[i]), destinations->size());
+        //Logger::debug("Dispatcher::ExchangeAllPlaces: nptrs = %d", stride + (dims[0] * 2));
+        if (i == 0) { 
+            idxStart = 0;
+            idxEnd = dims[0] * MAX_AGENT_TRAVEL;
+        } else if (i == devices.size() - 1) { // update params for last device
+            idxStart = dims[0] * MAX_AGENT_TRAVEL;
+            idxEnd = 0;
+        } else  { // update params for middle ranks
+            idxStart = dims[0] * MAX_AGENT_TRAVEL;
+            idxEnd = dims[0] * MAX_AGENT_TRAVEL;
+        }  
+        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride, idxStart, idxEnd, destinations->size());
         CHECK();
         cudaDeviceSynchronize();
     }
@@ -374,7 +378,9 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(handle);
     int* dims = deviceInfo->getDimSize();
     Logger::debug("Kernel dims = gridDim { %d, %d, %d } and blockDim = { %d, %d, %d }", pDims[0].x, pDims[0].y, pDims[0].z, pDims[1].x, pDims[1].y, pDims[1].z);
-    for (int i = 0; i < devices.size(); ++i) {
+    int idxStart;
+    int idxEnd;
+    for (int i = 0; i < devices.size() - 1; ++i) {
         Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
         cudaSetDevice(devices.at(i));
         // load any necessary arguments
@@ -383,11 +389,21 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
             CATCH(cudaMalloc((void** ) &argPtr, argSize));
 		    CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
         }
-        Logger::debug("DispatcherExchangeAllPlaces: nptrs = %d", stride + (dims[0] * ghostPlaceMult[i]));
-        // TODO: Need to pass params to kernel function to allow for ghost places processing
-        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride + (dims[0] * ghostPlaceMult[i]), destinations->size(), functionId, argPtr);
+        Logger::debug("DispatcherExchangeAllPlaces: nptrs = %d", stride);
+        if (i == 0) { 
+            idxStart = 0;
+            idxEnd = dims[0] * MAX_AGENT_TRAVEL;
+        } else if (i == devices.size() - 1) { // update params for last device
+            idxStart = dims[0] * MAX_AGENT_TRAVEL;
+            idxEnd = 0;
+        } else  { // update params for middle ranks
+            idxStart = dims[0] * MAX_AGENT_TRAVEL;
+            idxEnd = dims[0] * MAX_AGENT_TRAVEL;
+        } 
+        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride, idxStart, idxEnd, destinations->size(), functionId, argPtr);
         CHECK();
         cudaDeviceSynchronize();
+
         if (argPtr != NULL) {
             Logger::debug("Dispatcher::exchangeAllPlaces: Freeing device args.");
             cudaFree(argPtr);

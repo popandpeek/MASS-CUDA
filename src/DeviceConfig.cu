@@ -7,6 +7,8 @@
 #include "Logger.h"
 #include "MassException.h"
 #include "string.h"
+#include "settings.h"
+
 
 using namespace std;
 

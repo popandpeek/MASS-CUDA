@@ -22,6 +22,11 @@ class Place {
 
 public:
 	/**
+	Default constructor
+	*/
+	MASS_FUNCTION Place();
+	
+	/**
 	The constructor called on the GPU device.
 	A contiguous space of arguments is passed to the constructor.
 	*/
@@ -33,6 +38,11 @@ public:
 	function is mapped to a funcID, and is passed ‘args’ when called.
 	*/
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
+
+	/**
+	Sets state pointer
+	*/
+	MASS_FUNCTION void setState(PlaceState *pState) ;
 
 	/**
 	Returns the PlaceState object pointed associated with this Place
@@ -55,7 +65,7 @@ public:
 	/**
 	Return relative index of this place
 	*/
-	MASS_FUNCTION int getRelIndex();
+	MASS_FUNCTION int getDevIndex();
 	/**
 	Sets the index of this place to the specified integer value.
 	*/
@@ -64,7 +74,7 @@ public:
 	/**
 	Sets the index of this place relative to the entire space of Place objects
 	*/
-	MASS_FUNCTION void setRelIndex(int relIndex);
+	MASS_FUNCTION void setDevIndex(int devIndex);
 	/**
 	Adds a resident Agent to this place. Returns true if the adding was successful. 
 	Adding can fail if the place has reached its maximum occupancy.
@@ -95,7 +105,7 @@ public:
 	MASS_FUNCTION void addMigratingAgent(Agent* agent, int relativeIdx);
 
 
-	MASS_FUNCTION void setSize(int *dimensions, int nDims);
+	MASS_FUNCTION void setSize(int *placesDimensions, int *devDimensions, int nDims);
 	PlaceState *state;
 
 };
