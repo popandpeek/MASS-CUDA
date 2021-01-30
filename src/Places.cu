@@ -90,12 +90,14 @@ Place** Places::getElements() {
 		}
 	}
 
-	if (elemPtrs.size() > 0) {
-		for (int i = 0; i < elemPtrs.size(); ++i) {
-			delete[] elemPtrs.at(i);
-		}
-		elemPtrs = {};
-	}
+	// if (elemPtrs.size() > 0) {
+	// 	for (int i = 0; i < elemPtrs.size(); ++i) {
+	// 		Logger::debug("Places::getElements: Before delete on vector location %d", i);
+	// 		delete[] (elemPtrs.at(i));
+	// 		Logger::debug("Places::getElements: Successfully deletes from location %d", i);
+	// 	}
+	// 	elemPtrs = {};
+	// }
 
 	elemPtrs = elemPtrsVec;
 	Logger::debug("Places::getElements: Finished.");
