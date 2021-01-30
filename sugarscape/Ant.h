@@ -1,6 +1,6 @@
 
-#ifndef ANT_H_
-#define ANT_H_
+#ifndef ANT_H
+#define ANT_H
 
 #include "../src/Agent.h"
 #include "../src/AgentState.h"
@@ -17,7 +17,7 @@ public:
     const static int SET_INIT_METABOLISM = 2;
     const static int MIGRATE = 3;
 
-    MASS_FUNCTION Ant(mass::AgentState *state, void *argument);
+    MASS_FUNCTION Ant(mass::AgentState *state, void *argument = NULL);
     MASS_FUNCTION ~Ant();
     MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
     MASS_FUNCTION virtual AntState* getState();
