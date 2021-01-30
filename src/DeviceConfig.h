@@ -1,9 +1,13 @@
+#ifndef DEVICECONFIG_H
+#define DEVICECONFIG_H
+
 #pragma once
 
 #include <map>
 #include <cassert>
 #include <unordered_set>
 #include <vector>
+#include <utility>
 #include <algorithm>
 
 #include "iostream"
@@ -11,26 +15,36 @@
 #include "Logger.h"
 #include "GlobalConsts.h"
 #include "MassException.h"
-#include "settings.h"
+#include "Place.h"
+#include "PlaceState.h"
+#include "Agent.h"
+#include "AgentState.h"
 
 
 namespace mass {
 
 // forward declaration
-class Place;
-class Agent;
-class AgentState;
-class PlaceState;
+// class Place;
+// class Agent;
+// class AgentState;
+// class PlaceState;
 
 // PlaceArray stores place pointers and state pointers on GPU
 struct PlaceArray {
 	std::vector<Place**> devPtrs;
 	std::vector<void*> devStates;
-	std::vector<int*> devDims; //dimension size of each device Places chunk 
+	
+	std::vector<std::pair<Place**, void*>> topNeighborGhosts;
+	std::vector<std::pair<Place**, void*>> topGhosts;
+	std::vector<std::pair<Place**, void*>> bottomGhosts;
+	std::vector<std::pair<Place**, void*>> bottomNeighborGhosts;
+	
 	int qty;  //size
 	int placesStride;
 	int* ghostSpaceMultiple; //multipled by dimSize[0] and MAX_AGENT_TRAVEL to find num of ghost places on each device
 	dim3 pDims[2];
+	std::vector<int*> devDims; //dimension size of each device Places chunk 
+	int stateSize;
 };
 
 // AgentArray stores agent pointers and state pointers on GPU
@@ -43,6 +57,7 @@ struct AgentArray {
 	int* maxAgents; //number of all agent objects
 	int* nAgentsDev; // tracking array for agents on each device
 	dim3 aDims[2]; //block and thread dimensions
+	int stateSize;
 };
 
 /**
@@ -59,6 +74,7 @@ public:
 	void freeDevice();
 
 	std::vector<Place**> getDevPlaces(int handle);
+	std::vector<std::pair<Place**, void*>> getTopGhostPlaces(int handle);
 	std::vector<void*> getPlaceStates(int handle);
 	int getPlaceCount(int handle);
 	void setPlacesThreadBlockDims(int handle);
@@ -89,6 +105,9 @@ public:
 	void setDimensions(int dims);
 	std::vector<int> getDevices();
 
+	void* getPlaceStatesForTransfer(int handle, int device);
+	void copyGhostPlaces(int handle, int stateSize);
+
 	template<typename P, typename S>
 	std::vector<Place**> instantiatePlaces(int handle, void *argument, int argSize,
 			int dimensions, int size[], int qty);
@@ -96,6 +115,9 @@ public:
 	template<typename AgentType, typename AgentStateType>
 	std::vector<Agent**> instantiateAgents (int handle, void *argument, 
 		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs);
+
+	template<typename AgentType, typename AgentStateType>
+	void migrateAgents(int agentHandle, int placeHandle);
 
 private:
 	int *dimSize;
@@ -141,28 +163,17 @@ inline void getRandomPlaceIdxs(int* idxs, int nPlaces, int nAgents) {
 
 template<typename PlaceType, typename StateType>
 __global__ void instantiatePlacesKernel(Place** places, StateType *state,
-		void *arg, int *dims, int *devDims, int nDims, int qty, int ghostPlaceQty,
-		int device, int flip) {
+		void *arg, int *dims, int *devDims, int nDims, int qty, int placesStride, int ghostPlaceMult, 
+		int ghostRowSize, int device, int flip) {
 
 	unsigned idx = getGlobalIdx_1D_1D();
 
 	if (idx < qty) {
 		// set pointer to corresponding state object
-		int pIdx = idx + (flip * ghostPlaceQty);
-		places[pIdx] = new PlaceType(&(state[idx]), arg);
-		places[pIdx]->setDevIndex(idx);
-		places[pIdx]->setIndex(idx + (device * qty));
-		places[pIdx]->setSize(dims, devDims, nDims);
-	}
-}
-
-template<typename PlaceType, typename StateType>
-__global__ void instantiateGhostPlacesKernel(Place** places, StateType* state, 
-		int qty, int placeStride, int stateStride) {
-
-	unsigned idx = getGlobalIdx_1D_1D();
-	if (idx < qty) {
-		places[idx + placeStride] = new PlaceType(&(state[idx + stateStride]));
+		places[idx] = new PlaceType(&(state[idx]), arg);
+		places[idx]->setDevIndex(idx);
+		places[idx]->setIndex(idx - (ghostPlaceMult * ghostRowSize * flip) + (device * placesStride));
+		places[idx]->setSize(dims, devDims, nDims);
 	}
 }
 
@@ -184,6 +195,7 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	PlaceArray p;
 	p.qty = qty; //size
 	p.placesStride = qty / activeDevices.size();
+	p.stateSize = sizeof(S);
 
 	// set place ghost spacing for each device
 	p.ghostSpaceMultiple = new int[activeDevices.size()];
@@ -209,12 +221,8 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		for (int j = 0; j < dimensions - 1; j++) {
 			chunkSize[j] = size[j];
 		}
-		if (i != activeDevices.size() - 1) {
-			chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size() + p.ghostSpaceMultiple[i];
-		}
-		else {
-			chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size();
-		}
+
+		chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size() + p.ghostSpaceMultiple[i];
 		p.devDims.push_back(chunkSize);
 		Logger::debug("chunkSize for device: %d == %d X %d", i, chunkSize[0], chunkSize[1]);
 	}
@@ -228,9 +236,10 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	// create state vector of arrays to represent data on each device
 	int Sbytes = sizeof(S);
 	for (int i = 0; i < activeDevices.size(); ++i) {
+		cudaSetDevice(activeDevices.at(i));
 		S* d_state = NULL;
-		CATCH(cudaMalloc(&d_state, p.placesStride * Sbytes));
-		Logger::debug("DeviceConfig::instantiatePlaces: size of d_state = %d; size of sbytes = %d; placesStride = %d", sizeof(*d_state), Sbytes, p.placesStride);
+		CATCH(cudaMalloc(&d_state, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)) * Sbytes));
+		Logger::debug("DeviceConfig::instantiatePlaces: size of d_state = %d; size of sbytes = %d; number of places = %d", sizeof(*d_state), Sbytes, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)));
 		p.devStates.push_back((d_state));
 	}
 
@@ -239,7 +248,8 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	// create place vector for device pointers on each device - includes ghost places
 	int ptrbytes = sizeof(Place*);
 	for (int i = 0; i < activeDevices.size(); ++i) {
-		Place** tmpPlaces;
+		cudaSetDevice(activeDevices.at(i));
+		Place** tmpPlaces = NULL;
 		CATCH(cudaMalloc(&tmpPlaces, (p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[i])) * ptrbytes));
 		p.devPtrs.push_back(tmpPlaces);
 	}
@@ -253,7 +263,7 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		Logger::debug("Launching instantiation kernel on device: %d with params: placesStride = %d, ghostRowSize = %d, ghostMult = %d", activeDevices.at(i), p.placesStride, ghostRowSize, p.ghostSpaceMultiple[i]);
-		CATCH(cudaSetDevice(activeDevices.at(i)));
+		cudaSetDevice(activeDevices.at(i));
 		// handle arg 
 		void *d_arg = NULL;
 		if (NULL != argument) {
@@ -271,9 +281,10 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		CATCH(cudaMemcpy(d_devDims, p.devDims.at(i), dimBytes, H2D));
 		Logger::debug("DeviceConfig::instantiatePlace: placesStride = %d, ghostPlaceMult = %d, ghostRowSize = %d, device = %d, flip = %d", p.placesStride, 
 				p.ghostSpaceMultiple[i], ghostRowSize, i, flip);
-		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtrs[i], 
-				(S*)(p.devStates[i]), d_arg, d_dims, d_devDims, dimensions, 
-				p.placesStride, ghostRowSize * MAX_AGENT_TRAVEL, i, flip);
+		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtrs.at(i), 
+				(S*)(p.devStates.at(i)), d_arg, d_dims, d_devDims, dimensions, 
+				p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize), p.placesStride, 
+				p.ghostSpaceMultiple[0], ghostRowSize, i, flip);
 		CHECK();
 		if (NULL != argument) {
 			CATCH(cudaFree(d_arg));
@@ -286,32 +297,41 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		CATCH(cudaFree(d_dims));
 	}
 
-	cudaDeviceSynchronize();
+	// set pointers for each devices left and right sets of ghost place's and neighbors
 	for (int i = 0; i < activeDevices.size(); ++i) {
-		cudaSetDevice(activeDevices.at(i));
-		Logger::debug("Launching ghost Places instantiation kernel on device: %d ", activeDevices.at(i));
-		if (i % 2 == 0) {
-			// do right ghost stripe
-			instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i + 1]), 
-					ghostRowSize * MAX_AGENT_TRAVEL, p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[i]) - (ghostRowSize * MAX_AGENT_TRAVEL), 0);
-			if (i != 0) {
-				// do left ghost stripe
-				instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i - 1]), 
-						ghostRowSize * MAX_AGENT_TRAVEL, 0, p.placesStride - (ghostRowSize * MAX_AGENT_TRAVEL));
+		Place** topNeighborGhostTmpPlace = NULL;
+		void* topNeighborGhostTmpState = NULL;
+		Place** topGhostTmpPlace = p.devPtrs.at(i); // allows us to use one function to get start of 'legal' places
+		void* topGhostTmpState = p.devStates.at(i); // allows us to use one function to get start of 'legal' places
+		Place** bottomGhostTmpPlace = NULL;
+		void* bottomGhostTmpState = NULL;
+		Place** bottomNeighborGhostTmpPlace = NULL;
+		void* bottomNeighborGhostTmpState = NULL;
+		if (i != 0) {
+			topNeighborGhostTmpPlace = p.devPtrs.at(i);
+			topNeighborGhostTmpState = p.devStates.at(i);
+			topGhostTmpPlace = &(p.devPtrs.at(i)[size[0] * MAX_AGENT_TRAVEL]);
+			topGhostTmpState = &(((S*)(p.devStates.at(i)))[size[0] * MAX_AGENT_TRAVEL]);
+		}
+
+		if (i != activeDevices.size() - 1) {
+			if (i == 0) {
+				bottomGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride - (size[0] * MAX_AGENT_TRAVEL)]);
+				bottomGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride - (size[0] * MAX_AGENT_TRAVEL)]));
+				bottomNeighborGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride]);
+				bottomNeighborGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride]));
+			} else {
+				bottomGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride]);
+				bottomGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride]));
+				bottomNeighborGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride + (size[0] * MAX_AGENT_TRAVEL)]);
+				bottomNeighborGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride + (size[0] * MAX_AGENT_TRAVEL)]));
 			}
 		}
 
-		else {
-			// do left ghost stripe
-			instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i - 1]), 
-					ghostRowSize * MAX_AGENT_TRAVEL, 0, p.placesStride - (ghostRowSize * MAX_AGENT_TRAVEL));
-			if (i != activeDevices.size() - 1) {
-				// do right ghost stripe
-				instantiateGhostPlacesKernel<P, S><<<blockDim, threadDim>>>(p.devPtrs[i], (S*)(p.devStates[i + 1]), 
-						ghostRowSize * MAX_AGENT_TRAVEL, p.placesStride + (ghostRowSize * MAX_AGENT_TRAVEL), 0);
-			}
-		}
-
+		p.topNeighborGhosts.push_back(std::make_pair(topNeighborGhostTmpPlace, topNeighborGhostTmpState));
+		p.topGhosts.push_back(std::make_pair(topGhostTmpPlace, topGhostTmpState));
+		p.bottomGhosts.push_back(std::make_pair(bottomGhostTmpPlace, bottomGhostTmpState));
+		p.bottomNeighborGhosts.push_back(std::make_pair(bottomNeighborGhostTmpPlace, bottomNeighborGhostTmpState));
 	}
 
 	Logger::debug("Finished instantiation kernel");
@@ -322,16 +342,17 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	return p.devPtrs;
 }
 
+// TODO: Make else if clause a different kernel function?
 template<typename AgentType, typename AgentStateType>
-__global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
-		void *arg, int nAgents, int maxAgents, int agentsPerDevSum) {
+__global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state, void *arg, int nAgents, int maxAgents, int agentsPerDevSum) {
 	unsigned idx = getGlobalIdx_1D_1D(); // does this work for MGPU?
 
 	if ((idx < nAgents)) {
 		// set pointer to corresponding state object
 		agents[idx] = new AgentType(&(state[idx]), arg);
-		agents[idx]->setIndex(idx); // + agentsPerDevSum);
+		agents[idx]->setIndex(idx + agentsPerDevSum);
 		agents[idx]->setAlive();
+		agents[idx]->setTraveled(false);
 	} else if (idx < maxAgents) {
 		//create placeholder objects for future agent spawning
 		agents[idx] = new AgentType(&(state[idx]), arg);
@@ -339,8 +360,7 @@ __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state,
 }
 
 template<typename AgentType, typename AgentStateType>
-__global__ void mapAgentsKernel(Place **places, Agent **agents,
-		AgentStateType *state, int nAgents, int* placeIdxs, int ghostPlaceChunkSize) {
+__global__ void mapAgentsKernel(Place **places, Agent **agents, AgentStateType *state, int nAgents, int* placeIdxs, int ghostPlaceChunkSize) {
 	unsigned idx = getGlobalIdx_1D_1D();  //agent index
 
 	if (idx < nAgents) {
@@ -352,15 +372,15 @@ __global__ void mapAgentsKernel(Place **places, Agent **agents,
 }
 
 template<typename AgentType, typename AgentStateType>
-std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs) {
+std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument, int argSize, 
+		int nAgents, int placesHandle, int maxAgents, int* placeIdxs) {
 	Logger::debug("Entering DeviceConfig::instantiateAgents\n");
 	if (devAgentsMap.count(handle) > 0 /* && devAgentsMap[handle].nAgents != NULL*/) {
 		Logger::debug("DeviceConfig::instantiatePlaces: Agents already there.");
 		return {};
 	}
 
-	// create places tracking
+	// create agents tracking
 	AgentArray a;
 	Logger::debug("DeviceConfig::instantiateAgents: number of agents: %d", nAgents);
 	a.nAgents = nAgents;
@@ -373,6 +393,7 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 
 	a.nAgentsDev = new int[activeDevices.size()]{};
 	a.maxAgents = new int[activeDevices.size()]{};
+	a.stateSize = sizeof(AgentStateType);
 
 	PlaceArray places = devPlacesMap[placesHandle];
 
@@ -505,9 +526,253 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 		}
 	}
 
+	// TODO: Copy neighbor ghost places
+	copyGhostPlaces(placesHandle, devPlacesMap[handle].stateSize);
+
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 	Logger::debug("Finished DeviceConfig::instantiateAgents.\n");
 	return a.devPtrs;
 }
 
+template<typename AgentType, typename AgentStateType>
+__global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        ptrs[idx] -> resolveMigrationConflicts();
+    }
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void updateAgentLocationsKernel (Agent **ptrs, int nptrs) {
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nptrs) {
+        Place* destination = ptrs[idx]->state->destPlace;
+        if ( destination != NULL) {
+            // check that the new Place is actually accepting the agent
+            for (int i=0; i<MAX_AGENTS; i++) {
+                if (destination->state->agents[i] == ptrs[idx]) {
+                    // remove agent from the old place:
+                    ptrs[idx] -> getPlace() -> removeAgent(ptrs[idx]);
+
+                    // update place ptr in agent:
+                    ptrs[idx] -> setPlace(destination);
+                }
+            }
+            // clean all migration data:
+            ptrs[idx]-> state->destPlace = NULL;
+        }
+    }
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void moveAgentsDownKernel(Agent **src_agent_ptrs, Agent **dest_agent_ptrs, 
+            AgentStateType *src_agent_state, AgentStateType *dest_agent_state, 
+            Place **src_place_ptrs, Place **dest_place_ptrs, 
+            int device, int placesStride, int ghostPlaces, 
+            int ghostPlaceMult, int nAgentsDevSrc, int *nAgentsDevDest) {
+
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nAgentsDevSrc) {
+    // idx needs to be mapped base on which device L or R
+        int place_index = src_agent_ptrs[idx]->getPlaceIndex();
+        if (place_index >= (placesStride + (placesStride * device) + (ghostPlaceMult * ghostPlaces - ghostPlaces))) {
+            int neighborIdx = atomicAdd(nAgentsDevDest, 1);
+            memcpy(&(dest_agent_state[neighborIdx]), &(src_agent_state[idx]), sizeof(AgentStateType));
+
+            // clean up Agent in source array
+        	src_agent_ptrs[idx]->terminateAgent();
+		}
+    }
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void moveAgentsUpKernel(Agent **src_agent_ptrs, Agent **dest_agent_ptrs, 
+            AgentStateType *src_agent_state, AgentStateType *dest_agent_state, 
+            Place **src_place_ptrs, Place **dest_place_ptrs, 
+            int device, int placesStride, int ghostPlaces, 
+            int ghostPlaceMult, int nAgentsDevSrc, int *nAgentsDevDest) {
+
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nAgentsDevSrc) {
+    // idx needs to be mapped base on which device L or R
+        int place_index = src_agent_ptrs[idx]->getPlaceIndex();
+        if (place_index < device * placesStride) {
+            int neighborIdx = atomicAdd(nAgentsDevDest, 1);
+			src_agent_ptrs[idx]->setTraveled(true);
+            memcpy(&(dest_agent_state[neighborIdx]), (&(src_agent_state[idx])), sizeof(AgentStateType));
+            
+            // clean up Agent in source array
+			src_agent_ptrs[idx]->terminateAgent();
+		}
+    }
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void countTravelingAgentsTopKernel(Agent** agentPtrs, AgentStateType* statePtrs, int qty, int min, int* count) {
+	int idx = getGlobalIdx_1D_1D();
+
+	if (idx < qty) {
+		if (statePtrs[idx].index < min) {
+			atomicAdd(count, 1);
+		}
+	}
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void countTravelingAgentsBottomKernel(Agent** agentPtrs, AgentStateType* statePtrs, int qty, int max, int* count) {
+	int idx = getGlobalIdx_1D_1D();
+
+	if (idx < qty) {
+		if (statePtrs[idx].index > max) {
+			atomicAdd(count, 1);
+		}
+	}
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void updateAgentPointersMovingUp(Place** placePtrs, Agent** agentPtrs, 
+		int qty, int placesStride, int ghostPlaces, int ghostSpaceMult, int device) {
+	int idx = getGlobalIdx_1D_1D();
+	if (idx < qty) {
+		if (agentPtrs[idx]->isAlive() && agentPtrs[idx]->isTraveled()) {
+			agentPtrs[idx]->setTraveled(false);
+			int placePtrIdx = agentPtrs[idx]->getPlaceIndex() - (device * placesStride) + 
+					(ghostPlaces + ghostPlaces * ghostSpaceMult);
+			if (placePtrs[placePtrIdx]->addAgent(agentPtrs[idx])) {
+				agentPtrs[idx]->setPlace(placePtrs[placePtrIdx]);
+				return; 
+			}
+		}
+		// TODO: do something with agent - manually terminate?
+		return;
+	}
+}
+
+template<typename AgentType, typename AgentStateType>
+__global__ void updateAgentPointersMovingDown(Place** placePtrs, Agent** agentPtrs, 
+		int qty, int placesStride, int ghostPlaces, int ghostSpaceMult, int device) {
+	int idx = getGlobalIdx_1D_1D();
+	if (idx < qty) {
+		if (agentPtrs[idx]->isAlive() && agentPtrs[idx]->isTraveled()) {
+			agentPtrs[idx]->setTraveled(false);
+			int placePtrIdx = agentPtrs[idx]->getPlaceIndex() - (device * placesStride) + 
+					((ghostPlaces * 2) - (ghostSpaceMult * ghostPlaces));
+			if (placePtrs[placePtrIdx]->addAgent(agentPtrs[idx])) {
+				agentPtrs[idx]->setPlace(placePtrs[placePtrIdx]);
+				return; 
+			}
+		}
+		// TODO: do something with agent - manually terminate?
+		return; 
+	}
+}
+
+template<typename AgentType, typename AgentStateType>
+void DeviceConfig::migrateAgents(int agentHandle, int placeHandle) {
+    Logger::debug("Inside Dispatcher:: migrateAgents().");
+    std::vector<Place**> p_ptrs = getDevPlaces(placeHandle);
+	std::vector<std::pair<Place**, void*>> gh_ptrs = getTopGhostPlaces(placeHandle);
+    dim3* pDims = getPlacesThreadBlockDims(placeHandle);
+    Logger::debug("resolveMigrationConflicts Kernel dims = gridDim %d and blockDim = %d", pDims[0].x, pDims[1].x);
+    std::vector<int> devices = getDevices();
+    int placeStride = getPlacesStride(placeHandle);
+    int* ghostPlaceMult = getGhostPlaceMultiples(placeHandle);
+    int ghostPlaces = getDimSize()[0] * MAX_AGENT_TRAVEL;
+    int* nAgentsDev = getnAgentsDev(agentHandle);
+
+    Logger::debug("Dispatcher::MigrateAgents: number of places: %d", getPlaceCount(placeHandle));
+    for (int i = 0; i < devices.size(); ++i) {
+        Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", devices.at(i));
+        cudaSetDevice(devices.at(i));
+        resolveMigrationConflictsKernel<AgentType, AgentStateType><<<pDims[0], pDims[1]>>>((gh_ptrs.at(i)).first, placeStride);
+        CHECK();
+        cudaDeviceSynchronize();		
+    }
+
+    std::vector<Agent**> a_ptrs = getDevAgents(agentHandle);
+    dim3* aDims = getAgentsThreadBlockDims(agentHandle);  
+    Logger::debug("Dispatcher::MigrateAgents: number of agents: %d", getNumAgents(agentHandle));
+    for (int i = 0; i < devices.size(); ++i) {
+        Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel() on device: %d with number of agents = %d", devices.at(i), nAgentsDev[i]);
+        cudaSetDevice(devices.at(i));
+        updateAgentLocationsKernel<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>(a_ptrs.at(i), nAgentsDev[i]);
+        CHECK();
+        cudaDeviceSynchronize();
+    }
+
+    std::vector<void*> a_ste_ptrs = getAgentsState(agentHandle);
+    //check each devices Agents for agents needing to move devices
+    for (int i = 0; i < devices.size(); ++i) {
+		cudaSetDevice(devices.at(i));
+        if (i % 2 == 0) {
+            // check right ghost stripe for Agents needing to move
+            moveAgentsDownKernel<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>
+                    (a_ptrs.at(i), a_ptrs.at(i + 1), (AgentStateType*)(a_ste_ptrs.at(i)), 
+					(AgentStateType*)(a_ste_ptrs.at(i + 1)),
+                    p_ptrs.at(i), p_ptrs.at(i + 1), i, placeStride, 
+                    ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i + 1]));
+			CHECK();
+			cudaDeviceSynchronize();
+            if (i != 0) {
+                // check left ghost stripe for Agents needing to move
+                moveAgentsUpKernel<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>
+                        (a_ptrs.at(i), a_ptrs.at(i - 1), (AgentStateType*)(a_ste_ptrs.at(i)), 
+						((AgentStateType*)a_ste_ptrs.at(i - 1)),
+                        p_ptrs.at(i), p_ptrs.at(i - 1), i, placeStride, 
+                        ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i - 1]));
+				CHECK();
+            }
+        }
+
+        else {
+			if (i != devices.size() - 1) {
+                // check right ghost stripe for Agents needing to move
+                moveAgentsDownKernel<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>
+                        (a_ptrs.at(i), a_ptrs.at(i + 1), (AgentStateType*)(a_ste_ptrs.at(i)), 
+						(AgentStateType*)(a_ste_ptrs.at(i + 1)),
+                        p_ptrs.at(i), p_ptrs.at(i + 1), i, placeStride, 
+                        ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i + 1]));
+				CHECK();
+            }
+
+			cudaDeviceSynchronize();
+            // check left ghost stripe for Agents needing to move
+            moveAgentsUpKernel<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>
+                    (a_ptrs.at(i), a_ptrs.at(i - 1), (AgentStateType*)(a_ste_ptrs.at(i)), 
+					(AgentStateType*)(a_ste_ptrs.at(i - 1)),
+                    p_ptrs.at(i), p_ptrs.at(i - 1), i, placeStride, 
+                    ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i - 1]));
+			CHECK();
+        }
+    }
+
+	// update total number of live agents
+	int sumAgents = 0;
+	for (int i = 0; i < activeDevices.size(); ++i) {
+		sumAgents += nAgentsDev[i];
+	}
+
+	// TODO: Update agent kernel dimensions for each device.
+
+	// Check ghostPlaces for traveled Agents and update pointers
+	for (int i = 1; i < activeDevices.size(); ++i) {
+		cudaSetDevice(activeDevices.at(i));
+		updateAgentPointersMovingDown<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>(p_ptrs.at(i), a_ptrs.at(i), 
+				nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i - 1], i);
+		CHECK();
+		cudaDeviceSynchronize();
+	}
+
+	for (int i = 0; i < activeDevices.size() - 1; ++i) {
+		cudaSetDevice(activeDevices.at(i));
+		updateAgentPointersMovingUp<AgentType, AgentStateType><<<aDims[0], aDims[1]>>>(p_ptrs.at(i), a_ptrs.at(i),
+				nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i], i);
+		CHECK();
+	}
+
+	devAgentsMap[agentHandle].nAgents = sumAgents;
+    Logger::debug("Exiting Dispatcher:: migrateAgents().");
+}
+
 } // end namespace
+#endif
