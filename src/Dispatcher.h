@@ -1,4 +1,5 @@
-
+#ifndef DISPATCHER_H
+#define DISPATCHER_H
 
 #pragma once
 
@@ -101,7 +102,8 @@ public:
 	/* Executed during manageAll() call on the collection of agents to complete the 
 	 * migration of the agents marked for migration.
 	 */
-	void migrateAgents(int agentHandle, int placeHandle);
+	// template<typename AgentType, typename AgentStateType>
+	// void migrateAgents(int agentHandle, int placeHandle);
 
 	/* Executed during manageAll() call on the collection of agents to complete the 
 	 * agent spawning procedure for the agents that invoked the spawn() function.
@@ -113,6 +115,8 @@ public:
 	int* getMaxAgents(int agentHandle);
 	
 	int* getNumAgentsInstantiated(int handle);
+
+	int getAgentStateSize(int handle);
 
 	int* getNAgentsDev(int handle);
 
@@ -137,6 +141,9 @@ public:
 	template<typename AgentType, typename AgentStateType>
 	void instantiateAgents (int handle, void *argument, 
 		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs);
+
+	template<typename AgentType, typename AgentStateType>
+	void manageAll(int agentHandle, int placeHandle);
 
 private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
@@ -180,9 +187,22 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 
 	//create host-side data model
 	model->instantiateAgents<AgentType, AgentStateType> (handle, argument, 
-		argSize, nAgents, deviceInfo->getnAgentsDev(handle));
+		argSize, nAgents, deviceInfo->getMaxAgents(handle), deviceInfo->getnAgentsDev(handle));
 	
 	Logger::debug("Exiting Dispatcher::instantiateAgents\n");
 }
 
+template<typename AgentType, typename AgentStateType>
+void Dispatcher::manageAll(int agentHandle, int placeHandle) {
+    // Step 1: kill all agents that need killing
+    // terminateAgents(handle);
+
+    // Step 2: migrate all agents that need migrating
+    deviceInfo->migrateAgents<AgentType, AgentStateType>(agentHandle, placeHandle);
+
+    // Step 3: spawn all new agents that need spawning
+    // spawnAgents(handle);
+}
+
 } // namespace mass
+#endif
