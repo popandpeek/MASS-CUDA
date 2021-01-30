@@ -1,5 +1,6 @@
 #include "Ant.h"
 
+
 MASS_FUNCTION Ant::Ant(mass::AgentState *state, void *argument) :
         Agent(state, argument) {
     myState = (AntState*) state;
