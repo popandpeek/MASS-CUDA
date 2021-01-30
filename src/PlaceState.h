@@ -1,6 +1,6 @@
 
-#ifndef PLACESTATE_H_
-#define PLACESTATE_H_
+#ifndef PLACESTATE_H
+#define PLACESTATE_H
 
 #include "settings.h"
 
