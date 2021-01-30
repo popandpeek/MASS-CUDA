@@ -22,7 +22,7 @@ public:
 
     template<typename AgentType, typename AgentStateType>
     static AgentsModel* createAgents(int handle, void *argument, 
-        int argSize, int nAgents, int* nAgentsDev, int nDevices);
+        int argSize, int nAgents, int* nAgentsDev, int* maxAgents, int nDevices);
 
 private:
     // initialized in createAgents function
@@ -32,21 +32,23 @@ private:
     int handle;
     unsigned numElements;
     int* nAgentsDev; // tracking array for agents on each device
+    int* maxAgents;
     AgentsModel(int handle, int nAgents);
 };
 
 template<typename AgentType, typename AgentStateType>
-AgentsModel* AgentsModel::createAgents(int handle, void *argument, int argSize, int nAgents, int* nAgentsDev, int nDevices) {
+AgentsModel* AgentsModel::createAgents(int handle, void *argument, int argSize, int nAgents, int* nAgentsDev, int* maxAgents, int nDevices) {
     Logger::debug("Entering AgentsModel::createAgents");
 
     AgentsModel *am = new AgentsModel(handle, nAgents);
     am->nAgentsDev = nAgentsDev;
+    am->maxAgents = maxAgents;
     am->stateBytes = sizeof(AgentStateType);
-    Logger::debug("AgentsModel::createAgents: nAgentsDev = %d; State bytes = %d", am->nAgentsDev[0] + am->nAgentsDev[1], am->stateBytes);
     for (int i = 0; i < nDevices; ++i) {
-        Agent** a_ptrs = new Agent*[am->nAgentsDev[i]];
-        AgentStateType* tmpPtr = new AgentStateType[am->nAgentsDev[i]];
-        for (int j = 0; j < am->nAgentsDev[i]; ++j) {
+        Logger::debug("AgentsModel::createAgents: device: %d : nAgentsDev = %d; maxAgents = %d State bytes = %d", i, am->nAgentsDev[i] + am->maxAgents[i], am->stateBytes);
+        Agent** a_ptrs = new Agent*[am->maxAgents[i]];
+        AgentStateType* tmpPtr = new AgentStateType[am->maxAgents[i]];
+        for (int j = 0; j < am->maxAgents[i]; ++j) {
             Agent *ag = new AgentType((AgentState*) &(tmpPtr[j]), argument);
             a_ptrs[j] = ag;
         }
