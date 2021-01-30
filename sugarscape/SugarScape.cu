@@ -101,12 +101,10 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	
 	Logger::debug("placesSize[0] = %d, placesSize[1] = %d", placesSize[0], placesSize[1]);
 	places->callAll(SugarPlace::SET_SUGAR); //set proper initial amounts of sugar	
-	displaySugar(places, 0, placesSize);
 	
 	// initialize agents:
 	Agents *agents = Mass::createAgents<Ant, AntState> (1 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nAgents, 0 /*placesHandle*/);
-	displaySugar(places, 0, placesSize);
 
 	//create an array of random agentSugar and agentMetabolism values
 	int agentSugarArray[nAgents];
@@ -119,8 +117,6 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	//set proper initial amounts of sugar and metabolism for agents
 	agents->callAll(Ant::SET_INIT_SUGAR, agentSugarArray, sizeof(int) * nAgents);
 	agents->callAll(Ant::SET_INIT_METABOLISM, agentMetabolismArray, sizeof(int) * nAgents);
-
-	displayAgents(agents, 0);
 
 	// create neighborhood for average pollution calculations
 	vector<int*> neighbors;
@@ -166,10 +162,13 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		
 		agents->callAll(Ant::MIGRATE);
 
-		agents->manageAll();
+		// agents->manageAll<Ant, AntState>();
+		Mass::manageAll<Ant, AntState>(1, 0);
 
 		agents->callAll(Ant::METABOLIZE);
-		agents->manageAll();
+
+		// agents->manageAll<Ant, AntState>();
+		Mass::manageAll<Ant, AntState>(1, 0);
 
 		// display intermediate results
 		if (interval != 0 && (t % interval == 0 || t == max_time - 1)) {
@@ -184,6 +183,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		displaySugar(places, t, placesSize);
 		displayAgents(agents, t);
 	}
+	
 	// terminate the processes
 	Mass::finish();
 }
