@@ -1,6 +1,6 @@
 
-#ifndef PLACESMODEL_H_
-#define PLACESMODEL_H_
+#ifndef PLACESMODEL_H
+#define PLACESMODEL_H
 
 #include <map>
 #include <vector>
