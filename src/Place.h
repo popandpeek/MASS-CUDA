@@ -1,3 +1,5 @@
+#ifndef PLACE_H
+#define PLACE_H
 
 #pragma once
 
@@ -21,16 +23,12 @@ class PlaceState;
 class Place {
 
 public:
-	/**
-	Default constructor
-	*/
-	MASS_FUNCTION Place(PlaceState* state);
 	
 	/**
 	The constructor called on the GPU device.
 	A contiguous space of arguments is passed to the constructor.
 	*/
-	MASS_FUNCTION Place(PlaceState* state, void *args);
+	MASS_FUNCTION Place(PlaceState* state, void *args = NULL);
 	
 	/**
 	Called by MASS while executing Places.callAll(). 
@@ -105,3 +103,4 @@ public:
 
 };
 } /* namespace mass */
+#endif
