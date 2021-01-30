@@ -5,10 +5,7 @@
 
 namespace mass {
 
-MASS_FUNCTION Place::Place(PlaceState* state) { 
-	this->state = state;
-}
-
+	
 /**
  *  A contiguous space of arguments is passed
  *  to the constructor.
