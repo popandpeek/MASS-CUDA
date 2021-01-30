@@ -1,3 +1,5 @@
+#ifndef PLACES_H
+#define PLACES_H
 
 #pragma once
 
@@ -161,3 +163,4 @@ private:
 };
 
 } /* namespace mass */
+#endif
