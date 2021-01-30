@@ -1,4 +1,7 @@
 
+#ifndef AGENTS_H 
+#define AGENTS_H
+
 #pragma once
 
 #include <map>
@@ -66,7 +69,8 @@ public:
     /*
      Executes agent termination / migration / spawning, which was initiated since the previous call to manageAll()
      */
-    void manageAll();
+    // template<typename AgentType, typename AgentStateType>
+    // void manageAll();
 
     /**
      *  Returns an array of pointers to the Agent elements contained in this
@@ -87,3 +91,4 @@ private:
 };
 
 } /* namespace mass */
+#endif
