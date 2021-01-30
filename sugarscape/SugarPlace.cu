@@ -7,9 +7,6 @@ static const int maxMtSugar = 4; //max level of sugar in mountain peak
 using namespace std;
 using namespace mass;
 
-MASS_FUNCTION SugarPlace::SugarPlace(PlaceState *state) : Place(state) { 
-    myState = (SugarPlaceState*) state;
-}
 
 MASS_FUNCTION SugarPlace::SugarPlace(PlaceState *state, void *argument) :
 		Place(state, argument) {
@@ -64,8 +61,8 @@ MASS_FUNCTION void SugarPlace::incSugarAndPollution() {
 // Calculates average pollution between 4 neighbors
 MASS_FUNCTION void SugarPlace::avePollutions() { 
     
-    int idx = myState -> devIndex;
-    int* size = myState -> devSize;
+    int idx = myState -> index;
+    int* size = myState -> size;
 
     double top, right, bottom, left;
 
@@ -111,9 +108,9 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     int* size = myState -> size;
 
     for(int i=0; i< maxVisible; i++) { //displacement to the right
-        // TODO: fix the possibility to migrate across the plane border to next line
-        if (idx + i + 1 < size[0] * (size[1] + maxVisible)) {
+        if (idx + i + 1 < (size[0] * size[1])) {
             if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
+                // casts neighbor Place as SugarPlace and assigns to migrationDest
                 myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
                 myState -> migrationDestRelativeIdx = i;
                 return;
@@ -122,7 +119,7 @@ MASS_FUNCTION void SugarPlace::findMigrationDestination() {
     }
 
     for (int i=maxVisible; i<maxVisible*2; i++) { //displacement up
-        if (idx - (i-maxVisible+1) * (size[1] + maxVisible) > 0) {
+        if (idx - ((i-maxVisible+1) * size[1]) > 0) {
             if (((SugarPlace *)(myState-> neighbors[i])) -> isGoodForMigration()) {
                 myState -> migrationDest = (SugarPlace*)myState-> neighbors[i];
                 myState -> migrationDestRelativeIdx = i;
