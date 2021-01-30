@@ -61,17 +61,17 @@ void Agents::callAll(int functionId, void *argument, int argSize) {
     dispatcher->callAllAgents(handle, functionId, argument, argSize);
 }
 
+// template<typename AgentType, typename AgentStateType>
+// void Agents::manageAll() {
+//     // Step 1: kill all agents that need killing
+//     // dispatcher->terminateAgents(handle);
 
-void Agents::manageAll() {
-    // Step 1: kill all agents that need killing
-    dispatcher->terminateAgents(handle);
+//     // Step 2: migrate all agents that need migrating
+//     dispatcher->migrateAgents<AgentType, AgentStateType>(handle, placesHandle);
 
-    // Step 2: migrate all agents that need migrating
-    dispatcher->migrateAgents(handle, placesHandle);
-
-    // Step 3: spawn all new agents that need spawning
-    dispatcher->spawnAgents(handle);
-}
+//     // Step 3: spawn all new agents that need spawning
+//     // dispatcher->spawnAgents(handle);
+// }
 
 Agent** Agents::getElements() {
     std::vector<Agent**> elemPtrsVec = dispatcher->refreshAgents(handle); 
@@ -82,12 +82,6 @@ Agent** Agents::getElements() {
         mass::Agent** tmp_ptr = elemPtrsVec.at(i);
         for (int j = 0; j < numAgentsDev[i]; ++j) {
             retVals[count++] = tmp_ptr[j];
-        }
-    }
-
-    if (elemPtrs.size() > 0) {
-        for (int i = 0; i < elemPtrs.size(); ++i) {
-            delete[] elemPtrs.at(i);
         }
     }
 
