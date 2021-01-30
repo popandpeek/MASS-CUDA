@@ -20,8 +20,7 @@ public:
 	const static int FIND_MIGRATION_DESTINATION = 4;
 	const static int SELECT_AGENT_TO_ACCEPT = 5;
 
-	MASS_FUNCTION SugarPlace(mass::PlaceState *state);
-	MASS_FUNCTION SugarPlace(mass::PlaceState *state, void *argument);
+	MASS_FUNCTION SugarPlace(mass::PlaceState *state, void *argument = NULL);
 	MASS_FUNCTION ~SugarPlace();
 
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
