@@ -1,3 +1,6 @@
+#ifndef AGENT_H
+#define AGENT_H
+
 #pragma once
 #define MASS_FUNCTION __host__ __device__
 #include<cuda_runtime.h>
@@ -47,6 +50,8 @@ public:
     */
     MASS_FUNCTION int getPlaceIndex();
 
+    MASS_FUNCTION int getPlaceDevIndex();
+
     /**
     Returns the unique index of this Agent
     */
@@ -71,11 +76,16 @@ public:
     MASS_FUNCTION void setAlive();
 
     /**
+    Sets the traveled status of Agent -> True for having traveled devices, false for not
+    */
+    MASS_FUNCTION void setTraveled(bool);
+
+    MASS_FUNCTION bool isTraveled();  
+    /**
     Sets the agent status to inactive. Agents place is set to vacant and 
     he agent is excluded from all the subsequent callAll() function calls.
     */
     MASS_FUNCTION void terminateAgent();
-
 
     /**
     Moves the agent from the current place to the destination place. 
@@ -101,3 +111,4 @@ public:
     AgentState *state;
 };
 }
+#endif
