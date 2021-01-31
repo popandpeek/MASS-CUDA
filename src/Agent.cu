@@ -67,6 +67,14 @@ MASS_FUNCTION void Agent::terminateAgent() {
     state -> index = -1;
 }
 
+MASS_FUNCTION void Agent::terminateGhostAgent() {
+    state -> isAlive = false;
+    state-> agentTraveled = false;
+    state->place = NULL;
+    state -> index = -1;
+}
+
+
 MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelativeIdx) {
     state -> destPlace = destination;
     destination -> addMigratingAgent(this, destinationRelativeIdx);

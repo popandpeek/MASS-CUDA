@@ -68,8 +68,6 @@ void Places::exchangeAll(std::vector<int*> *destinations) {
  */
 void Places::exchangeAll(std::vector<int*> *destinations, int functionId, void *argument, int argSize) {
 	dispatcher->exchangeAllPlaces(handle, destinations, functionId, argument, argSize);
-	// dispatcher->exchangeAllPlaces(handle, destinations);
-	// dispatcher->callAllPlaces(handle, functionId, argument, argSize);
 }
 
 Place** Places::getElements() {
@@ -89,15 +87,6 @@ Place** Places::getElements() {
 			count++;
 		}
 	}
-
-	// if (elemPtrs.size() > 0) {
-	// 	for (int i = 0; i < elemPtrs.size(); ++i) {
-	// 		Logger::debug("Places::getElements: Before delete on vector location %d", i);
-	// 		delete[] (elemPtrs.at(i));
-	// 		Logger::debug("Places::getElements: Successfully deletes from location %d", i);
-	// 	}
-	// 	elemPtrs = {};
-	// }
 
 	elemPtrs = elemPtrsVec;
 	Logger::debug("Places::getElements: Finished.");

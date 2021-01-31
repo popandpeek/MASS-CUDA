@@ -139,15 +139,18 @@ int* DeviceConfig::getMaxAgents(int handle) {
 
 void DeviceConfig::setAgentsThreadBlockDims(int handle) {
 	// TODO: Need to update aDims to hold multiple sets
-	Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): numPlaces == %d, numDevices == %d", devAgentsMap[handle].nAgents, activeDevices.size());
-	int numBlocks = (devAgentsMap[handle].nAgents / activeDevices.size()) / BLOCK_SIZE + 1;
-	int nThr = (devAgentsMap[handle].nAgents / activeDevices.size()) / numBlocks + 1;
-	dim3 bDim = dim3(numBlocks);
-	dim3 tDim = dim3(nThr);
-
-	devAgentsMap[handle].aDims[0] = bDim;
-	devAgentsMap[handle].aDims[1] = tDim;
-	Logger::debug("setAgentsThreadBlockDims(): numBlocks == %u, %u, %u; nThr == %u, %u, %u", bDim.x, bDim.y, bDim.z, tDim.x, tDim.y, tDim.z);
+	Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): numAgents == %d, numDevices == %d", devAgentsMap[handle].nAgents, activeDevices.size());
+	
+	for (int i = 0; i < activeDevices.size(); ++i) {
+		Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): maxAgents[%d] = %d", i, devAgentsMap[handle].maxAgents[i]);
+		int numBlocks = (devAgentsMap[handle].maxAgents[i] / BLOCK_SIZE) + 1;
+		int nThr = (devAgentsMap[handle].maxAgents[i] / numBlocks) + 1;
+		dim3 bDim = dim3(numBlocks, 1, 1);
+		dim3 tDim = dim3(nThr, 1, 1);
+		std::pair<dim3, dim3> temp = std::make_pair(bDim, tDim);
+		devAgentsMap[handle].aDims.push_back(temp);
+		Logger::debug("DeviceConfig::setAgentsThreadBlockDims: bDim = %d, tDim = %d", (devAgentsMap[handle].aDims.at(i).first).x, (devAgentsMap[handle].aDims.at(i).second).x);
+	}
 }
 
 int* DeviceConfig::getnAgentsDev(int handle) {
@@ -158,7 +161,7 @@ std::vector<Agent**> DeviceConfig::getBagOAgentsDevPtrs(int agentHandle) {
 	return devAgentsMap[agentHandle].collectedAgents;
 }
 
-dim3* DeviceConfig::getAgentsThreadBlockDims(int handle) {
+std::vector<std::pair<dim3, dim3>> DeviceConfig::getAgentsThreadBlockDims(int handle) {
 	return devAgentsMap[handle].aDims;
 }
 
@@ -179,18 +182,23 @@ __global__ void destroyAgentsKernel(Agent **agents, int qty) {
 }
 
 void DeviceConfig::deleteAgents(int handle) {
+	Logger::debug("DeviceConfig:: Entering deleteAgents.");
 	AgentArray a = devAgentsMap[handle];
-	dim3* aDims = getAgentsThreadBlockDims(handle);
 
 	for (int i = 0; i < a.devPtrs.size(); ++i) {
-		destroyAgentsKernel<<<a.aDims[0], a.aDims[1]>>>(a.devPtrs.at(i), a.maxAgents[i]);
+		Logger::debug("DeviceConfig::deleteAgents: device: %d, Number to delete: %d.", i, a.maxAgents[i]);
+		cudaSetDevice(activeDevices.at(i));
+		destroyAgentsKernel<<<a.aDims.at(i).first, a.aDims.at(i).second>>>(a.devPtrs.at(i), a.maxAgents[i]);
 		CHECK();
 		CATCH(cudaFree(a.devPtrs.at(i)));
 		CATCH(cudaFree(a.devStates.at(i)));
-		cudaDeviceSynchronize();
+		Logger::debug("DeviceConfig::deleteAgents: CUDA memory freed on device: %d", i);
 	}
 
+	delete[] a.nAgentsDev;
+	delete[] a.maxAgents;
 	devAgentsMap.erase(handle);
+	Logger::debug("DeviceConfig::deleteAgents: SUCCESS!");
 }
 
 __global__ void destroyPlacesKernel(Place **places, int qty) {
@@ -201,20 +209,26 @@ __global__ void destroyPlacesKernel(Place **places, int qty) {
 	}
 }
 
+// TODO: NULL all helper pointers before the kernel
 void DeviceConfig::deletePlaces(int handle) {
+	Logger::debug("DeviceConfig:: Entering deletePlaces.");
 	PlaceArray p = devPlacesMap[handle];
 	dim3* pDims = getPlacesThreadBlockDims(handle);
 
 	
 	for (int i = 0; i < p.devPtrs.size(); ++i) {
+		Logger::debug("DeviceConfig::deletePlaces: device: %d, Number to delete: %d.", i, p.placesStride + (p.ghostSpaceMultiple[i] * MAX_AGENT_TRAVEL * dimSize[0]));
+		cudaSetDevice(activeDevices.at(i));
 		destroyPlacesKernel<<<p.pDims[0], p.pDims[1]>>>(p.devPtrs.at(i), 
 				(p.placesStride + (p.ghostSpaceMultiple[i] * MAX_AGENT_TRAVEL * dimSize[0])));
 		CHECK();
 		CATCH(cudaFree(p.devPtrs.at(i)));
 		CATCH(cudaFree(p.devStates.at(i)));
+		Logger::debug("DeviceConfig::deletePlaces: CUDA memory freed on device: %d", i);
 	}
 
 	devPlacesMap.erase(handle);
+	Logger::debug("DeviceConfig::deletePlaces: SUCCESS!");
 }
 
 int* DeviceConfig::getDimSize() {
@@ -242,10 +256,24 @@ void* DeviceConfig::getPlaceStatesForTransfer(int handle, int device) {
 	return tmp[device].second;
 }
 
+__global__ void cleanGhostPointers(Place** p_ptrs, int qty) {
+	unsigned idx = getGlobalIdx_1D_1D();
+	if (idx < qty) {
+		PlaceState* state = (PlaceState*)(p_ptrs[idx]->getState());
+		for (int i = 0; i < MAX_NEIGHBORS; ++i) {
+			state->neighbors[i] = NULL;
+		}
+		for (int i = 0; i < MAX_AGENTS; ++i) {
+			state->agents[i] = NULL;
+		}
+	}
+}
+
 // copy PlaceState's to neighbor device
 void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 	std::vector<void*> devStates = getPlaceStates(handle);
 	int placesStride = getPlacesStride(handle);
+	dim3* pDims = getPlacesThreadBlockDims(handle);
     int flip = 1;
 	Logger::debug("DeviceConfig::copyGhostPlaces - entering copyGhostPlaces");
 	Logger::debug("Handle: %d and stateSize = %d and num PlaceState top copy: %d", handle, stateSize, flip * MAX_AGENT_TRAVEL * getDimSize()[0]);
@@ -255,37 +283,35 @@ void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 		CATCH(cudaMemcpyAsync(devPlacesMap[handle].topNeighborGhosts.at(i + 1).second, 
 				devPlacesMap[handle].bottomGhosts.at(i).second, 
 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
-        // TODO: call kernel function to set pointers to NULL?
+		cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].topNeighborGhosts.at(i + 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         if (i != 0) {
             // copy left
             cudaSetDevice(activeDevices.at(i - 1));
 			CATCH(cudaMemcpyAsync(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).second, 
 					devPlacesMap[handle].topGhosts.at(i).second, 
 					MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
-            // TODO: call kernel function to set pointers to NULL?
+			cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         }
         if (flip == 1) {
             flip = 0;
         }
     }
 
-    // wait event?
     for (int i = 1; i < activeDevices.size(); i+=2) {
         // copy left
         cudaSetDevice(activeDevices.at(i - 1));
 		CATCH(cudaMemcpyAsync(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).second, 
 				devPlacesMap[handle].topGhosts.at(i).second, 
 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
-        // TODO: call kernel function to set pointers to NULL?
+		cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         if (i != activeDevices.size() - 1) {
             // copy right
             cudaSetDevice(activeDevices.at(i + 1));
 			CATCH(cudaMemcpyAsync(devPlacesMap[handle].topNeighborGhosts.at(i + 1).second, 
 					devPlacesMap[handle].topGhosts.at(i).second, 
 					MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
-            // TODO: call kernel function to set pointers to NULL?
+			cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].topNeighborGhosts.at(i + 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         }
-
         if (flip == 0) {
             flip = 1;
         }

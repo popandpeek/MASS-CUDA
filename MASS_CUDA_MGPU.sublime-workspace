@@ -38,6 +38,14 @@
 				"buffer_size": 4156,
 				"line_ending": "Unix"
 			}
+		},
+		{
+			"file": "/usr/local/cuda-11/samples/6_Advanced/threadMigration/threadMigration.cpp",
+			"settings":
+			{
+				"buffer_size": 14140,
+				"line_ending": "Unix"
+			}
 		}
 	],
 	"build_system": "",
@@ -203,7 +211,7 @@
 	"groups":
 	[
 		{
-			"selected": 1,
+			"selected": 2,
 			"sheets":
 			[
 				{
@@ -231,7 +239,7 @@
 						"translation.y": 408.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -257,6 +265,34 @@
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/usr/local/cuda-11/samples/6_Advanced/threadMigration/threadMigration.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 14140,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 4221.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,

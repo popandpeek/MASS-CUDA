@@ -87,6 +87,8 @@ public:
     */
     MASS_FUNCTION void terminateAgent();
 
+    MASS_FUNCTION void terminateGhostAgent();
+
     /**
     Moves the agent from the current place to the destination place. 
     The actual migration is performed during the subsequent Agents::manageAll() call. 

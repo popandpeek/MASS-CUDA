@@ -398,10 +398,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
 void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument, int argSize) {
     if (initialized) {
         Logger::debug("Dispatcher::callAllAgents: Calling all on agents[%d]. Function id = %d", agentHandle, functionId);
-
-        dim3* aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
-        Logger::debug("Kernel dims = gridDim %d and blockDim = %d", aDims[0].x, aDims[1].x);
-
+        std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
         std::vector<int> devices = deviceInfo->getDevices();
         std::vector<Agent**> agtsPtrs = deviceInfo->getDevAgents(agentHandle); 
         int* strides = deviceInfo->getnAgentsDev(agentHandle);
@@ -416,7 +413,7 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument, 
                 CATCH(cudaMalloc((void** ) &argPtr, argSize));
 			    CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
             }
-            callAllAgentsKernel<<<aDims[0], aDims[1]>>>(agtsPtrs.at(i), strides[i], functionId, argPtr);
+            callAllAgentsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(agtsPtrs.at(i), strides[i], functionId, argPtr);
             CHECK();
             cudaDeviceSynchronize();
             if (argPtr != NULL) {
@@ -451,12 +448,12 @@ void Dispatcher::terminateAgents(int agentHandle) {
     // 2. iterate over devices
     //     a. activate device
     //     b. kernel function to accumulate count of dead agents from each place
-    dim3* aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
+    std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
     for (int i = 0; i < agentDevPtrs.size(); ++i) {
         cudaSetDevice(devices.at(i));
         cudaMalloc((void** ) &(dAgentTerminateCount.at(i)), sizeof(int));
         cudaMemcpy(dAgentTerminateCount.at(i), hAgentTerminateCount.at(i), sizeof(int), H2D);
-        // terminateAgentsCount<<<aDims[0], aDims[1]>>>(agentDevPtrs.at(i), nAgentsDev[i], dAgentTerminateCount.at(i));
+        // terminateAgentsCount<<<aDims.first, aDims.second>>>(agentDevPtrs.at(i), nAgentsDev[i], dAgentTerminateCount.at(i));
     }
 
     // 3. initialize ds for each bag of collected agents
@@ -469,8 +466,8 @@ void Dispatcher::spawnAgents(int handle) {
     
     Logger::debug("Inside Dispatcher::spawnAgents()");
     // std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(handle);
-    // dim3* aDims = deviceInfo->getAgentsThreadBlockDims(handle);
-    // Logger::debug("Kernel dims = gridDim %d and blockDim = %d", aDims[0].x, aDims[1].x);
+    // std::vector<std::pair<dim3, dim3>> aDims = deviceConfig->getAgentsThreadBlockDims(agentHandle);
+    // Logger::debug("Kernel dims = gridDim %d and blockDim = %d", aDims.first.x, aDims.second.x);
 
     // std::vector<int> devices = deviceInfo->getDevices();
     // int* nAgentsDevs = deviceInfo->getnAgentsDev(handle);
@@ -484,7 +481,7 @@ void Dispatcher::spawnAgents(int handle) {
 
     // for (int i = 0; i < devices.size(); ++i) {
     //     cudaSetDevice(devices.at(i));
-    //     spawnAgentsKernel<<<aDims[0], aDims[1]>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
+    //     spawnAgentsKernel<<<aDims.first, aDims.second>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
     //     CHECK();
 
     //     // Is this necessary? If so, may need to accumulate count of results above
