@@ -1,4 +1,7 @@
 
+#ifndef MASS_H
+#define MASS_H
+
 #pragma once
 
 #include <iostream>
@@ -65,8 +68,10 @@ public:
 	 */
 	template<typename AgentType, typename AgentStateType>
 	static Agents* createAgents(int handle, void *argument, int argSize,
-			int nAgents, int placesHandle, int maxAgents =0, int* placeIdxs = NULL);
+			int nAgents, int placesHandle, int maxAgents = 0, int* placeIdxs = NULL);
 
+	template<typename AgentType, typename AgentStateType>
+	static void manageAll(int agentHandle, int placeHandle);
 
 private:
 
@@ -114,5 +119,10 @@ Agents* Mass::createAgents(int handle, void *argument, int argSize,
 	return agents;
 }
 
+template<typename AgentType, typename AgentStateType>
+void Mass::manageAll(int agentHandle, int placeHandle) {
+	dispatcher->manageAll<AgentType, AgentStateType>(agentHandle, placeHandle);
+}
 
 } /* namespace mass */
+#endif
