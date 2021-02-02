@@ -3,6 +3,7 @@
 
 #include "DeviceConfig.h"
 #include "Place.h"
+#include "PlaceState.h"
 #include "cudaUtil.h"
 #include "Logger.h"
 #include "MassException.h"
@@ -32,24 +33,27 @@ DeviceConfig::~DeviceConfig() {
 }
 
 void DeviceConfig::freeDevice() {
-	Logger::debug("deviceConfig free ");
-
-	// Delete agents:
+	Logger::debug("DeviceConfig::freeDevice()");
+	Logger::debug("deviceConfig delete Agent's");
 	std::map<int, AgentArray>::iterator it_a = devAgentsMap.begin();
+	int agentsMapSize = devAgentsMap.size();
 	while (it_a != devAgentsMap.end()) {
 		deleteAgents(it_a->first);
-		++it_a;
+		devAgentsMap.erase(it_a++);
 	}
 	devAgentsMap.clear();
 
 	// Delete places:
+	Logger::debug("deviceConfig delete Place's");
 	std::map<int, PlaceArray>::iterator it_p = devPlacesMap.begin();
+	int placesSize = devPlacesMap.size();
 	while (it_p != devPlacesMap.end()) {
 		deletePlaces(it_p->first);
-		++it_p;
+		Logger::debug("DeviceConfig::freeDevice(): Returns from deletePlaces().");
+		devPlacesMap.erase(it_p++);
 	}
-	devPlacesMap.clear();
 
+	devPlacesMap.clear();
 	for (std::size_t i = 0; i < activeDevices.size(); ++i) {
 		CATCH(cudaSetDevice(activeDevices.at(i)));
 		CATCH(cudaDeviceReset());
@@ -184,7 +188,6 @@ __global__ void destroyAgentsKernel(Agent **agents, int qty) {
 void DeviceConfig::deleteAgents(int handle) {
 	Logger::debug("DeviceConfig:: Entering deleteAgents.");
 	AgentArray a = devAgentsMap[handle];
-
 	for (int i = 0; i < a.devPtrs.size(); ++i) {
 		Logger::debug("DeviceConfig::deleteAgents: device: %d, Number to delete: %d.", i, a.maxAgents[i]);
 		cudaSetDevice(activeDevices.at(i));
@@ -192,12 +195,12 @@ void DeviceConfig::deleteAgents(int handle) {
 		CHECK();
 		CATCH(cudaFree(a.devPtrs.at(i)));
 		CATCH(cudaFree(a.devStates.at(i)));
+		cudaDeviceSynchronize();
 		Logger::debug("DeviceConfig::deleteAgents: CUDA memory freed on device: %d", i);
 	}
 
-	delete[] a.nAgentsDev;
-	delete[] a.maxAgents;
-	devAgentsMap.erase(handle);
+	delete a.nAgentsDev;
+	delete a.maxAgents;
 	Logger::debug("DeviceConfig::deleteAgents: SUCCESS!");
 }
 
@@ -214,20 +217,19 @@ void DeviceConfig::deletePlaces(int handle) {
 	Logger::debug("DeviceConfig:: Entering deletePlaces.");
 	PlaceArray p = devPlacesMap[handle];
 	dim3* pDims = getPlacesThreadBlockDims(handle);
-
 	
 	for (int i = 0; i < p.devPtrs.size(); ++i) {
-		Logger::debug("DeviceConfig::deletePlaces: device: %d, Number to delete: %d.", i, p.placesStride + (p.ghostSpaceMultiple[i] * MAX_AGENT_TRAVEL * dimSize[0]));
+		Logger::debug("DeviceConfig::deletePlaces: device: %d, Number to delete: %d.", i, p.placesStride + (p.ghostSpaceMultiple[i] * dimSize[0]));
 		cudaSetDevice(activeDevices.at(i));
 		destroyPlacesKernel<<<p.pDims[0], p.pDims[1]>>>(p.devPtrs.at(i), 
-				(p.placesStride + (p.ghostSpaceMultiple[i] * MAX_AGENT_TRAVEL * dimSize[0])));
+				(p.placesStride + (p.ghostSpaceMultiple[i] * dimSize[0])));
 		CHECK();
 		CATCH(cudaFree(p.devPtrs.at(i)));
 		CATCH(cudaFree(p.devStates.at(i)));
+		cudaDeviceSynchronize();
 		Logger::debug("DeviceConfig::deletePlaces: CUDA memory freed on device: %d", i);
 	}
 
-	devPlacesMap.erase(handle);
 	Logger::debug("DeviceConfig::deletePlaces: SUCCESS!");
 }
 

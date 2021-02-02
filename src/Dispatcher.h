@@ -102,8 +102,7 @@ public:
 	/* Executed during manageAll() call on the collection of agents to complete the 
 	 * migration of the agents marked for migration.
 	 */
-	// template<typename AgentType, typename AgentStateType>
-	// void migrateAgents(int agentHandle, int placeHandle);
+	void migrateAgents(int agentHandle, int placeHandle);
 
 	/* Executed during manageAll() call on the collection of agents to complete the 
 	 * agent spawning procedure for the agents that invoked the spawn() function.
@@ -198,7 +197,8 @@ void Dispatcher::manageAll(int agentHandle, int placeHandle) {
     // terminateAgents(handle);
 
     // Step 2: migrate all agents that need migrating
-    deviceInfo->migrateAgents<AgentType, AgentStateType>(agentHandle, placeHandle);
+    // deviceInfo->migrateAgents<AgentType, AgentStateType>(agentHandle, placeHandle);
+	migrateAgents(agentHandle, placeHandle);
 
     // Step 3: spawn all new agents that need spawning
     // spawnAgents(handle);

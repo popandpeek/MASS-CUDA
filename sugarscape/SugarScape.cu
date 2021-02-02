@@ -162,13 +162,13 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		
 		agents->callAll(Ant::MIGRATE);
 
-		// agents->manageAll<Ant, AntState>();
-		Mass::manageAll<Ant, AntState>(1, 0);
+		agents->manageAll();
+		// Mass::manageAll<Ant, AntState>(1, 0);
 
 		agents->callAll(Ant::METABOLIZE);
 
-		// agents->manageAll<Ant, AntState>();
-		Mass::manageAll<Ant, AntState>(1, 0);
+		agents->manageAll();
+		// Mass::manageAll<Ant, AntState>(1, 0);
 
 		// display intermediate results
 		if (interval != 0 && (t % interval == 0 || t == max_time - 1)) {

@@ -69,8 +69,7 @@ public:
     /*
      Executes agent termination / migration / spawning, which was initiated since the previous call to manageAll()
      */
-    // template<typename AgentType, typename AgentStateType>
-    // void manageAll();
+    void manageAll();
 
     /**
      *  Returns an array of pointers to the Agent elements contained in this

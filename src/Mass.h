@@ -119,10 +119,10 @@ Agents* Mass::createAgents(int handle, void *argument, int argSize,
 	return agents;
 }
 
-template<typename AgentType, typename AgentStateType>
-void Mass::manageAll(int agentHandle, int placeHandle) {
-	dispatcher->manageAll<AgentType, AgentStateType>(agentHandle, placeHandle);
-}
+// template<typename AgentType, typename AgentStateType>
+// void Mass::manageAll(int agentHandle, int placeHandle) {
+// 	dispatcher->manageAll<AgentType, AgentStateType>(agentHandle, placeHandle);
+// }
 
 } /* namespace mass */
 #endif
