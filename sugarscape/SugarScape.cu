@@ -22,6 +22,7 @@ static const int maxInitAgentSugar = 10;
 SugarScape::SugarScape() {
 
 }
+
 SugarScape::~SugarScape() {
 
 }
@@ -107,12 +108,13 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 			sizeof(double), nAgents, 0 /*placesHandle*/);
 
 	//create an array of random agentSugar and agentMetabolism values
-	int agentSugarArray[nAgents];
-	int agentMetabolismArray[nAgents];
+	int* agentSugarArray = new int[nAgents];
+	int* agentMetabolismArray = new int[nAgents];
 	for (int i=0; i<nAgents; i++) {
 		agentSugarArray[i] = rand() % maxInitAgentSugar +1;
 		agentMetabolismArray[i] = rand() % maxMetabolism +1;
 	}
+
 
 	//set proper initial amounts of sugar and metabolism for agents
 	agents->callAll(Ant::SET_INIT_SUGAR, agentSugarArray, sizeof(int) * nAgents);
@@ -184,6 +186,9 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		displayAgents(agents, t);
 	}
 	
+	delete[] agentSugarArray;
+	delete[] agentMetabolismArray;
+
 	// terminate the processes
 	Mass::finish();
 }

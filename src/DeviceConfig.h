@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <curand_kernel.h>
+#include <curand.h>
 #include <map>
 #include <cassert>
 #include <unordered_set>
@@ -15,6 +17,7 @@
 #include "Logger.h"
 #include "GlobalConsts.h"
 #include "MassException.h"
+#include "settings.h"
 
 
 namespace mass {
@@ -101,6 +104,7 @@ public:
 
 	void* getPlaceStatesForTransfer(int handle, int device);
 	void copyGhostPlaces(int handle, int stateSize);
+	unsigned int* calculateRandomNumbers(int size);
 
 	template<typename P, typename S>
 	std::vector<Place**> instantiatePlaces(int handle, void *argument, int argSize,
@@ -122,6 +126,10 @@ private:
 
 	size_t freeMem;
 	size_t allMem;
+	size_t limit;
+
+	curandState *randState;
+	int randStateSize;
 
 	void deletePlaces(int handle);
 	void deleteAgents(int handle);
@@ -176,6 +184,7 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		int dimensions, int size[], int qty) {
 
 	Logger::debug("Entering DeviceConfig::instantiatePlaces\n");
+	Logger::debug("DeviceConfig::instantiatePlaces: mem limit == %llu", limit);
 	Logger::debug("Places size == size[0] = %d : size[1] = %d", size[0], size[1]);
 	if (devPlacesMap.count(handle) > 0) {
 		Logger::debug("DeviceConfig::instantiatePlaces: Places already there.");
@@ -226,17 +235,19 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	// set places dimensions
 	this->setDimensions(dimensions);
 	this->setDimSize(size);
-
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	Logger::debug("DeviceConfig: Constructor: allMem == %llu and freeMem == %llu", allMem, freeMem);
 	// create state vector of arrays to represent data on each device
 	int Sbytes = sizeof(S);
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		cudaSetDevice(activeDevices.at(i));
 		S* d_state = NULL;
 		CATCH(cudaMalloc(&d_state, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)) * Sbytes));
-		Logger::debug("DeviceConfig::instantiatePlaces: size of d_state = %d; size of sbytes = %d; number of places = %d", sizeof(*d_state), Sbytes, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)));
+		Logger::debug("DeviceConfig::instantiatePlaces: size of place = %d; size of place_state = %d; number of places = %d", sizeof(P), Sbytes, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)));
 		p.devStates.push_back((d_state));
 	}
-
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	Logger::debug("DeviceConfig: Constructor: allMem == %llu and freeMem == %llu", allMem, freeMem);
 	Logger::debug("DeviceConfig::InstantiatePlaces: Places State loaded into vector.");
 
 	// create place vector for device pointers on each device - includes ghost places
@@ -247,6 +258,9 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		CATCH(cudaMalloc(&tmpPlaces, (p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[i])) * ptrbytes));
 		p.devPtrs.push_back(tmpPlaces);
 	}
+
+	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	Logger::debug("DeviceConfig: Constructor: allMem == %llu and freeMem == %llu", allMem, freeMem);
 
 	int blockDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostRowSize) / BLOCK_SIZE + 1;
 	int threadDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostRowSize) / blockDim + 1;
@@ -340,7 +354,7 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 // TODO: Make else if clause a different kernel function?
 template<typename AgentType, typename AgentStateType>
 __global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state, void *arg, int nAgents, int maxAgents, int agentsPerDevSum) {
-	unsigned idx = getGlobalIdx_1D_1D(); // does this work for MGPU?
+	unsigned idx = getGlobalIdx_1D_1D();
 
 	if ((idx < nAgents)) {
 		// set pointer to corresponding state object
@@ -390,8 +404,7 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 	a.maxAgents = new int[activeDevices.size()]{};
 	a.stateSize = sizeof(AgentStateType);
 
-	PlaceArray places = devPlacesMap[placesHandle];
-
+	PlaceArray places = devPlacesMap.at(placesHandle);
 	Logger::debug("DeviceConfig::instantiateAgents() - Successfully loads (%d) places from memory.", places.qty);
 
 	// If no agent mapping provided, split agents evenly amongst devices/place chunks and randomly generate placeIdxs
@@ -499,7 +512,6 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 	}
 
 	Logger::debug("Finished agent instantiation kernel");
-
 	// Loop over devices and map agents to places on each device
 	int ghostPlaceChunkSize = 0;
 	for (int i = 0; i < activeDevices.size(); ++i) {
@@ -520,11 +532,14 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 		if (ghostPlaceChunkSize == 0) {
 			ghostPlaceChunkSize = dimSize[0] * MAX_AGENT_TRAVEL;
 		}
+
+		CATCH(cudaMemGetInfo(&freeMem, &allMem));
+		CATCH(cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize));
+		Logger::debug("DeviceConfig::instantiateAgents: mem limit == %llu", limit);
+		Logger::debug("DeviceConfig::instantiateAgents: allMem: %llu and freeMem: %llu", allMem, freeMem);
 	}
-
-	copyGhostPlaces(placesHandle, devPlacesMap[handle].stateSize);
-
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
+	
+	copyGhostPlaces(placesHandle, devPlacesMap.at(placesHandle).stateSize);
 	Logger::debug("Finished DeviceConfig::instantiateAgents.\n");
 	return a.devPtrs;
 }

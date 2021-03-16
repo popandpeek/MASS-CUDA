@@ -21,7 +21,6 @@ public:
     unsigned agentPop; // the population of agents on this place
 
     Agent* potentialNextAgents[N_DESTINATIONS]; //agents that expressed an intention to migrate into this place
-
 };
 
 } /* namespace mass */

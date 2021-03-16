@@ -35,7 +35,8 @@
 			"file": "Makefile",
 			"settings":
 			{
-				"buffer_size": 4156,
+				"buffer_size": 4272,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
@@ -211,7 +212,7 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -248,15 +249,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4156,
+						"buffer_size": 4272,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								411,
+								411
 							]
 						],
 						"settings":
@@ -264,10 +265,10 @@
 							"syntax": "Packages/Makefile/Makefile.sublime-syntax"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 663.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
@@ -295,7 +296,7 @@
 						"translation.y": 4221.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 1,
 					"type": "text"
 				}
 			]

@@ -1,2 +1,23 @@
 ========= CUDA-MEMCHECK
-========= ERROR SUMMARY: 0 errors
+========= Internal Memcheck Error: Dynamic initialization failed
+=========     Saved host backtrace up to driver entry point at error
+=========     Host Frame:/usr/lib/x86_64-linux-gnu/libcuda.so.1 (cuLaunchKernel + 0x2b8) [0x222dc8]
+=========     Host Frame:./bin/sugarscape [0x3e5cb]
+=========     Host Frame:./bin/sugarscape [0x8b080]
+=========     Host Frame:./bin/sugarscape [0xc1e7]
+=========     Host Frame:./bin/sugarscape [0xb9e7]
+=========     Host Frame:./bin/sugarscape [0xba9a]
+=========     Host Frame:./bin/sugarscape [0xcceb]
+=========     Host Frame:./bin/sugarscape [0xf6f3]
+=========     Host Frame:./bin/sugarscape [0xd27a]
+=========     Host Frame:./bin/sugarscape [0xc887]
+=========     Host Frame:./bin/sugarscape [0xafb4]
+=========     Host Frame:./bin/sugarscape [0x25c8d]
+=========     Host Frame:/lib/x86_64-linux-gnu/libc.so.6 (__libc_start_main + 0xe7) [0x21bf7]
+=========     Host Frame:./bin/sugarscape [0x8ffa]
+=========
+========= Error: process didn't terminate successfully
+========= Fatal UVM GPU fault of type invalid pde due to invalid address
+=========     during read access to address 0x00000000
+=========
+========= No CUDA-MEMCHECK results found

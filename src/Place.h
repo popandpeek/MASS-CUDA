@@ -60,7 +60,7 @@ public:
 	*/
 	MASS_FUNCTION int getDevIndex();
 	/**
-	Sets the index of this place to the specified integer value.
+	Sets the index of this place to the specif bn ied integer value.
 	*/
 	MASS_FUNCTION void setIndex(int index);
 

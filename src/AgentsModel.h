@@ -45,7 +45,7 @@ AgentsModel* AgentsModel::createAgents(int handle, void *argument, int argSize, 
     am->maxAgents = maxAgents;
     am->stateBytes = sizeof(AgentStateType);
     for (int i = 0; i < nDevices; ++i) {
-        Logger::debug("AgentsModel::createAgents: device: %d : nAgentsDev = %d; maxAgents = %d State bytes = %d", i, am->nAgentsDev[i] + am->maxAgents[i], am->stateBytes);
+        Logger::debug("AgentsModel::createAgents: device: %d : nAgentsDev = %d; maxAgents = %d State bytes = %d", i, am->nAgentsDev[i], am->maxAgents[i], am->stateBytes);
         Agent** a_ptrs = new Agent*[am->maxAgents[i]];
         AgentStateType* tmpPtr = new AgentStateType[am->maxAgents[i]];
         for (int j = 0; j < am->maxAgents[i]; ++j) {

@@ -71,6 +71,7 @@ public:
      */
     void manageAll();
 
+    void manageAllSpawnFirst();
     /**
      *  Returns an array of pointers to the Agent elements contained in this
      *  Agents object. This is an expensive operation since it requires memory

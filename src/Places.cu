@@ -154,4 +154,8 @@ Places::Places(int handle, int dimensions, int size[], Dispatcher *d) {
 	}
 }
 
+unsigned int* Places::getRandomNumbers(int size, int minVal, int maxVal) {
+	return dispatcher->calculateRandomNumbers(size, minVal, maxVal);
+}
+
 } /* namespace mass */

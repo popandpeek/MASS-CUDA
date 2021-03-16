@@ -1,6 +1,4 @@
 
-#include <curand.h>
-
 #include "DeviceConfig.h"
 #include "Place.h"
 #include "PlaceState.h"
@@ -19,13 +17,27 @@ DeviceConfig::DeviceConfig() :
 		activeDevices(-1) {
 	freeMem = 0;
 	allMem = 0;
+	limit = 0;
+	randState = NULL;
+	int randStateSize = 0;
 	Logger::warn("DeviceConfig::NoParam constructor");
 }
 
 DeviceConfig::DeviceConfig(std::vector<int> devices) {
 	activeDevices = devices;
-    devPlacesMap = map<int, PlaceArray>{};
+	devPlacesMap = map<int, PlaceArray>{};
 	devAgentsMap = map<int, AgentArray>{};
+	for (int i = 0; i < activeDevices.size(); ++i) {
+		CATCH(cudaSetDevice(activeDevices.at(i)));
+		CATCH(cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize));
+		CATCH(cudaMemGetInfo(&freeMem, &allMem));
+		Logger::debug("DeviceConfig: Constructor: mem limit == %llu", limit);
+		Logger::debug("DeviceConfig: Constructor: allMem == %llu", allMem);
+		size_t total =  size_t(2048) * size_t(2048) * size_t(1536);
+		CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, total));
+		CATCH(cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize));
+		Logger::debug("DeviceConfig: Constructor: mem limit == %llu", limit);
+	}
 }
 
 DeviceConfig::~DeviceConfig() {
@@ -97,8 +109,8 @@ int DeviceConfig::getPlaceCount(int handle) {
 
 void DeviceConfig::setPlacesThreadBlockDims(int handle) {
 	Logger::debug("DeviceConfig::setPlacesThreadBlockDims(): numPlaces == %d, numDevices == %d", devPlacesMap[handle].qty, activeDevices.size());
-	int numBlocks = (devPlacesMap[handle].placesStride + (2 * dimSize[0] * devPlacesMap[handle].ghostSpaceMultiple[0])) / BLOCK_SIZE + 1;
-	int nThr = (devPlacesMap[handle].placesStride + (2 * dimSize[0] * devPlacesMap[handle].ghostSpaceMultiple[0])) / numBlocks + 1;
+	int numBlocks = ((devPlacesMap[handle].placesStride + (2 * dimSize[0] * devPlacesMap[handle].ghostSpaceMultiple[0])) - 1) / BLOCK_SIZE + 1;
+	int nThr = ((devPlacesMap[handle].placesStride + (2 * dimSize[0] * devPlacesMap[handle].ghostSpaceMultiple[0])) - 1) / numBlocks + 1;
 	dim3 bDim = dim3(numBlocks);
 	dim3 tDim = dim3(nThr);
 
@@ -147,8 +159,8 @@ void DeviceConfig::setAgentsThreadBlockDims(int handle) {
 	
 	for (int i = 0; i < activeDevices.size(); ++i) {
 		Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): maxAgents[%d] = %d", i, devAgentsMap[handle].maxAgents[i]);
-		int numBlocks = (devAgentsMap[handle].maxAgents[i] / BLOCK_SIZE) + 1;
-		int nThr = (devAgentsMap[handle].maxAgents[i] / numBlocks) + 1;
+		int numBlocks = ((devAgentsMap[handle].maxAgents[i] - 1) / BLOCK_SIZE) + 1;
+		int nThr = ((devAgentsMap[handle].maxAgents[i] - 1) / numBlocks) + 1;
 		dim3 bDim = dim3(numBlocks, 1, 1);
 		dim3 tDim = dim3(nThr, 1, 1);
 		std::pair<dim3, dim3> temp = std::make_pair(bDim, tDim);
@@ -193,9 +205,9 @@ void DeviceConfig::deleteAgents(int handle) {
 		cudaSetDevice(activeDevices.at(i));
 		destroyAgentsKernel<<<a.aDims.at(i).first, a.aDims.at(i).second>>>(a.devPtrs.at(i), a.maxAgents[i]);
 		CHECK();
+		cudaDeviceSynchronize();
 		CATCH(cudaFree(a.devPtrs.at(i)));
 		CATCH(cudaFree(a.devStates.at(i)));
-		cudaDeviceSynchronize();
 		Logger::debug("DeviceConfig::deleteAgents: CUDA memory freed on device: %d", i);
 	}
 
@@ -216,20 +228,29 @@ __global__ void destroyPlacesKernel(Place **places, int qty) {
 void DeviceConfig::deletePlaces(int handle) {
 	Logger::debug("DeviceConfig:: Entering deletePlaces.");
 	PlaceArray p = devPlacesMap[handle];
-	dim3* pDims = getPlacesThreadBlockDims(handle);
-	
+	Logger::debug("DeviceConfig::deletePlaces: Size of places map == %d", devPlacesMap.size());
 	for (int i = 0; i < p.devPtrs.size(); ++i) {
 		Logger::debug("DeviceConfig::deletePlaces: device: %d, Number to delete: %d.", i, p.placesStride + (p.ghostSpaceMultiple[i] * dimSize[0]));
 		cudaSetDevice(activeDevices.at(i));
 		destroyPlacesKernel<<<p.pDims[0], p.pDims[1]>>>(p.devPtrs.at(i), 
 				(p.placesStride + (p.ghostSpaceMultiple[i] * dimSize[0])));
 		CHECK();
+		cudaDeviceSynchronize();
 		CATCH(cudaFree(p.devPtrs.at(i)));
 		CATCH(cudaFree(p.devStates.at(i)));
-		cudaDeviceSynchronize();
 		Logger::debug("DeviceConfig::deletePlaces: CUDA memory freed on device: %d", i);
 	}
 
+
+	delete[] p.ghostSpaceMultiple;
+	p.topNeighborGhosts.clear();
+	p.topGhosts.clear();
+	p.bottomGhosts.clear();
+	p.bottomNeighborGhosts.clear();
+	for (auto ptr: p.devDims) {
+		delete ptr;
+	}
+	p.devDims.clear();
 	Logger::debug("DeviceConfig::deletePlaces: SUCCESS!");
 }
 
@@ -273,10 +294,7 @@ __global__ void cleanGhostPointers(Place** p_ptrs, int qty) {
 
 // copy PlaceState's to neighbor device
 void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
-	std::vector<void*> devStates = getPlaceStates(handle);
-	int placesStride = getPlacesStride(handle);
 	dim3* pDims = getPlacesThreadBlockDims(handle);
-    int flip = 1;
 	Logger::debug("DeviceConfig::copyGhostPlaces - entering copyGhostPlaces");
 	Logger::debug("Handle: %d and stateSize = %d and num PlaceState top copy: %d", handle, stateSize, flip * MAX_AGENT_TRAVEL * getDimSize()[0]);
     for (int i = 0; i < activeDevices.size(); i+=2) {
@@ -293,9 +311,6 @@ void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 					devPlacesMap[handle].topGhosts.at(i).second, 
 					MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
 			cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
-        }
-        if (flip == 1) {
-            flip = 0;
         }
     }
 
@@ -314,10 +329,50 @@ void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 					MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
 			cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].topNeighborGhosts.at(i + 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         }
-        if (flip == 0) {
-            flip = 1;
-        }
     }
+}
+
+__global__ void initCurand(curandState *state, int nNums){
+    int idx = getGlobalIdx_1D_1D();
+	if (idx < nNums) {
+		curand_init(clock64(), idx, 0, &state[idx]);
+	}
+}
+
+__global__ void calculateRandomNumbersKernel(unsigned int* nums, curandState *state, int nNums) {
+	int idx = getGlobalIdx_1D_1D();
+	if (idx < nNums) {
+		nums[idx] = curand_uniform(state);
+	}
+}
+
+// TODO: Refactor to return device pointer and check for whether the pointer is
+//		 on host or device with cudaDeviceGetAttributes()
+unsigned int* DeviceConfig::calculateRandomNumbers(int size) {
+	if (randStateSize != size) {
+		if (randState != NULL) {
+			CATCH(cudaFree(randState));
+			cudaDeviceSynchronize();
+			CHECK();
+			randState = NULL;
+		}
+
+		randStateSize = size;
+		CATCH(cudaMalloc((void**)randState, size * sizeof(curandState)));
+		initCurand<<<(size+nTHB-1)/nTHB, nTHB>>>(randState, size);
+		cudaDeviceSynchronize();
+		CHECK();
+	}
+
+	unsigned int *dMem, *hMem;
+	hMem = new unsigned int[size*sizeof(unsigned int)];
+	CATCH(cudaMalloc(&dMem, size * sizeof(unsigned int)));
+	calculateRandomNumbersKernel<<<((size+nTHB-1)/nTHB), nTHB>>>(dMem, randState, size);
+	cudaDeviceSynchronize();
+	CHECK();
+	CATCH(cudaMemcpy(hMem, dMem, size * sizeof(unsigned int), cudaMemcpyDefault));
+	CATCH(cudaFree(dMem));
+	return hMem;
 }
 
 } // end Mass namespace

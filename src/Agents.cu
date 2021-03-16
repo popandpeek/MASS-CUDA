@@ -72,6 +72,17 @@ void Agents::manageAll() {
     // dispatcher->spawnAgents(handle);
 }
 
+void Agents::manageAllSpawnFirst() {
+    // Step 1: kill all agents that need killing
+    dispatcher->terminateAgents(handle);
+
+    // Step 2: migrate all agents that need migrating
+    dispatcher->spawnAgents(handle);
+
+    // Step 3: spawn all new agents that need spawning
+    dispatcher->migrateAgents(handle, placesHandle); 
+}
+
 Agent** Agents::getElements() {
     std::vector<Agent**> elemPtrsVec = dispatcher->refreshAgents(handle); 
     mass::Agent** retVals = new Agent*[dispatcher->getNumAgents(handle)];

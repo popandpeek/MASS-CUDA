@@ -1,27 +1,44 @@
 
 
-Mon 2021/02/01 15:14:51  [INFO] Logger initialized.
+Wed 2021/02/10 09:12:23  [INFO] Logger initialized.
 Size,CPU,GPU,MASS
-15:14:51  [INFO]    Running SugarScape with params:
+09:12:23  [INFO]    Running SugarScape with params:
 	size = 100
 	time = 100
 	interval = 0
-100,MASS time 38042
-
-
-Mon 2021/02/01 15:14:54  [INFO] Logger initialized.
-Size,CPU,GPU,MASS
-15:14:54  [INFO]    Running SugarScape with params:
-	size = 100
+100,MASS time 43659
+09:12:23  [INFO]    Running SugarScape with params:
+	size = 500
 	time = 100
 	interval = 0
-100,MASS time 37311
-
-
-Mon 2021/02/01 15:14:55  [INFO] Logger initialized.
-Size,CPU,GPU,MASS
-15:14:55  [INFO]    Running SugarScape with params:
-	size = 100
+500,MASS time 575562
+09:12:24  [INFO]    Running SugarScape with params:
+	size = 1000
 	time = 100
 	interval = 0
-100,MASS time 37426
+1000,MASS time 1992676
+09:12:28  [INFO]    Running SugarScape with params:
+	size = 1500
+	time = 100
+	interval = 0
+1500,MASS time 4264731
+09:12:39  [INFO]    Running SugarScape with params:
+	size = 2000
+	time = 100
+	interval = 0
+2000,MASS time 7452112
+09:13:06  [INFO]    Running SugarScape with params:
+	size = 2500
+	time = 100
+	interval = 0
+2500,MASS time 11552705
+09:14:04  [INFO]    Running SugarScape with params:
+	size = 3000
+	time = 100
+	interval = 0
+3000,MASS time 16577130
+09:15:55  [INFO]    Running SugarScape with params:
+	size = 3500
+	time = 100
+	interval = 0
+3500,MASS time 22435877

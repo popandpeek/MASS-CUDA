@@ -153,6 +153,7 @@ __global__ void updateAgentPointersMovingUp(Place** placePtrs, Agent** agentPtrs
 	if (idx < qty) {
 		if (agentPtrs[idx]->isAlive() && agentPtrs[idx]->isTraveled()) {
 			agentPtrs[idx]->setTraveled(false);
+            // Get array index from overall indexing scheme
 			int placePtrIdx = agentPtrs[idx]->getPlaceIndex() - (device * placesStride) + 
 					(ghostPlaces + ghostPlaces * ghostSpaceMult);
 			if (placePtrs[placePtrIdx]->addAgent(agentPtrs[idx])) {
@@ -190,6 +191,7 @@ __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
             // find a spot in Agents array:
             int idxStart = atomicAdd(nextIdx, ptrs[idx]->state->nChildren);
             if (idxStart+ptrs[idx]->state->nChildren >= maxAgents) {
+                // TODO: Allocate more space for Agents
                 return;
             }
             for (int i=0; i< ptrs[idx]->state->nChildren; i++) {
@@ -227,7 +229,7 @@ void Dispatcher::init() {
 		}
 
         // Establish peerable device list
-        std::vector<int> devices;
+        std::vector<int> devices = std::vector<int>{};
         // CUDA runtime places highest CC device in first position, no further ordering guaranteed
         devices.push_back(0);
         for (int d = 1; d < gpuCount; d++) {
@@ -256,7 +258,7 @@ void Dispatcher::init() {
 }
 
 Dispatcher::~Dispatcher() {
-    Logger::debug("~Dispatcher:: Deconstructor calling deviiceInfo->freeDevice()");
+    Logger::debug("~Dispatcher:: Deconstructor calling deviceInfo->freeDevice()");
 	deviceInfo->freeDevice();
 }
 
@@ -286,6 +288,7 @@ std::vector<Place**> Dispatcher::refreshPlaces(int handle) {
 	}
     
     Logger::debug("Exiting Dispatcher::refreshPlaces");
+
     return placesModel->getPlaceElements();
 }
 
@@ -293,7 +296,6 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 	if (initialized) {
         Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", 
                 placeHandle, functionId);
-
         std::vector<int> devices = deviceInfo->getDevices();
         std::vector<Place**> devPtrs = deviceInfo->getDevPlaces(placeHandle); 
         int stride = deviceInfo->getPlacesStride(placeHandle);
@@ -420,6 +422,7 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
         cudaDeviceSynchronize();
     }
 
+    deviceInfo->copyGhostPlaces(handle, model->getPlacesModel(handle)->getStateSize());
 	Logger::debug("Exiting Dispatcher::exchangeAllPlaces");
 }
 
@@ -497,7 +500,6 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     }
 
     deviceInfo->copyGhostPlaces(handle, model->getPlacesModel(handle)->getStateSize());
-
     Logger::debug("Exiting Dispatcher::exchangeAllPlaces with functionId = %d as an argument", functionId);
 } 
 
@@ -589,7 +591,8 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
         cudaDeviceSynchronize();		
     }
 
-    
+    Logger::debug("Dispatcher::migrateAgents: Number of place arrays in devPlaceMap == %d", deviceInfo->devPlacesMap.size());
+
 	std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(agentHandle);
 	std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
     Logger::debug("Dispatcher::MigrateAgents: number of agents: %d", getNumAgents(agentHandle));
@@ -604,6 +607,10 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
 	// TODO: Wait on even devices to finish moving Agent's locally
     std::vector<void*> a_ste_ptrs = deviceInfo->getAgentsState(agentHandle);
     //check each devices Agents for agents needing to move devices
+    // TODO: Refactor to check if Agents needing to move devices have spawning to do.
+    //       a. Do we leave them after local migration and spawn? 
+    //       b. Do we leave them at origination for spawn
+    //       c. Do we spawn and then migrate?
     for (int i = 0; i < devices.size(); ++i) {
 		cudaSetDevice(devices.at(i));
         if (i % 2 == 0) {
@@ -747,6 +754,10 @@ int* Dispatcher::getGhostPlaceMultiples(int handle) {
 
 int* Dispatcher::getNumAgentsInstantiated(int handle) {
     return deviceInfo->getMaxAgents(handle);
+}
+
+unsigned int* Dispatcher::calculateRandomNumbers(int size, int minVal, int maxVal) {
+    return deviceInfo->calculateRandomNumbers(size);
 }
 
 }// namespace mass
