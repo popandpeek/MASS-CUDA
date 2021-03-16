@@ -34,5 +34,10 @@
 #etc
 *.sublime-project
 *.sublime-workspace
+launch.json
+lib
+obj
+bin
+.vscode
 
 
