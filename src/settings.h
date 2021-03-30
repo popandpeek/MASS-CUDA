@@ -1,6 +1,6 @@
 
 // Maximum number of agents allowed in one place:
-#define MAX_AGENTS 2
+#define MAX_AGENTS 1
 
 // Maximum number of neighbors each place gets data from:
 #define MAX_NEIGHBORS 8

@@ -14,7 +14,9 @@ class NeuronPlaceState: public mass::PlaceState {
     BrainGridConstants::NPartType myType; // EMPTY, SOMA, AXON, DENDRITE, SYNAPTIC_TERMINAL
     int totalIters;
     int curIter;
-    double signal;
+    int signalType;
+    double inputSignal;
+    double outputSignal;
     
     // SOMA behavior params
     unsigned int dendritesToSpawn;

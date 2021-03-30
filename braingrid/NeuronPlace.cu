@@ -49,6 +49,12 @@ MASS_FUNCTION void NeuronPlace::callMethod(int functionId, void *argument) {
         case MAKE_CONNECTIONS:
             makeGrowingEndConnections();
             break;
+        case CREATE_SIGNAL:
+            createSignal((int*)argument);
+            break;
+        case PROCESS_SIGNALS:
+            processSignals();
+            break;
         default:
 			break;
     }
@@ -71,11 +77,11 @@ MASS_FUNCTION void setNeuronSignalType(int randNum) {
     if (myState->myType == SOMA) {
         int score = randNum[getIndex()] % 30;
         if (score < BrainGridConstants::EXCITATORY) {
-            signal = BrainGridConstants::EXCITATORY;
+            signalType = BrainGridConstants::EXCITATORY;
         } else if (score < (BrainGridConstants::INHIBITORY + BrainGridConstants::EXCITATORY)) {
-            signal = BrainGridConstants::INHIBITORY;
+            signalType = BrainGridConstants::INHIBITORY;
         } else {
-            signal = BrainGridConstants::NEUTRAL;
+            signalType = BrainGridConstants::NEUTRAL;
         }
 }
 }
@@ -222,7 +228,7 @@ MASS_FUNCTION void NeuronPlace::makeGrowingEndConnections() {
                     }
                 }
                 // Dendrite
-                else {
+                else if (potentialNextAgents[i]->myType == DENDRITE) {
                     if (incomingDendrite == NULL) {
                         incomingDendrite = potentialNextAgents[i];
                     } else if (potentialNextAgents[i]->index < incomingDendrite->index) {
@@ -241,8 +247,42 @@ MASS_FUNCTION void NeuronPlace::makeGrowingEndConnections() {
                 myState->occupied = true;
                 myState->travelingDendrite->isGrowing = false;
                 myState->travelingSynapse->isGrowing = false;
+                myState->travelingDendrite->myConnectPlace = this;
+                myState->travelingSynapse->myConnectPlace = this;
             } else {
                 myState->travelingDendrite->terminateAgent();
+            }
+        }
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::createSignal(int* randNums) {
+    if (myState->myType == SOMA) {
+        outputSignal = 0.0;
+        switch(myState->signalType) {
+            case EXCITATORY:
+                outputSignal = (randNums[getIndex()] % 100 + 1 <= 
+                        ACTIVATING_SIGNAL ) ? (1.0) : (0.0);
+                outputSignal += inputSignal * (1 + SIGNAL_MODULATION);
+                break;
+            case INHIBITORY:
+                outputSignal += inputSignal * SIGNAL_MODULATION;
+                break;
+            case NEUTRAL:
+                outputSignal = inputSignal;
+                break;
+        }
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::processSignals() {
+    if (myState->myType == SOMA) {
+        myState->inputSignal = 0.0;
+        for (int i = 0; i < MAX_AGENTS; ++i) {
+            if (((GrowingEnd*)myState->agents[i])->myState->myType == SYNAPSE && 
+                    ((GrowingEnd*)myState->agents[i])->myState->myConnectPlace != NULL) {
+                // accumulate signal
+                myState->inputSignal += ((GrowingEnd*)myState->agents[i])->myState->signal;
             }
         }
     }

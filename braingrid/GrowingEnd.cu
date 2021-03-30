@@ -74,6 +74,18 @@ MASS_FUNCTION void GrowingEnd::callMethod(int functionId, void *argument) {
         case SET_MIGRATED_BRANCHES:
             setMigratedBranches();
             break;
+        case SOMA_TRAVEL:
+            somaTravel();
+            break;
+        case GET_SIGNAL:
+            getSignal();
+            break;
+        case DENDRITE_SOMA_TRAVEL:
+            dendriteSomaTravel();
+            break;
+        case SET_SOMA_SIGNAL:
+            setSomaSignal();
+            break;
         case UPDATE_ITER:
             updateIters();
             break;
@@ -298,5 +310,26 @@ MASS_FUNCTION void GrowingEnd::checkGrowingEndGrowth() {
         if (myState->branchGrowthRemaining == 0) {
             myState->isGrowing = false;
         }
+    }
+}
+
+MASS_FUNCTION void somaTravel() {
+    // TODO: Is connected?
+    if (myState->isAlive && !(myState->isGrowing) && (myState->myType == SYNAPSE) {
+        // TODO: Need to provide below method signature in Agent class
+        migrateAgent(myState->mySoma);
+    }
+}
+
+MASS_FUNCTION void GrowingEnd::getSignal() {
+    if (myState->myType == SYNAPSE && myState->isAlive && !myState->isGrowing && 
+                myState->getPlaceIndex() == myState->mySomaIndex) {
+        myState->signal = myState->place->outputSignal;
+    }
+}
+
+MASS_FUNCTION void GrowingEnd::dendriteSomaTravel() {
+    if (myState->isAlive && !(myState->isGrowing) && (myState->myType == SYNAPSE) {
+        migrateAgent(myState->myConnectPlace);
     }
 }

@@ -192,17 +192,35 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
         dendrites3->callAll(GrowingEnd::SET_MIGRATED_BRANCHES);
 
         // If a synapse and dendrite meet, link them
+        // TODO: Update to get SOMA Place from Dendrite Agent and kill it 
         neurons->callAll(NeuronPlace::MAKE_CONNECTIONS);
 
+        // 1. Axon Agent travels to its SOMA
+        axons->callAll(GrowingEnd::SOMA_TRAVEL);
+        axons->manageAll();
+
         // Collect and transmit signals
-        // 1. synapses migrate to SOMA
-        // 2. synapses get signal from SOMA
-        // 3. synapses migrate to connection home
-        // 4. synapses place signal at connection home
-        // 5. dendrites get signal from connection home
-        // 6. dendrites migrate to SOMA
-        // 7. dendrites place signal at SOMA
-        // 8. dendrties migrate to connection home
+        // 2. SOMAs create signal
+        randos = calculateRandomNumbers(numNeurons);
+        neurons->callAll(NeuronPlace::CREATE_SIGNAL, randos, numNeurons * sizeof(int));
+        delete[] randos;
+
+        // 3. axons on SOMA's get signal
+        axons->callAll(GrowingEnd::GET_SIGNAL);
+
+        // 4. synapses migrate to SOMA
+        axons->callAll(GrowingEnd::DENDRITE_SOMA_TRAVEL); 
+        axons->manageAll();
+
+        // 5. dendrites place signal at SOMA
+        axons->callAll(GrowingEnd::SET_SOMA_SIGNAL);
+
+        // 6. SOMAs process received signals
+        neurons->callAll(NeuronPlace::PROCESS_SIGNALS);
+
+        // 7. Axons migrate to SOMA home
+        axons->callAll(GrowingEnd::SOMA_TRAVEL);
+        axons->manageAll();
 
         // Update end of iter params
         axons->callAll(GrowingEnd::UPDATE_ITER);

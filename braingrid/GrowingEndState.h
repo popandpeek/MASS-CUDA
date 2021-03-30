@@ -13,8 +13,10 @@ class GrowingEndState: public mass::AgentState {
     
     // NeuronPlace of origin
     NeuronPlace* mySoma;
+    NeuronPlace* myConnectPlace;
     int mySomaIndex;
     BrainGridConstants::NPartType myType;
+    double signal;
     int spawnTime;
     BrainGridConstants::Direction growthDirection;
     bool hasSpawned;
