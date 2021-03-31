@@ -296,7 +296,7 @@ __global__ void cleanGhostPointers(Place** p_ptrs, int qty) {
 void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 	dim3* pDims = getPlacesThreadBlockDims(handle);
 	Logger::debug("DeviceConfig::copyGhostPlaces - entering copyGhostPlaces");
-	Logger::debug("Handle: %d and stateSize = %d and num PlaceState top copy: %d", handle, stateSize, flip * MAX_AGENT_TRAVEL * getDimSize()[0]);
+	Logger::debug("Handle: %d and stateSize = %d and num PlaceState top copy: %d", handle, stateSize, MAX_AGENT_TRAVEL * getDimSize()[0]);
     for (int i = 0; i < activeDevices.size(); i+=2) {
         // copy right
         cudaSetDevice(activeDevices.at(i + 1));
