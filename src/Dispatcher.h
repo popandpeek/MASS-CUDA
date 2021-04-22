@@ -125,7 +125,7 @@ public:
 
 	int* getGhostPlaceMultiples(int handle);
 
-	unsigned int* calculateRandomNumbers(int, int, int);
+	unsigned int* calculateRandomNumbers(int);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This

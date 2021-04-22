@@ -81,6 +81,9 @@ public:
     MASS_FUNCTION void setTraveled(bool);
 
     MASS_FUNCTION bool isTraveled();  
+
+    MASS_FUNCTION bool longDistanceMigration();
+    
     /**
     Sets the agent status to inactive. Agents place is set to vacant and 
     he agent is excluded from all the subsequent callAll() function calls.

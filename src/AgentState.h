@@ -14,11 +14,12 @@ public:
     int size;             // the size of the Agent array
     Place *place;         //Points to the current place where this agent resides.
     unsigned placeIndex;  //index of the place where agent resides
-    unsigned placeDevIndex;
+    unsigned placeDevIndex; // REMOVE?
     bool isAlive;
     bool agentTraveled;
-
+    bool longDistanceMigration; // REFACTOR TO REMOVE
     Place *destPlace;
+    unsigned destPlaceIdx;
 
     int nChildren;  //number of agents to spawn at the next call to migrate()
     Place *childPlace;

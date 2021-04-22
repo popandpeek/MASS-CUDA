@@ -141,8 +141,6 @@ public:
 	 */
 	std::vector<int> getIndexVector(int rowMajorIdx);
 
-	unsigned int* getRandomNumbers(int, int, int);
-
 #ifndef TEST
 private:
 #endif

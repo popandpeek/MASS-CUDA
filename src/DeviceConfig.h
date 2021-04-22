@@ -52,7 +52,7 @@ struct AgentArray {
 
 	int nAgents;  //number of live agents
 	int* maxAgents; //number of all agent objects
-	int* nAgentsDev; // tracking array for agents on each device
+	int* nAgentsDev; // tracking for alive agents on each device
 	std::vector<std::pair<dim3, dim3>> aDims; //block and thread dimensions
 	int stateSize;
 };

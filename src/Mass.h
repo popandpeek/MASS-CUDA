@@ -73,6 +73,8 @@ public:
 	template<typename AgentType, typename AgentStateType>
 	static void manageAll(int agentHandle, int placeHandle);
 
+	static unsigned int* getRandomNumbers(int);
+
 private:
 
 	static std::map<int, Places*> placesMap;

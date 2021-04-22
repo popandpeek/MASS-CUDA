@@ -78,6 +78,46 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, i
     }
 }
 
+__global__ void longDistanceMigrationKernel(Agent **src_agent_ptrs, Agent **dest_agent_ptrs, 
+        AgentState *src_agent_state, AgentState *dest_agent_state, int nAgentsDevSrc, 
+        int* nAgentsDevDest, int destDevice, int placesStride, int stateSize) {
+    
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < nAgentsDevSrc) {
+        if (src_agent_ptrs[idx]->isAlive() && src_agent_ptrs[idx]->longDistanceMigration()) {
+            int destPlaceIdx = src_agent_state[idx]->destPlaceIdx;
+            if (destPlaceIdx >= placesStride * destDevice && 
+                    destPlaceIdx < (placesStride * destDevice + placesStride)) {
+                int neighborIdx = atomicAdd(nAgentsDevDest, 1);
+                memcpy(&(dest_agent_state[neighborIdx]), &(src_agent_state[idx]), stateSize);
+
+                // clean up Agent in source array
+        	    src_agent_ptrs[idx]->terminateAgent();
+            }
+        } 
+    }
+}
+
+__global__ void longDistanceMigrationSetPlaceKernel(Place** p_ptrs, Agent** a_ptrs, int qty, int placeStride,
+        int ghostPlaces, int ghostSpaceMult, int device) {
+    
+    int idx = getGlobalIdx_1D_1D();
+    if (idx < qty) {
+        if (a_ptrs[idx]->isAlive() && a_ptrs[idx]->longDistanceMigration()) {
+            a_ptrs[idx]->setLongDistanceMigration(false);
+            int placePtrIdx = a_ptrs[idx]->getPlaceIndex() - (device * placeStride) + 
+                    ((ghostPlaces * 2) - (ghostSpaceMult * ghostPlaces));
+            // TODO: Should we add to potential agents array instead?
+            if (p_ptrs[placePtrIdx]->addAgent(a_ptrs[idx]) {
+                a_ptrs[idx]->setPlace(p_ptrs[placePtrIdx]);
+                return;
+            }
+            // No home found on device traveled to so Agent is terminated on new device
+            a_ptrs[idx]->terminateGhostAgent();
+       }
+    }
+}
+
 __global__ void resolveMigrationConflictsKernel(Place **ptrs, int nptrs) {
     int idx = getGlobalIdx_1D_1D();
     if (idx < nptrs) {
@@ -573,9 +613,13 @@ void Dispatcher::terminateAgents(int agentHandle) {
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     Logger::debug("Inside Dispatcher:: migrateAgents().");
     std::vector<Place**> p_ptrs = deviceInfo->getDevPlaces(placeHandle);
-	std::vector<std::pair<Place**, void*>> gh_ptrs = deviceInfo->getTopGhostPlaces(placeHandle);
     dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
-    Logger::debug("resolveMigrationConflicts Kernel dims = gridDim %d and blockDim = %d", pDims[0].x, pDims[1].x);
+
+    std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(agentHandle);
+    std::vector<void*> a_ste_ptrs = deviceInfo->getAgentsState(agentHandle);
+	std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
+
+	std::vector<std::pair<Place**, void*>> gh_ptrs = deviceInfo->getTopGhostPlaces(placeHandle);
     std::vector<int> devices = deviceInfo->getDevices();
     int placeStride = deviceInfo->getPlacesStride(placeHandle);
     int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(placeHandle);
@@ -583,6 +627,26 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     int* nAgentsDev = deviceInfo->getnAgentsDev(agentHandle);
 
     Logger::debug("Dispatcher::MigrateAgents: number of places: %d", deviceInfo->getPlaceCount(placeHandle));
+    for (int i = 0; i < devices.size(); ++i) {
+        Logger::debug("Dispatcher::migrateAgents: Starting Long Distance Agent migration on device %d", i);
+        for (int j = 0; j < devices.size() ++j) {
+            cudaSetDevice(devices.at(i)); 
+            Logger::debug("Dispatcher::migrateAgents: longDistanceMigrationKernel copying to device %d", j);
+            longDistanceMigrationKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), 
+                    a_ptrs.at(j), a_ste_ptrs.at(i), a_ste_ptrs.at(j), nAgentsDev.at(i), nAgentsDev.at(j),
+                    j, placeStride, model->getAgentsModel(agentHandle)->getStateSize());
+        }
+    }
+
+    Logger::debug("Dispatcher::migrateAgents: Adding long distance migrated Agents to target Place.");
+    for (int i = 0; i < devices.size(); ++i) {
+        cudaSetDevice(devices.at(i));
+        longDistanceMigrationsSetPlaceKernel<<<aDims.at(i).first, aDims.at(i).second>>>(p_ptrs.at(i), a_ptrs.at(i), 
+                nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i], devices.at(i));
+    }
+    
+    Logger::debug("Dispatcher::resolveMigrationConflictsKernel() dims = gridDim %d and blockDim = %d", pDims[0].x, pDims[1].x);
+
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", devices.at(i));
         cudaSetDevice(devices.at(i));
@@ -592,9 +656,6 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     }
 
     Logger::debug("Dispatcher::migrateAgents: Number of place arrays in devPlaceMap == %d", deviceInfo->devPlacesMap.size());
-
-	std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(agentHandle);
-	std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
     Logger::debug("Dispatcher::MigrateAgents: number of agents: %d", getNumAgents(agentHandle));
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel() on device: %d with number of agents = %d", devices.at(i), nAgentsDev[i]);
@@ -605,12 +666,11 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     }
 
 	// TODO: Wait on even devices to finish moving Agent's locally
-    std::vector<void*> a_ste_ptrs = deviceInfo->getAgentsState(agentHandle);
     //check each devices Agents for agents needing to move devices
     // TODO: Refactor to check if Agents needing to move devices have spawning to do.
     //       a. Do we leave them after local migration and spawn? 
     //       b. Do we leave them at origination for spawn
-    //       c. Do we spawn and then migrate?
+    //       c. Do we spawn and then migrate? ** THIS ONE **
     for (int i = 0; i < devices.size(); ++i) {
 		cudaSetDevice(devices.at(i));
         if (i % 2 == 0) {
@@ -692,34 +752,34 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
 void Dispatcher::spawnAgents(int handle) {
     
     Logger::debug("Inside Dispatcher::spawnAgents()");
-    // std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(handle);
-    // std::vector<std::pair<dim3, dim3>> aDims = deviceConfig->getAgentsThreadBlockDims(agentHandle);
-    // Logger::debug("Kernel dims = gridDim %d and blockDim = %d", aDims.first.x, aDims.second.x);
+    std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(handle);
+    std::vector<std::pair<dim3, dim3>> aDims = deviceConfig->getAgentsThreadBlockDims(agentHandle);
+    Logger::debug("Kernel dims = gridDim %d and blockDim = %d", aDims.first.x, aDims.second.x);
 
-    // std::vector<int> devices = deviceInfo->getDevices();
-    // int* nAgentsDevs = deviceInfo->getnAgentsDev(handle);
+    std::vector<int> devices = deviceInfo->getDevices();
+    int* nAgentsDevs = deviceInfo->getnAgentsDev(handle);
 
-    // int* numAgentObjects[devices.size()];
-    // for (int i = 0; i < devices.size(); ++i) { 
-    //     cudaSetDevice(devices.at(i));
-    //     CATCH(cudaMalloc(&numAgentObjects[i], sizeof(int)));
-    //     CATCH(cudaMemcpy(numAgentObjects[i], &nAgentsDevs[i], sizeof(int), H2D));
-    // }
+    int* numAgentObjects[devices.size()];
+    for (int i = 0; i < devices.size(); ++i) { 
+        cudaSetDevice(devices.at(i));
+        CATCH(cudaMalloc(&numAgentObjects[i], sizeof(int)));
+        CATCH(cudaMemcpy(numAgentObjects[i], &nAgentsDevs[i], sizeof(int), H2D));
+    }
 
-    // for (int i = 0; i < devices.size(); ++i) {
-    //     cudaSetDevice(devices.at(i));
-    //     spawnAgentsKernel<<<aDims.first, aDims.second>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
-    //     CHECK();
+    for (int i = 0; i < devices.size(); ++i) {
+        cudaSetDevice(devices.at(i));
+        spawnAgentsKernel<<<aDims.first, aDims.second>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
+        CHECK();
 
-    //     // Is this necessary? If so, may need to accumulate count of results above
-    //     if (*numAgentObjects[i] > deviceInfo->getMaxAgents(handle, i)) {
-    //         throw MassException("Trying to spawn more agents than the maximun set for the system");
-    //     }
+        // Is this necessary? If so, may need to accumulate count of results above
+        if (*numAgentObjects[i] > deviceInfo->getMaxAgents(handle, i)) {
+            throw MassException("Trying to spawn more agents than the maximun set for the system");
+        }
 
-    //     int nNewAgents = *numAgentObjects[i] - getNumAgentsInstantiated(handle)[i];
-    //     deviceInfo->devAgentsMap[handle].nAgents += nNewAgents;
-    //     deviceInfo->devAgentsMap[handle].nAgentsDev[i] += nNewAgents;
-    // }
+        int nNewAgents = *numAgentObjects[i] - getNumAgentsInstantiated(handle)[i];
+        deviceInfo->devAgentsMap[handle].nAgents += nNewAgents;
+        deviceInfo->devAgentsMap[handle].nAgentsDev[i] += nNewAgents;
+    }
 
     Logger::debug("Finished Dispatcher::spawnAgents");
 }
@@ -756,7 +816,7 @@ int* Dispatcher::getNumAgentsInstantiated(int handle) {
     return deviceInfo->getMaxAgents(handle);
 }
 
-unsigned int* Dispatcher::calculateRandomNumbers(int size, int minVal, int maxVal) {
+unsigned int* Dispatcher::calculateRandomNumbers(int size) {
     return deviceInfo->calculateRandomNumbers(size);
 }
 

@@ -1,9 +1,10 @@
-all: dirs heat2d sugarscape test
+all: dirs braingrid heat2d sugarscape test
 
 dirs:
 	mkdir -p obj/lib
 	mkdir -p obj/heat2d
 	mkdir -p obj/sugarscape
+	mkdir -p obj/braingrid
 	mkdir -p obj/test
 	mkdir -p bin
 	mkdir -p lib
@@ -14,7 +15,7 @@ heat2d: objlib objheat2d
 sugarscape: objlib objsugarscape
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -lineinfo -lcurand -m64 -L/usr/local/cuda/lib64 obj/sugarscape/*.o lib/mass_cuda.a -o bin/sugarscape
 
-braingrid:
+braingrid: objlib objbraingrid
 	nvcc -Wno-deprecated-gpu-targets -rdc=true -lineinfo -lcurand -m64 -L/usr/local/cuda/lib64 obj/braingrid/*.o lib/mass_cuda.a -o bin/braingrid
 
 test: objlib objheat2d objtest

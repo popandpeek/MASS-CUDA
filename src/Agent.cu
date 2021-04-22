@@ -60,6 +60,10 @@ MASS_FUNCTION bool Agent::isTraveled() {
     return this->state->agentTraveled;
 }
 
+MASS_FUNCTION bool Agent::longDistanceMigration() {
+    return state->longDistanceMigration;
+}
+
 MASS_FUNCTION void Agent::terminateAgent() {
     state -> isAlive = false;
     state-> agentTraveled = false;
@@ -74,14 +78,18 @@ MASS_FUNCTION void Agent::terminateGhostAgent() {
     state -> index = -1;
 }
 
-
 MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelativeIdx) {
     state -> destPlace = destination;
     destination -> addMigratingAgent(this, destinationRelativeIdx);
 }
 
+MASS_FUNCTION void Agent::migrateAgentLongDistance(Place* destination, int destinationIdx) {
+    state -> longDistanceMigration = true;
+    state -> destPlace = destination;
+    state -> destPlaceIdx = destinationIdx;
+}
+
 MASS_FUNCTION void Agent::spawn(int numAgents, Place* place) {
-    
     state -> nChildren += numAgents;
     state -> childPlace = place;
 }

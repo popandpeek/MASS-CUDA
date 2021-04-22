@@ -2,13 +2,13 @@
 #define BRAINGRID_CONSTANTS_H
 
 
-namespace BrainGridConstants {
+;namespace BrainGridConstants {
 
     // Neuron initalization constants
     const int EXCITATORY = 10;
     const int INHIBITORY = 10;
     const int NEUTRAL = 10;
-    const int SPACE = (100 - EXICTATORY - INHIBITORY - NEUTRAL);
+    const int SPACE = (100 - EXCITATORY - INHIBITORY - NEUTRAL);
     const int MAX_DENDRITES = 7;
 
     // Neuron Signal Constants
@@ -24,10 +24,11 @@ namespace BrainGridConstants {
     const int STOP_BRANCH_GROWTH = 10;
 
     // Parts of the Neuron
-    enum NPartType { EMPTY = 0, SOMA, AXON, DENDRITE, SYNAPSE };
+    enum NPartType : int { EMPTY = 0, SOMA, AXON, DENDRITE, SYNAPSE };
 
-    enum Direction { NORTH = 0, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST, NOT_APPLICABLE };
+    enum Direction : int { NORTH = 0, NORTHEAST, EAST, SOUTHEAST, SOUTH, SOUTHWEST, WEST, NORTHWEST };
 
+    enum SignalType : int { E = 0, I, N };
 }
 
 #endif
