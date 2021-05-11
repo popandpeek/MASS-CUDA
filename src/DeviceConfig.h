@@ -48,10 +48,9 @@ struct PlaceArray {
 struct AgentArray {
 	std::vector<Agent**> devPtrs;
 	std::vector<void*> devStates;
-	std::vector<Agent**> collectedAgents;
 
-	int nAgents;  //number of live agents
-	int* maxAgents; //number of all agent objects
+	int nAgents;  //number of live agents in system
+	int* maxAgents; //number of all agent objects on each device
 	int* nAgentsDev; // tracking for alive agents on each device
 	std::vector<std::pair<dim3, dim3>> aDims; //block and thread dimensions
 	int stateSize;
@@ -88,7 +87,8 @@ public:
 	void setAgentsThreadBlockDims(int handle);
 	std::vector<std::pair<dim3, dim3>> getAgentsThreadBlockDims(int handle);
 	int* getnAgentsDev(int handle);
-	std::vector<Agent**> getBagOAgentsDevPtrs(int agentHandle);
+	std::vector<int*> getCollectedAgentPtrs(int agentHandle);
+	std::vector<int*> getCollectedAgentsCount(int agentHandle);
 
 	// returns machine number for device in held by default numbering in vector
 	int getDeviceNum(int device);

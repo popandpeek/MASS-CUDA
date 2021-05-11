@@ -3,6 +3,7 @@
 #include <algorithm>  // array compare
 #include <iterator>
 #include <typeinfo>
+#include "../cub-1.8.0/cub/cub.cuh"
 
 #include "Dispatcher.h"
 #include "cudaUtil.h"
@@ -78,6 +79,67 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, i
     }
 }
 
+__global__ void setFlagsKernel(Agent** a_ptrs, int nPtrs, bool* flags) {
+    unsigned idx = getGlobalIdx_1D_1D();
+    if (idx < nPtrs) {
+        flags[idx] = 0;
+        if (a_ptrs[idx]->isAlive()) {
+            flags[idx] = 1;
+        }
+    }
+}
+
+__global__ void writeMovingAgentLocationsKernel(AgentState* state_ptrs, int startIndex, unsigned qty, unsigned* locations, unsigned* locations_loc) {
+    unsigned idx = getGlobalIdx_1D_1D() + startIndex;
+    if (idx < qty) {
+        if(state_ptrs[idx].isAlive) {
+            int location_idx = atomicAdd(locations_loc, 1);
+            locations[location_idx] = idx;
+        }
+    }
+}
+
+__global__ void compactAgentsKernel(AgentState* state_ptrs, int qty, int agentStateSize, unsigned* locations, unsigned* locations_loc) {
+    unsigned idx = getGlobalIdx_1D_1D();
+    if (idx < qty) {
+        if (!(state_ptrs[idx].isAlive)) {
+            int location_idx = atomicAdd(locations_loc, 1);
+            AgentState temp = state_ptrs[idx];
+            memcpy(&(state_ptrs[idx]), &(state_ptrs[locations[location_idx]]), agentStateSize);
+            memcpy(&(state_ptrs[locations[location_idx]]), &(temp), agentStateSize);
+        }
+    }
+}
+
+__global__ void realignAgentsKernel(Agent** a_ptrs, AgentState* ste_ptrs, int nPtrs) {
+    unsigned idx = getGlobalIdx_1D_1D();
+    if (idx < nPtrs) {
+        a_ptrs[idx]->state = &ste_ptrs[idx];
+        a_ptrs[idx]->setIndex(idx);
+    }
+}
+
+__global__ void unattachPlaceAgentsKernel(Place** p_ptrs, int placesStride, int ghostplace_offset) {
+    unsigned idx = getGlobalIdx_1D_1D();
+    if (idx < placesStride) {
+        Place* pl = p_ptrs[idx + ghostplace_offset];
+        for (int i = 0; i < MAX_AGENTS; i++) {
+            if (pl->state->agents[i] != NULL) {
+                pl->removeAgent(pl->state->agents[i]);
+            }
+        }
+    }
+}
+
+__global__ void reattachPlaceAgentsKernel(Agent** a_ptrs, Place** p_ptrs, int nPtrs) {
+    unsigned idx = getGlobalIdx_1D_1D();
+    if (idx < nPtrs) {
+        int pl_idx = a_ptrs[idx]->getPlaceDevIndex();
+        Place* pl = p_ptrs[pl_idx];
+        pl->reattachAgent(a_ptrs[idx]);
+    }
+}
+
 __global__ void longDistanceMigrationKernel(Agent **src_agent_ptrs, Agent **dest_agent_ptrs, 
         AgentState *src_agent_state, AgentState *dest_agent_state, int nAgentsDevSrc, 
         int* nAgentsDevDest, int destDevice, int placesStride, int stateSize) {
@@ -85,9 +147,9 @@ __global__ void longDistanceMigrationKernel(Agent **src_agent_ptrs, Agent **dest
     int idx = getGlobalIdx_1D_1D();
     if (idx < nAgentsDevSrc) {
         if (src_agent_ptrs[idx]->isAlive() && src_agent_ptrs[idx]->longDistanceMigration()) {
-            int destPlaceIdx = src_agent_state[idx]->destPlaceIdx;
-            if (destPlaceIdx >= placesStride * destDevice && 
-                    destPlaceIdx < (placesStride * destDevice + placesStride)) {
+            unsigned destPlaceIdx = src_agent_state[idx].destPlaceIdx;
+            if ((destPlaceIdx >= (placesStride * destDevice)) && 
+                    (destPlaceIdx < (placesStride * destDevice + placesStride))) {
                 int neighborIdx = atomicAdd(nAgentsDevDest, 1);
                 memcpy(&(dest_agent_state[neighborIdx]), &(src_agent_state[idx]), stateSize);
 
@@ -98,7 +160,7 @@ __global__ void longDistanceMigrationKernel(Agent **src_agent_ptrs, Agent **dest
     }
 }
 
-__global__ void longDistanceMigrationSetPlaceKernel(Place** p_ptrs, Agent** a_ptrs, int qty, int placeStride,
+__global__ void longDistanceMigrationsSetPlaceKernel(Place** p_ptrs, Agent** a_ptrs, int qty, int placeStride,
         int ghostPlaces, int ghostSpaceMult, int device) {
     
     int idx = getGlobalIdx_1D_1D();
@@ -107,8 +169,7 @@ __global__ void longDistanceMigrationSetPlaceKernel(Place** p_ptrs, Agent** a_pt
             a_ptrs[idx]->setLongDistanceMigration(false);
             int placePtrIdx = a_ptrs[idx]->getPlaceIndex() - (device * placeStride) + 
                     ((ghostPlaces * 2) - (ghostSpaceMult * ghostPlaces));
-            // TODO: Should we add to potential agents array instead?
-            if (p_ptrs[placePtrIdx]->addAgent(a_ptrs[idx]) {
+            if (p_ptrs[placePtrIdx]->addAgent(a_ptrs[idx])) {
                 a_ptrs[idx]->setPlace(p_ptrs[placePtrIdx]);
                 return;
             }
@@ -227,13 +288,12 @@ __global__ void updateAgentPointersMovingDown(Place** placePtrs, Agent** agentPt
 __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
     int idx = getGlobalIdx_1D_1D();
     if (idx < *nextIdx) {
-        if ((ptrs[idx]->isAlive()) && (ptrs[idx]->state->nChildren > 0)) {
-            // find a spot in Agents array:
+        if ((ptrs[idx]->isAlive()) && (ptrs[idx]->state->nChildren  > 0)) {
             int idxStart = atomicAdd(nextIdx, ptrs[idx]->state->nChildren);
             if (idxStart+ptrs[idx]->state->nChildren >= maxAgents) {
-                // TODO: Allocate more space for Agents
                 return;
             }
+
             for (int i=0; i< ptrs[idx]->state->nChildren; i++) {
                 // instantiate with proper index
                 ptrs[idxStart+i]->setAlive();
@@ -247,7 +307,6 @@ __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
             // restore Agent spawning data:
             ptrs[idx]->state->nChildren = 0;
             ptrs[idx]->state->childPlace = NULL;
-
         }
     }
 }
@@ -574,41 +633,83 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument, 
     }
 }
 
-void Dispatcher::terminateAgents(int agentHandle) {
-    //TODO: implement periodic garbage collection of terminated agents and reuse of that space to allocate new agents
-    
-    // 1. get agentHandle's Agent DS and bag of Agent DS
+void Dispatcher::terminateAgents(int agentHandle, int placeHandle) {
+
     std::vector<int> devices = deviceInfo->getDevices();
     std::vector<Agent**> agentDevPtrs = deviceInfo->getDevAgents(agentHandle);
-    std::vector<Agent**> bagOAgentsDevPtrs = deviceInfo->getBagOAgentsDevPtrs(agentHandle);
+    std::vector<void*> agentStatePtrs = deviceInfo->getAgentsState(agentHandle);
+    std::vector<Place**> placeDevPtrs = deviceInfo->getDevPlaces(placeHandle);
+
     int* nAgentsDev = deviceInfo->getnAgentsDev(agentHandle);
+    int* maxAgents = deviceInfo->getMaxAgents(agentHandle);
+    int placesStride = deviceInfo->getPlacesStride(placeHandle);
+    int* nDims = deviceInfo->getDimSize();
 
-    // 2. int *var to track number of agents to be collected 
-    std::vector<int*> hAgentTerminateCount;
-    std::vector<int*> dAgentTerminateCount;
-    for (int i = 0; i < devices.size(); ++i) {
-        int tmp = 0;
-        int* tptr = NULL;
-        hAgentTerminateCount.push_back(&tmp);
-        dAgentTerminateCount.push_back(tptr);
-    }
-
-    // 2. iterate over devices
-    //     a. activate device
-    //     b. kernel function to accumulate count of dead agents from each place
+    int agentStateSize = model->getAgentsModel(agentHandle)->getStateSize();
     std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(agentHandle);
-    for (int i = 0; i < agentDevPtrs.size(); ++i) {
-        cudaSetDevice(devices.at(i));
-        cudaMalloc((void** ) &(dAgentTerminateCount.at(i)), sizeof(int));
-        cudaMemcpy(dAgentTerminateCount.at(i), hAgentTerminateCount.at(i), sizeof(int), H2D);
-        // terminateAgentsCount<<<aDims.first, aDims.second>>>(agentDevPtrs.at(i), nAgentsDev[i], dAgentTerminateCount.at(i));
-    }
+    dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
 
-    // 3. initialize ds for each bag of collected agents
-    // 4. iterate over devices
-    //     a. activate device
-    //     b. kernel function to add dead agents to each devices (SHARED?) agent bag
-}   
+    // compact Agent arrays
+    for (int i = 0; i < devices.size(); ++i) {
+        cudaSetDevice(devices.at(i));
+
+        // 1. bool array to represent alive/dead Agent's
+        bool* h_compact_flags[maxAgents[i]]; 
+        bool* d_compact_flags = NULL;
+        int flags_size = maxAgents[i] * sizeof(bool);
+        CATCH(cudaMalloc((void**) &d_compact_flags, flags_size));
+        CATCH(cudaMemcpy(d_compact_flags, h_compact_flags, flags_size, H2D));
+        setFlagsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(agentDevPtrs.at(i), maxAgents[i], d_compact_flags);
+        
+        // 2. count true (alive Agents) values in bool array
+        void *dev_temp_storage = NULL;
+        size_t temp_storage_bytes = 0;
+        unsigned h_count_output[1];
+        unsigned *dev_count_output = 0;
+        CubDebugExit(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, dev_count_output, maxAgents[i]));
+        CubDebugExit(cudaMalloc(&dev_temp_storage, temp_storage_bytes));
+        CubDebugExit(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, dev_count_output, maxAgents[i]));
+        CATCH(cudaMemcpy(h_count_output, dev_count_output, sizeof(int), D2H));
+        CATCH(cudaFree(dev_temp_storage));
+
+        // 3. count false (dead Agents) values in bool array up to count of total alive Agents
+        unsigned* h_count_dead = NULL;
+        *h_count_dead = 0;
+        unsigned* dev_count_dead = NULL;
+        CubDebugExit(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, dev_count_dead, *dev_count_output));
+        CATCH(cudaMemcpy(h_count_dead, dev_count_dead, sizeof(unsigned), D2H));
+
+        // 4. new unsigned array of size false (dead Agents) count
+        unsigned* h_dead_locations[*h_count_dead];
+
+        // 5. write alive Agent locations from count total alive Agents up to maxAgents to new array
+        unsigned* dev_dead_locations = NULL;
+        unsigned location_idx[1];
+        *location_idx = 0;
+        CATCH(cudaMalloc((void**) &dev_dead_locations, sizeof(unsigned) * (*h_count_dead)));
+        writeMovingAgentLocationsKernel<<<aDims.at(i).first, aDims.at(i).second>>>((AgentState*)agentStatePtrs.at(i), *h_count_output, maxAgents[i], dev_dead_locations, location_idx);
+
+        // 6. swap memory objects of dead and alive Agents to compact alive Agents 
+        unsigned* dev_index = NULL;
+        unsigned h_index[1];
+        *h_index = 0;
+        CATCH(cudaMalloc(&dev_index, sizeof(unsigned)));
+        CATCH(cudaMemcpy(dev_index, h_index, sizeof(unsigned), H2D));
+        compactAgentsKernel<<<aDims.at(i).first, aDims.at(i).second>>>((AgentState*)agentStatePtrs.at(i), *h_count_output, agentStateSize, dev_dead_locations, dev_index);
+
+        // update each Place's agent array
+        int ghostPlace_offset = 0;
+        if (i != 0) {
+            ghostPlace_offset = nDims[0];
+        } 
+
+        // 7. removes all Agents from Places because the pointers now point at the incorrect Agent
+        unattachPlaceAgentsKernel<<<pDims[0], pDims[1]>>>(placeDevPtrs.at(i), placesStride, ghostPlace_offset);
+        
+        // 8. adds Agents back to correct Place based on Place index stored in AgentState
+        reattachPlaceAgentsKernel<<<pDims[0], pDims[1]>>>(agentDevPtrs.at(i), placeDevPtrs.at(i), nAgentsDev[i]);
+    }       
+}
 
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     Logger::debug("Inside Dispatcher:: migrateAgents().");
@@ -629,11 +730,11 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     Logger::debug("Dispatcher::MigrateAgents: number of places: %d", deviceInfo->getPlaceCount(placeHandle));
     for (int i = 0; i < devices.size(); ++i) {
         Logger::debug("Dispatcher::migrateAgents: Starting Long Distance Agent migration on device %d", i);
-        for (int j = 0; j < devices.size() ++j) {
+        for (int j = 0; j < devices.size(); ++j) {
             cudaSetDevice(devices.at(i)); 
             Logger::debug("Dispatcher::migrateAgents: longDistanceMigrationKernel copying to device %d", j);
             longDistanceMigrationKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), 
-                    a_ptrs.at(j), a_ste_ptrs.at(i), a_ste_ptrs.at(j), nAgentsDev.at(i), nAgentsDev.at(j),
+                    a_ptrs.at(j), (AgentState*)a_ste_ptrs.at(i), (AgentState*)a_ste_ptrs.at(j), nAgentsDev[i], &nAgentsDev[j],
                     j, placeStride, model->getAgentsModel(agentHandle)->getStateSize());
         }
     }
@@ -753,8 +854,8 @@ void Dispatcher::spawnAgents(int handle) {
     
     Logger::debug("Inside Dispatcher::spawnAgents()");
     std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(handle);
-    std::vector<std::pair<dim3, dim3>> aDims = deviceConfig->getAgentsThreadBlockDims(agentHandle);
-    Logger::debug("Kernel dims = gridDim %d and blockDim = %d", aDims.first.x, aDims.second.x);
+    // TODO: get collected Agents
+    std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(handle);
 
     std::vector<int> devices = deviceInfo->getDevices();
     int* nAgentsDevs = deviceInfo->getnAgentsDev(handle);
@@ -768,7 +869,7 @@ void Dispatcher::spawnAgents(int handle) {
 
     for (int i = 0; i < devices.size(); ++i) {
         cudaSetDevice(devices.at(i));
-        spawnAgentsKernel<<<aDims.first, aDims.second>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
+        spawnAgentsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
         CHECK();
 
         // Is this necessary? If so, may need to accumulate count of results above

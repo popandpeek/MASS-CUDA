@@ -75,6 +75,13 @@ public:
 	MASS_FUNCTION bool addAgent(Agent* agent);
 
 	/**
+	Adds a resident Agent to this place. Returns true if the adding was successful. 
+	Adding can fail if the place has reached its maximum occupancy.
+	Used to reattach Agents using atomicAdd() after memory compaction of Agents array
+	*/
+	__device__ bool reattachAgent(Agent* agent);
+	
+	/**
 	Removes the specified Agent from the array of resident Agents in this place.
 	*/
 	MASS_FUNCTION void removeAgent(Agent* agent);

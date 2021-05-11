@@ -125,6 +125,15 @@ MASS_FUNCTION bool Place::addAgent(Agent* agent) {
 	return false;
 }
 
+__device__ bool Place::reattachAgent(Agent* agent) {
+	if (state->agentPop < MAX_AGENTS) {
+		int idx = atomicAdd(&(state->agentPop), 1);
+		state->agents[idx] = agent;
+		return true;
+	}
+	return false;
+}
+
 MASS_FUNCTION void Place::removeAgent(Agent* agent) {
 	for (int i=0; i< state->agentPop; i++) {
 		if (state->agents[i] == NULL) continue;

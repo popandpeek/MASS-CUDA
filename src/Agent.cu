@@ -64,6 +64,10 @@ MASS_FUNCTION bool Agent::longDistanceMigration() {
     return state->longDistanceMigration;
 }
 
+MASS_FUNCTION void Agent::setLongDistanceMigration(bool longDistanceMigration) {
+    state->longDistanceMigration = longDistanceMigration;
+}
+
 MASS_FUNCTION void Agent::terminateAgent() {
     state -> isAlive = false;
     state-> agentTraveled = false;

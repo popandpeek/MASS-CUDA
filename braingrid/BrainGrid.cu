@@ -238,7 +238,7 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
         axons->callAll(GrowingEnd::GROW_BRANCHES);
         dendrites->callAll(GrowingEnd::GROW_BRANCHES);
 
-        // TODO: Do we need a follow-up neurons->callAll() to process potenmtialNextAgents array?
+        // TODO: Do we need a follow-up neurons->callAll() to process potentialNextAgents array?
         axons->manageAllSpawnFirst();
         dendrites->manageAllSpawnFirst();      
 
@@ -249,7 +249,7 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
         // 1. Axon Agent travels to its SOMA
         axons->callAll(GrowingEnd::SOMA_TRAVEL);
 
-        // TODO: Do we need a follow-up neurons->callAll() to process potenmtialNextAgents array?
+        // TODO: Do we need a follow-up neurons->callAll() to process potentialNextAgents array?
         axons->manageAll();
 
         // Collect and transmit signals
@@ -258,13 +258,13 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
         neurons->callAll(NeuronPlace::CREATE_SIGNAL, randos, numNeurons * sizeof(int));
         delete[] randos;
 
-        // 3. axons on SOMA's get signal
+        // 3. synapses on SOMA's get signal
         axons->callAll(GrowingEnd::GET_SIGNAL);
 
         // 4. synapses migrate to SOMA
         axons->callAll(GrowingEnd::DENDRITE_SOMA_TRAVEL); 
 
-        // TODO: Do we need a follow-up neurons->callAll() to process potenmtialNextAgents array?
+        // TODO: Do we need a follow-up neurons->callAll() to process potentialNextAgents array?
         axons->manageAll();
 
         // 5. dendrites place signal at SOMA
@@ -276,7 +276,7 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
         // 7. Axons migrate to SOMA home
         axons->callAll(GrowingEnd::SOMA_TRAVEL);
 
-        // TODO: Do we need a follow-up neurons->callAll() to process potenmtialNextAgents array?
+        // TODO: Do we need a follow-up neurons->callAll() to process potentialNextAgents array?
         axons->manageAll();
 
         // Update end of iter params

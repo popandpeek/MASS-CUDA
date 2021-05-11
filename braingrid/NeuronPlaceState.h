@@ -25,11 +25,6 @@ public:
     int axonSpawnTime;
     int dendriteSpawnTime[MAX_NEIGHBORS];
     BrainGridConstants::Direction growthDirection;
-    
-    // stores SOMA locations for spawning GrowingEnds
-    // TODO: Refactor to get rid of these
-    NeuronPlace *growthInSomas[MAX_NEIGHBORS];
-    int growthInSomasType[MAX_NEIGHBORS];
 
     // migration params
     NeuronPlace *migrationDest;
@@ -41,10 +36,8 @@ public:
     
     // Connections made are moved to connectedNeurons each turn and cleared
     bool occupied;
-    int inboundAxonPlaceID;
-    int inboundDendritePlaceID;
-    GrowingEnd* travelingDendrite;
-    GrowingEnd* travelingSynapse;
+    bool travelingDendrite;
+    bool travelingSynapse;
 };
 
 #endif 

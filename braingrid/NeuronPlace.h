@@ -28,8 +28,8 @@ public:
 	MASS_FUNCTION ~NeuronPlace();
 
 	MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
-    
     MASS_FUNCTION virtual NeuronPlaceState* getState();
+    
     MASS_FUNCTION NeuronPlace* getMigrationDest();
     MASS_FUNCTION int getMigrationDestRelIdx();
     MASS_FUNCTION int getGrowthDirection();
@@ -39,11 +39,12 @@ public:
     MASS_FUNCTION int getAxonSpawnTime();
     MASS_FUNCTION int getDendritesToSpawn();
     MASS_FUNCTION void reduceDendritesToSpawn(int);
-    MASS_FUNCTION GrowingEnd* getTravelingSynapse();
-    MASS_FUNCTION GrowingEnd* getTravelingDendrite();
-    MASS_FUNCTION void setTravelingDendrite(GrowingEnd*);
-    MASS_FUNCTION void setTravelingSynapse(GrowingEnd*);
+    MASS_FUNCTION bool getTravelingSynapse();
+    MASS_FUNCTION bool getTravelingDendrite();
+    MASS_FUNCTION void setTravelingDendrite(bool);
+    MASS_FUNCTION void setTravelingSynapse(bool);
     MASS_FUNCTION bool isOccupied();
+    MASS_FUNCTION void setOccupied(bool);
     MASS_FUNCTION void setBranchedSynapseSoma(NeuronPlace*);
     MASS_FUNCTION void setBranchedSynapseSomaIdx(int);
     MASS_FUNCTION void setBranchedDendriteSoma(NeuronPlace*);

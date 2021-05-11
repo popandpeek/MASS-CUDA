@@ -97,7 +97,7 @@ public:
 	/* Executed during manageAll() call on the collection of agents to complete the 
 	 * deallocation/memory management of the agents marked for termination.
 	 */
-	void terminateAgents(int agentHandle);
+	void terminateAgents(int agentHandle, int placeHandle);
 
 	/* Executed during manageAll() call on the collection of agents to complete the 
 	 * migration of the agents marked for migration.

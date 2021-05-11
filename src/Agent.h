@@ -26,7 +26,7 @@ public:
     to be a switch statement where each user-implemented function is 
     mapped to a funcID, and is passed ‘args’ when called.
     */
-    MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL) = 0;
+    MASS_FUNCTION virtual void callMethod(int, void *arg = NULL) = 0;
 
     /**
     Returns the AgentState object pointed associated with this Agent
@@ -36,7 +36,7 @@ public:
     /**
     Assigns this Agents to a particular Place (it’s place of residency)
     */
-    MASS_FUNCTION void setPlace(Place* place);
+    MASS_FUNCTION void setPlace(Place*);
 
     /**
     Returns a pointer to the Place, on which this agent is located/resides. 
@@ -60,7 +60,7 @@ public:
     /**
     Sets the unique index of this Agent
     */
-    MASS_FUNCTION void setIndex(int index);
+    MASS_FUNCTION void setIndex(int);
 
     /**
     Returns true if the Agent is in an active state. Returns false if the 
@@ -84,6 +84,8 @@ public:
 
     MASS_FUNCTION bool longDistanceMigration();
     
+    MASS_FUNCTION void setLongDistanceMigration(bool);
+
     /**
     Sets the agent status to inactive. Agents place is set to vacant and 
     he agent is excluded from all the subsequent callAll() function calls.
@@ -103,15 +105,16 @@ public:
     This parameter is required to save different agents migrating to a place from 
     different surrounding locations into separate places in memory.
     */
-    MASS_FUNCTION void migrateAgent(Place* destination, int destinationRelativeIdx);
+    MASS_FUNCTION void migrateAgent(Place*, int);
 
+    MASS_FUNCTION void migrateAgentLongDistance(Place*, int);
     /**
     Spawns the specified number of new agents at the specified place.
     The function does not accept instantiation arguments due to current limitations of the library.
     If you need to set some parameters of the newly created Agents, please set these parameters 
     in a separate function after agent creation.
     */
-    MASS_FUNCTION void spawn(int numAgents, Place* place);
+    MASS_FUNCTION void spawn(int, Place*);
 
     AgentState *state;
 };

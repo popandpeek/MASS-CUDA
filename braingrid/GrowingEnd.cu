@@ -23,6 +23,10 @@ MASS_FUNCTION GrowingEnd::~GrowingEnd() {
     // nothing to delete
 }
 
+MASS_FUNCTION GrowingEndState* GrowingEnd::getState() {
+    return myState;
+}
+
 MASS_FUNCTION bool GrowingEnd::isGrowing() {
     return myState->isGrowing;
 }
@@ -209,8 +213,9 @@ MASS_FUNCTION void GrowingEnd::axonToSynapse(int* randNums) {
             myState->myType = SYNAPSE;
             myState->branchCountRemaining = R_REPETITIVE_BRANCHES;
             myState->branchGrowthRemaining = K_BRANCH_GROWTH;
-            if (((NeuronPlace*)myState->place)->getTravelingSynapse() == NULL) {
-                ((NeuronPlace*)myState->place)->setTravelingSynapse(this);
+            if (((NeuronPlace*)myState->place)->getTravelingSynapse() == false) {
+                ((NeuronPlace*)myState->place)->setTravelingSynapse(true);
+                ((NeuronPlace*)myState->place)->addAgent(this);
             } 
             else {
                 terminateAgent();

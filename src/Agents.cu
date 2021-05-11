@@ -74,7 +74,7 @@ void Agents::manageAll() {
 
 void Agents::manageAllSpawnFirst() {
     // Step 1: kill all agents that need killing
-    dispatcher->terminateAgents(handle);
+    dispatcher->terminateAgents(handle, placesHandle);
 
     // Step 2: migrate all agents that need migrating
     dispatcher->spawnAgents(handle);

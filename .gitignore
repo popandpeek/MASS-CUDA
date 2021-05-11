@@ -38,6 +38,9 @@ launch.json
 lib
 obj
 bin
-.vscode
-
-
+*.vscode
+*.bak
+*.txt
+GPATH
+GRTAGS
+GTAGS

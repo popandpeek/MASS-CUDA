@@ -173,10 +173,6 @@ int* DeviceConfig::getnAgentsDev(int handle) {
 	return devAgentsMap[handle].nAgentsDev;
 }
 
-std::vector<Agent**> DeviceConfig::getBagOAgentsDevPtrs(int agentHandle) {
-	return devAgentsMap[agentHandle].collectedAgents;
-}
-
 std::vector<std::pair<dim3, dim3>> DeviceConfig::getAgentsThreadBlockDims(int handle) {
 	return devAgentsMap[handle].aDims;
 }

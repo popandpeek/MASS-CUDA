@@ -40,6 +40,7 @@ public:
     MASS_FUNCTION ~GrowingEnd();
     MASS_FUNCTION virtual void callMethod(int functionId, void *arg = NULL);
     MASS_FUNCTION virtual GrowingEndState* getState();
+    
     MASS_FUNCTION bool isGrowing();
     MASS_FUNCTION void setGrowing(bool);
     MASS_FUNCTION int getType();

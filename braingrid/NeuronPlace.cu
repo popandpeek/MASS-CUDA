@@ -12,18 +12,17 @@ MASS_FUNCTION NeuronPlace::NeuronPlace(PlaceState *state, void *argument) :
 		Place(state, argument) {
 
 	myState = (NeuronPlaceState*) state;
-    for (int i = 0; i < MAX_NEIGHBORS; ++i) {
-        myState->growthInSomas[i] = NULL;
-        myState->growthInSomasType[i] = -1;
-    }
     
     myState->growthDirection = (BrainGridConstants::Direction)0;
     myState->migrationDest = NULL;
     myState->migrationDestRelativeIdx = -1;
-    myState->inboundDendritePlaceID = -1;
-    myState->inboundAxonPlaceID = -1;
-    myState->travelingDendrite = NULL;
-    myState->travelingSynapse = NULL;
+    myState->travelingDendrite = false;
+    myState->travelingSynapse = false;
+}
+
+
+MASS_FUNCTION NeuronPlaceState* NeuronPlace::getState() {
+    return myState;
 }
 
 MASS_FUNCTION int NeuronPlace::getDendriteSpawnTime() {
@@ -42,6 +41,10 @@ MASS_FUNCTION int NeuronPlace::getMigrationDestRelIdx() {
     return myState->migrationDestRelativeIdx;
 }
 
+MASS_FUNCTION int NeuronPlace::getGrowthDirection() {
+    return myState->growthDirection;
+}
+
 MASS_FUNCTION int NeuronPlace::getType() {
     return myState->myType;
 }
@@ -58,24 +61,28 @@ MASS_FUNCTION void NeuronPlace::reduceDendritesToSpawn(int amount) {
     myState->dendritesToSpawn -= amount;
 }
 
-MASS_FUNCTION GrowingEnd* NeuronPlace::getTravelingSynapse() {
+MASS_FUNCTION bool NeuronPlace::getTravelingSynapse() {
     return myState->travelingSynapse;
 }
 
-MASS_FUNCTION GrowingEnd* NeuronPlace::getTravelingDendrite() {
+MASS_FUNCTION bool NeuronPlace::getTravelingDendrite() {
     return myState->travelingDendrite;
 }
 
-MASS_FUNCTION void NeuronPlace::setTravelingSynapse(GrowingEnd* gEnd) {
-    myState->travelingSynapse = gEnd;
+MASS_FUNCTION void NeuronPlace::setTravelingSynapse(bool hasTraveler) {
+    myState->travelingSynapse = hasTraveler;
 }
 
-MASS_FUNCTION void NeuronPlace::setTravelingDendrite(GrowingEnd* gEnd) {
-    myState->travelingDendrite = gEnd;
+MASS_FUNCTION void NeuronPlace::setTravelingDendrite(bool hasTraveler) {
+    myState->travelingDendrite = hasTraveler;
 }
 
 MASS_FUNCTION bool NeuronPlace::isOccupied() {
     return myState->occupied;
+}
+
+MASS_FUNCTION void NeuronPlace::setOccupied(bool isOccupied) {
+    myState->occupied = isOccupied;
 }
 
 MASS_FUNCTION void NeuronPlace::setBranchedSynapseSoma(NeuronPlace* branchedSoma) {
@@ -191,7 +198,7 @@ MASS_FUNCTION void NeuronPlace::findAxonGrowthDestinationFromSoma() {
         myState ->  migrationDestRelativeIdx = -1;
 
         NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
-        while (tmpPlace == NULL || tmpPlace->myState->myType != BrainGridConstants::EMPTY || tmpPlace->myState->travelingDendrite != NULL) {
+        while (tmpPlace == NULL || tmpPlace->myState->myType != BrainGridConstants::EMPTY || tmpPlace->getTravelingDendrite()) {
             myState->growthDirection = (BrainGridConstants::Direction) (myState->growthDirection + 1 % N_DESTINATIONS);
             tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
         }
@@ -219,7 +226,7 @@ MASS_FUNCTION void NeuronPlace::findDendriteGrowthDestinationFromSoma() {
         int startPos = pos;
         NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[pos];
         // TODO: Need to protect from having Dendrite go to same place as Axon 
-        while (tmpPlace == NULL || tmpPlace->myState->myType != BrainGridConstants::EMPTY || tmpPlace->myState->travelingDendrite != NULL) {
+        while (tmpPlace == NULL || tmpPlace->myState->myType != BrainGridConstants::EMPTY || tmpPlace->getTravelingDendrite()) {
             pos = (pos + 1) % N_DESTINATIONS;
             myState->growthDirection = (BrainGridConstants::Direction)pos;
             tmpPlace = (NeuronPlace*)myState->neighbors[pos];
@@ -236,28 +243,19 @@ MASS_FUNCTION void NeuronPlace::findDendriteGrowthDestinationFromSoma() {
 
 MASS_FUNCTION void NeuronPlace::setNeuronPlaceGrowths() {
     if (myState->myType == BrainGridConstants::EMPTY && !(myState->occupied)) {
-        int count = 0;
-        GrowingEnd* tmpEnd = (GrowingEnd*)myState->agents[count];
-        while (tmpEnd != NULL) {
+        for (int i = 0; i < MAX_AGENTS; ++i) {
+            GrowingEnd* tmpEnd = (GrowingEnd*)myState->agents[i];
             if (tmpEnd->getType() == BrainGridConstants::SYNAPSE) {
-                if (myState->travelingSynapse == NULL) {
-                    myState->travelingSynapse = tmpEnd;
-                } else if (tmpEnd->getIndex() < myState->travelingSynapse->getIndex()) {
-                    myState->travelingSynapse->terminateAgent();
-                    myState->travelingSynapse = tmpEnd;
+                if (!getTravelingSynapse()) {
+                    setTravelingSynapse(true);
+                } 
+            } 
+            
+            if (tmpEnd->getType() == BrainGridConstants::DENDRITE){
+                if (!getTravelingDendrite()) {
+                    setTravelingDendrite(true);
                 }
             }
-
-            else if (tmpEnd->getType() == BrainGridConstants::DENDRITE){
-                if (myState->travelingDendrite == NULL) {
-                    myState->travelingDendrite = tmpEnd;
-                } else if (tmpEnd->getIndex() < myState->travelingDendrite->getIndex()) {
-                    myState->travelingDendrite->terminateAgent();
-                    myState->travelingDendrite = tmpEnd;
-                }
-            }
-
-            tmpEnd = (GrowingEnd*)myState->agents[++count];
         }
     }
 }
@@ -310,16 +308,14 @@ MASS_FUNCTION void NeuronPlace::makeGrowingEndConnections() {
         }
 
 
-        if (myState->travelingDendrite != NULL && myState->travelingSynapse != NULL) {
-            if (myState->travelingDendrite->getSomaIndex() != myState->travelingSynapse->getSomaIndex()) {
-                myState->occupied = true;
-                myState->travelingDendrite->setGrowing(false);
-                myState->travelingSynapse->setGrowing(false);
-                myState->travelingSynapse->setConnectPlace(myState->travelingDendrite->getSoma());
-                myState->travelingSynapse->setConnectPlaceIndex(myState->travelingDendrite->getSomaIndex());    
-            }
-
-            myState->travelingDendrite->terminateAgent();
+        if (getTravelingDendrite() && getTravelingSynapse() && 
+                incomingSynapse->getSomaIndex() != incomingDendrite->getSomaIndex()) {
+            myState->occupied = true;
+            incomingSynapse->setGrowing(false);
+            incomingDendrite->setGrowing(false);
+            incomingSynapse->setConnectPlace(incomingDendrite->getSoma());
+            incomingSynapse->setConnectPlaceIndex(incomingDendrite->getSomaIndex());     
+            incomingDendrite->terminateAgent();
         }
     }
 }
