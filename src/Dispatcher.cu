@@ -4,6 +4,7 @@
 #include <iterator>
 #include <typeinfo>
 #include "../cub-1.8.0/cub/cub.cuh"
+#include <omp.h>
 
 #include "Dispatcher.h"
 #include "cudaUtil.h"
@@ -61,7 +62,7 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, i
 
 __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, int idxEnd, int nNeighbors, int functionId,
         void *argPtr) {
-    unsigned idx = getGlobalIdx_1D_1D();
+    int idx = getGlobalIdx_1D_1D();
 
     if (idx < nptrs) {
         PlaceState *state = ptrs[idx + idxStart]->getState();
@@ -79,64 +80,44 @@ __global__ void exchangeAllPlacesKernel(Place **ptrs, int nptrs, int idxStart, i
     }
 }
 
-__global__ void setFlagsKernel(Agent** a_ptrs, int nPtrs, bool* flags) {
-    unsigned idx = getGlobalIdx_1D_1D();
+__global__ void setFlagsKernel(Agent** a_ptrs, int nPtrs, int* flags) {
+    int idx = getGlobalIdx_1D_1D();
     if (idx < nPtrs) {
-        flags[idx] = 0;
         if (a_ptrs[idx]->isAlive()) {
             flags[idx] = 1;
+            return;
         }
+        flags[idx] = 0;
+
     }
 }
 
-__global__ void writeMovingAgentLocationsKernel(AgentState* state_ptrs, int startIndex, unsigned qty, unsigned* locations, unsigned* locations_loc) {
-    unsigned idx = getGlobalIdx_1D_1D() + startIndex;
+__global__ void writeAliveAgentLocationsKernel(Agent** a_ptrs, int startIdx, int qty, int* locations, int* locations_loc) {
+    int idx = getGlobalIdx_1D_1D() + startIdx;
     if (idx < qty) {
-        if(state_ptrs[idx].isAlive) {
+        if(a_ptrs[idx]->isAlive()) {
             int location_idx = atomicAdd(locations_loc, 1);
             locations[location_idx] = idx;
         }
     }
 }
 
-__global__ void compactAgentsKernel(AgentState* state_ptrs, int qty, int agentStateSize, unsigned* locations, unsigned* locations_loc) {
-    unsigned idx = getGlobalIdx_1D_1D();
+__global__ void compactAgentsKernel(Agent** a_ptrs, int qty, int agentStateSize, int* locations, int* locations_loc) {
+    int idx = getGlobalIdx_1D_1D();
     if (idx < qty) {
-        if (!(state_ptrs[idx].isAlive)) {
+        if (!(a_ptrs[idx]->isAlive())) {
+            // Copy alive Agent to dead Agent location
             int location_idx = atomicAdd(locations_loc, 1);
-            AgentState temp = state_ptrs[idx];
-            memcpy(&(state_ptrs[idx]), &(state_ptrs[locations[location_idx]]), agentStateSize);
-            memcpy(&(state_ptrs[locations[location_idx]]), &(temp), agentStateSize);
+            memcpy(a_ptrs[idx]->state, a_ptrs[locations[location_idx]]->state, agentStateSize);
+            a_ptrs[idx]->setIndex(idx);
+            
+            // remove Agent at old location from Place
+            Place* pl = a_ptrs[locations[location_idx]]->getPlace();
+            pl->removeAgent(a_ptrs[locations[location_idx]]);
+
+            // add Agent at new location to Place
+            pl->addAgent(a_ptrs[idx]);
         }
-    }
-}
-
-__global__ void realignAgentsKernel(Agent** a_ptrs, AgentState* ste_ptrs, int nPtrs) {
-    unsigned idx = getGlobalIdx_1D_1D();
-    if (idx < nPtrs) {
-        a_ptrs[idx]->state = &ste_ptrs[idx];
-        a_ptrs[idx]->setIndex(idx);
-    }
-}
-
-__global__ void unattachPlaceAgentsKernel(Place** p_ptrs, int placesStride, int ghostplace_offset) {
-    unsigned idx = getGlobalIdx_1D_1D();
-    if (idx < placesStride) {
-        Place* pl = p_ptrs[idx + ghostplace_offset];
-        for (int i = 0; i < MAX_AGENTS; i++) {
-            if (pl->state->agents[i] != NULL) {
-                pl->removeAgent(pl->state->agents[i]);
-            }
-        }
-    }
-}
-
-__global__ void reattachPlaceAgentsKernel(Agent** a_ptrs, Place** p_ptrs, int nPtrs) {
-    unsigned idx = getGlobalIdx_1D_1D();
-    if (idx < nPtrs) {
-        int pl_idx = a_ptrs[idx]->getPlaceDevIndex();
-        Place* pl = p_ptrs[pl_idx];
-        pl->reattachAgent(a_ptrs[idx]);
     }
 }
 
@@ -147,7 +128,7 @@ __global__ void longDistanceMigrationKernel(Agent **src_agent_ptrs, Agent **dest
     int idx = getGlobalIdx_1D_1D();
     if (idx < nAgentsDevSrc) {
         if (src_agent_ptrs[idx]->isAlive() && src_agent_ptrs[idx]->longDistanceMigration()) {
-            unsigned destPlaceIdx = src_agent_state[idx].destPlaceIdx;
+            int destPlaceIdx = src_agent_state[idx].destPlaceIdx;
             if ((destPlaceIdx >= (placesStride * destDevice)) && 
                     (destPlaceIdx < (placesStride * destDevice + placesStride))) {
                 int neighborIdx = atomicAdd(nAgentsDevDest, 1);
@@ -217,7 +198,8 @@ __global__ void moveAgentsDownKernel(Agent **src_agent_ptrs, Agent **dest_agent_
     if (idx < nAgentsDevSrc) {
     // idx needs to be mapped base on which device L or R
         int place_index = src_agent_ptrs[idx]->getPlaceIndex();
-        if (place_index >= (placesStride + (placesStride * device) + (ghostPlaceMult * ghostPlaces - ghostPlaces))) {
+        if (place_index >= (placesStride + (placesStride * device) + 
+                (ghostPlaceMult * ghostPlaces - ghostPlaces))) {
             int neighborIdx = atomicAdd(nAgentsDevDest, 1);
             memcpy(&(dest_agent_state[neighborIdx]), &(src_agent_state[idx]), stateSize);
 
@@ -255,8 +237,7 @@ __global__ void updateAgentPointersMovingUp(Place** placePtrs, Agent** agentPtrs
 		if (agentPtrs[idx]->isAlive() && agentPtrs[idx]->isTraveled()) {
 			agentPtrs[idx]->setTraveled(false);
             // Get array index from overall indexing scheme
-			int placePtrIdx = agentPtrs[idx]->getPlaceIndex() - (device * placesStride) + 
-					(ghostPlaces + ghostPlaces * ghostSpaceMult);
+			int placePtrIdx = agentPtrs[idx]->getPlaceDevIndex() - (device * placesStride) + (ghostPlaces + ghostPlaces * ghostSpaceMult);
 			if (placePtrs[placePtrIdx]->addAgent(agentPtrs[idx])) {
 				agentPtrs[idx]->setPlace(placePtrs[placePtrIdx]);
 				return; 
@@ -273,8 +254,7 @@ __global__ void updateAgentPointersMovingDown(Place** placePtrs, Agent** agentPt
 	if (idx < qty) {
 		if (agentPtrs[idx]->isAlive() && agentPtrs[idx]->isTraveled()) {
 			agentPtrs[idx]->setTraveled(false);
-			int placePtrIdx = agentPtrs[idx]->getPlaceIndex() - (device * placesStride) + 
-					((ghostPlaces * 2) - (ghostSpaceMult * ghostPlaces));
+			int placePtrIdx = agentPtrs[idx]->getPlaceDevIndex() - (device * placesStride) + ((ghostPlaces * 2) - (ghostSpaceMult * ghostPlaces));
 			if (placePtrs[placePtrIdx]->addAgent(agentPtrs[idx])) {
 				agentPtrs[idx]->setPlace(placePtrs[placePtrIdx]);
 				return; 
@@ -296,7 +276,7 @@ __global__ void spawnAgentsKernel(Agent **ptrs, int* nextIdx, int maxAgents) {
 
             for (int i=0; i< ptrs[idx]->state->nChildren; i++) {
                 // instantiate with proper index
-                ptrs[idxStart+i]->setAlive();
+                ptrs[idxStart+i]->setAlive(true);
                 ptrs[idxStart+i]->setIndex(idxStart+i);
 
                 // link to a place:
@@ -320,10 +300,10 @@ void Dispatcher::init() {
 	if (!initialized) {
 		initialized = true; 
 		Logger::debug(("Initializing Dispatcher"));
-        int gpuCount;
+        int gpuCount = 0;
         cudaGetDeviceCount(&gpuCount);
         
-		if (gpuCount == 0) {
+		if (gpuCount < 1) {
 			throw MassException("No GPU devices were found.");
 		}
 
@@ -351,6 +331,17 @@ void Dispatcher::init() {
             }
         }
 
+        omp_set_dynamic(0);
+        omp_set_num_threads(devices.size());
+        #pragma omp parallel 
+        {
+		    int gpu_id = -1;
+            const int thread_id = omp_get_thread_num();
+            CATCH(cudaSetDevice(thread_id));
+		    CATCH(cudaGetDevice(&gpu_id));
+		    Logger::debug("Thread id = %d selected device id = %d total threads = %d", thread_id, gpu_id, omp_get_num_threads());
+        }
+
         deviceInfo = new DeviceConfig(devices);
         model = new DataModel(devices.size());
 	}
@@ -366,23 +357,17 @@ std::vector<Place**> Dispatcher::refreshPlaces(int handle) {
     Logger::debug("Entering Dispatcher::refreshPlaces");
     PlacesModel *placesModel = model->getPlacesModel(handle);
     if (initialized) {
-        int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(handle);
-        int* dims = deviceInfo->getDimSize();
-        std::vector<int> devices = deviceInfo->getDevices();
-        int idxBump = 0;
         Logger::debug("Dispatcher::refreshPlaces: Initialized -> copying info from GPU to CPU");
-        std::vector<void*> devStates = deviceInfo->getPlaceStates(handle);
-        int placesStrideDev = deviceInfo->getPlacesStride(handle);
+        int placesStride = deviceInfo->getPlacesStride(handle);
         int stateSize = placesModel->getStateSize();
-        Logger::debug("Dispatcher::refreshPlaces: devPtrs size = %d; placesStrideDev = %d; stateSize = %d, idxBump = %d", devStates.size(), placesStrideDev, stateSize, idxBump);
-        for (int i = 0; i < devices.size(); ++i) {
-            Logger::debug("Dispatcher::refreshPlaces: copy memory on device: %d", i);
-            int bytes = stateSize * placesStrideDev;
-            cudaSetDevice(devices.at(i));
-            CATCH(cudaMemcpy(placesModel->getStatePtr(i), deviceInfo->getPlaceStatesForTransfer(handle, i), bytes, cudaMemcpyDefault));
-            if (idxBump == 0) {
-                idxBump = dims[0] * MAX_AGENT_TRAVEL;
-            }
+        
+        #pragma omp parallel 
+        {
+            int gpu_id = -1;
+            CATCH(cudaGetDevice(&gpu_id));
+            Logger::debug("Dispatcher::refreshPlaces: copy memory on device: %d", gpu_id);
+            int bytes = stateSize * placesStride;
+            CATCH((cudaMemcpy(placesModel->getStatePtr(gpu_id), deviceInfo->getPlaceStatesForTransfer(handle, gpu_id), bytes, cudaMemcpyDefault)));
         }
 	}
     
@@ -395,40 +380,37 @@ void Dispatcher::callAllPlaces(int placeHandle, int functionId, void *argument, 
 	if (initialized) {
         Logger::debug("Dispatcher::callAllPlaces: Calling all on places[%d]. Function id = %d", 
                 placeHandle, functionId);
-        std::vector<int> devices = deviceInfo->getDevices();
-        std::vector<Place**> devPtrs = deviceInfo->getDevPlaces(placeHandle); 
-        int stride = deviceInfo->getPlacesStride(placeHandle);
-        dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
-        int* dims = deviceInfo->getDimSize();
-        int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(placeHandle);
 
-        int idxBump = 0;
-        for (int i = 0; i < devices.size(); ++i) {
-            Logger::debug("Launching Dispatcher::callAllPlacesKernel() on device: %d", 
-                    devices.at(i));
-            cudaSetDevice(devices.at(i));
-            Logger::debug("Dispatcher::callAllPlaces: device: %d; pdims[0]: %d, pdims[1]: %d", i, pDims[0].x, pDims[1].x);
+        std::vector<Place**> devPtrs = deviceInfo->getDevPlaces(placeHandle); 
+        int placesStride = deviceInfo->getPlacesStride(placeHandle);
+        dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
+
+        #pragma omp parallel 
+        {
+            int gpu_id = -1;
+            CATCH(cudaGetDevice(&gpu_id));
+            Logger::debug("Dispatcher::callAllPlaces: device: %d; pdims[0]: %d, pdims[1]: %d", gpu_id, pDims[0].x, pDims[1].x);
 
             // load any necessary arguments
             void *argPtr = NULL;
             if (argument != NULL) {
-                CATCH(cudaMalloc((void** ) &argPtr, argSize));
-                CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
+                int devArgSize = calculatePlaceArgumentArrayChunkSize(placeHandle, argSize, gpu_id);
+                Logger::debug("Dispatcher::callAllPlaces: Argument size = %d; devArgSize = %d", argSize, devArgSize);
+                CATCH(cudaMalloc((void** ) &argPtr, devArgSize));
+                CATCH(cudaMemcpy(argPtr, calculateArgumentPointer(placeHandle, gpu_id, argument, argSize), devArgSize, H2D));
             }
-
-            callAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride, functionId, idxBump, argPtr);
+            
+            int idxBump = gpu_id > 0 ? deviceInfo->getDimSize()[0] * MAX_AGENT_TRAVEL : 0;
+            callAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(gpu_id), placesStride, functionId, idxBump, argPtr);
             CHECK();
             cudaDeviceSynchronize();
+        
             if (argPtr != NULL) {
                 Logger::debug("Dispatcher::callAllPlaces: Freeing device args.");
                 cudaFree(argPtr);
             }
-
-            if (idxBump == 0) {
-                idxBump = dims[0] * MAX_AGENT_TRAVEL;
-            }
         }
-
+        
         deviceInfo->copyGhostPlaces(placeHandle, model->getPlacesModel(placeHandle)->getStateSize());
 		Logger::debug("Exiting Dispatcher::callAllPlaces()");
 	}
@@ -471,11 +453,13 @@ bool Dispatcher::updateNeighborhood(int handle, std::vector<int*> *vec) {
     }
     
     // Now copy offsets to the GPU:
-    for (int i = 0; i < deviceInfo->getNumDevices(); ++i) {
-        CATCH(cudaSetDevice(deviceInfo->getDeviceNum(i)));
+    #pragma omp parallel shared(offsets_device, offsets)
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
         cudaMemcpyToSymbol(offsets_device, offsets, sizeof(int) * nNeighbors);
         CHECK();
-        Logger::debug("Copied constant memory to device %d", i);
+        Logger::debug("Copied constant memory to device %d", gpu_id);
     }
 
     delete [] offsets;
@@ -491,32 +475,29 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations) 
     }
 
 	std::vector<Place**> devPtrs = deviceInfo->getDevPlaces(handle);
-    std::vector<void*> devStates = deviceInfo->getPlaceStates(handle);
     dim3* pDims = deviceInfo->getPlacesThreadBlockDims(handle);
     Logger::debug("Kernel dims = gridDim { %d, %d, %d } and blockDim = { %d, %d, %d }", pDims[0].x, pDims[0].y, pDims[0].z, pDims[1].x, pDims[1].y, pDims[1].z);
-    std::vector<int> devices = deviceInfo->getDevices();
-    int stride = deviceInfo->getPlacesStride(handle);
-    int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(handle);
     int* dims = deviceInfo->getDimSize();
     int placesStride = deviceInfo->getPlacesStride(handle);
 
-    int idxStart;
-    int idxEnd;
-    for (int i = 0; i < devices.size(); ++i) {
-        Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
-        cudaSetDevice(devices.at(i));
-        //Logger::debug("Dispatcher::ExchangeAllPlaces: nptrs = %d", stride + (dims[0] * 2));
-        if (i == 0) { 
+    #pragma omp parallel 
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", gpu_id);
+        int idxStart;
+        int idxEnd;
+        if (gpu_id == 0) { 
             idxStart = 0;
             idxEnd = dims[0] * MAX_AGENT_TRAVEL;
-        } else if (i == devices.size() - 1) { // update params for last device
+        } else if (gpu_id == omp_get_num_threads() - 1) { // update params for last device
             idxStart = dims[0] * MAX_AGENT_TRAVEL;
             idxEnd = 0;
         } else  { // update params for middle ranks
             idxStart = dims[0] * MAX_AGENT_TRAVEL;
             idxEnd = dims[0] * MAX_AGENT_TRAVEL;
         }  
-        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride, idxStart, idxEnd, destinations->size());
+        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(gpu_id), placesStride, idxStart, idxEnd, destinations->size());
         CHECK();
         cudaDeviceSynchronize();
     }
@@ -562,33 +543,40 @@ void Dispatcher::exchangeAllPlaces(int handle, std::vector<int*> *destinations, 
     std::vector<Place**> devPtrs = deviceInfo->getDevPlaces(handle);
     dim3* pDims = deviceInfo->getPlacesThreadBlockDims(handle);
     std::vector<int> devices = deviceInfo->getDevices();
-    int stride = deviceInfo->getPlacesStride(handle);
+    int placesStride = deviceInfo->getPlacesStride(handle);
     int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(handle);
     int* dims = deviceInfo->getDimSize();
     Logger::debug("Kernel dims = gridDim { %d, %d, %d } and blockDim = { %d, %d, %d }", pDims[0].x, pDims[0].y, pDims[0].z, pDims[1].x, pDims[1].y, pDims[1].z);
-    int idxStart;
-    int idxEnd;
-    for (int i = 0; i < devices.size(); ++i) {
-        Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", devices.at(i));
-        cudaSetDevice(devices.at(i));
+    
+    #pragma omp parallel 
+    {
+        int idxStart;
+        int idxEnd;
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        Logger::debug("Launching Dispatcher::exchangeAllPlacesKernel() on device: %d", gpu_id);
+
         // load any necessary arguments
         void *argPtr = NULL;
         if (argument != NULL) {
-            CATCH(cudaMalloc((void** ) &argPtr, argSize));
-		    CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
+            int devArgSize = calculatePlaceArgumentArrayChunkSize(handle, argSize, gpu_id);
+            Logger::debug("Dispatcher::callAllPlaces: Argument size = %d; devArgSize = %d", argSize, devArgSize);
+            CATCH(cudaMalloc((void** ) &argPtr, devArgSize));
+            CATCH(cudaMemcpy(argPtr, calculateArgumentPointer(handle, gpu_id, argument, argSize), devArgSize, H2D));
         }
-        Logger::debug("DispatcherExchangeAllPlaces: nptrs = %d", stride);
-        if (i == 0) { 
+
+        Logger::debug("DispatcherExchangeAllPlaces: nptrs = %d", placesStride);
+        if (gpu_id == 0) { 
             idxStart = 0;
             idxEnd = dims[0] * MAX_AGENT_TRAVEL;
-        } else if (i == devices.size() - 1) { // update params for last device
+        } else if (gpu_id == omp_get_num_threads() - 1) { // update params for last device
             idxStart = dims[0] * MAX_AGENT_TRAVEL;
             idxEnd = 0;
         } else  { // update params for middle ranks
             idxStart = dims[0] * MAX_AGENT_TRAVEL;
             idxEnd = dims[0] * MAX_AGENT_TRAVEL;
         } 
-        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(i), stride, idxStart, idxEnd, destinations->size(), functionId, argPtr);
+        exchangeAllPlacesKernel<<<pDims[0], pDims[1]>>>(devPtrs.at(gpu_id), placesStride, idxStart, idxEnd, destinations->size(), functionId, argPtr);
         CHECK();
         cudaDeviceSynchronize();
 
@@ -610,17 +598,22 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument, 
         std::vector<Agent**> agtsPtrs = deviceInfo->getDevAgents(agentHandle); 
         int* strides = deviceInfo->getnAgentsDev(agentHandle);
 
-        for (int i = 0; i < devices.size(); ++i) {
-            
-            Logger::debug("Launching Dispatcher::callAllAgentsKernel() on device: %d", devices.at(i));
-            cudaSetDevice(devices.at(i));
+        #pragma omp parallel
+        {
+            int gpu_id = -1;
+            CATCH(cudaGetDevice(&gpu_id));
+            Logger::debug("Launching Dispatcher::callAllAgentsKernel() on device: %d", gpu_id);
+
             // load any necessary arguments
             void *argPtr = NULL;
             if (argument != NULL) {
-                CATCH(cudaMalloc((void** ) &argPtr, argSize));
-			    CATCH(cudaMemcpy(argPtr, argument, argSize, H2D));
+                int devArgSize = argSize / omp_get_num_threads();
+                char* tmp = (char*)argument;
+                CATCH(cudaMalloc((void** ) &argPtr, devArgSize));
+                CATCH(cudaMemcpy(argPtr, (void*)(&(tmp[gpu_id * devArgSize])), devArgSize, H2D));
             }
-            callAllAgentsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(agtsPtrs.at(i), strides[i], functionId, argPtr);
+
+            callAllAgentsKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(agtsPtrs.at(gpu_id), strides[gpu_id], functionId, argPtr);
             CHECK();
             cudaDeviceSynchronize();
             if (argPtr != NULL) {
@@ -634,14 +627,14 @@ void Dispatcher::callAllAgents(int agentHandle, int functionId, void *argument, 
 }
 
 void Dispatcher::terminateAgents(int agentHandle, int placeHandle) {
-
+    Logger::debug("Launching Dispatcher::terminateAgents()");
     std::vector<int> devices = deviceInfo->getDevices();
     std::vector<Agent**> agentDevPtrs = deviceInfo->getDevAgents(agentHandle);
     std::vector<void*> agentStatePtrs = deviceInfo->getAgentsState(agentHandle);
     std::vector<Place**> placeDevPtrs = deviceInfo->getDevPlaces(placeHandle);
 
     int* nAgentsDev = deviceInfo->getnAgentsDev(agentHandle);
-    int* maxAgents = deviceInfo->getMaxAgents(agentHandle);
+    int maxAgents = deviceInfo->getMaxAgents(agentHandle);
     int placesStride = deviceInfo->getPlacesStride(placeHandle);
     int* nDims = deviceInfo->getDimSize();
 
@@ -650,65 +643,103 @@ void Dispatcher::terminateAgents(int agentHandle, int placeHandle) {
     dim3* pDims = deviceInfo->getPlacesThreadBlockDims(placeHandle);
 
     // compact Agent arrays
-    for (int i = 0; i < devices.size(); ++i) {
-        cudaSetDevice(devices.at(i));
+    #pragma omp parallel
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        Logger::debug("########################  DEVICE #%d ########################", gpu_id);
+        int agent_mem_used = (int)(((float)nAgentsDev[gpu_id] / (float)maxAgents) * 100);
+        if (agent_mem_used > AGENT_MEM_CHECK) {
+            // 1. bool array to represent alive/dead Agent's
+            int h_compact_flags[nAgentsDev[gpu_id]]; 
+            int* d_compact_flags;
+            CATCH(cudaMalloc((void**) &d_compact_flags, (nAgentsDev[gpu_id] * sizeof(int))));
+            Logger::debug("Dispatcher::terminateAgents(): alive Agents = %d, maxAgents = %d.", nAgentsDev[gpu_id], maxAgents);
+            setFlagsKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(agentDevPtrs.at(gpu_id), nAgentsDev[gpu_id], d_compact_flags);
+            Logger::debug("Dispatcher::terminateAgents(): Set Flags kernel completes.");
+            CATCH(cudaMemcpy(h_compact_flags, d_compact_flags, nAgentsDev[gpu_id] * sizeof(int), D2H));
+            // for (int j = 0; j < nAgentsDev[i]; ++j) {
+            //     Logger::debug("Index = %d : Flag = %d", j, h_compact_flags[j]);
+            // }
 
-        // 1. bool array to represent alive/dead Agent's
-        bool* h_compact_flags[maxAgents[i]]; 
-        bool* d_compact_flags = NULL;
-        int flags_size = maxAgents[i] * sizeof(bool);
-        CATCH(cudaMalloc((void**) &d_compact_flags, flags_size));
-        CATCH(cudaMemcpy(d_compact_flags, h_compact_flags, flags_size, H2D));
-        setFlagsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(agentDevPtrs.at(i), maxAgents[i], d_compact_flags);
-        
-        // 2. count true (alive Agents) values in bool array
-        void *dev_temp_storage = NULL;
-        size_t temp_storage_bytes = 0;
-        unsigned h_count_output[1];
-        unsigned *dev_count_output = 0;
-        CubDebugExit(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, dev_count_output, maxAgents[i]));
-        CubDebugExit(cudaMalloc(&dev_temp_storage, temp_storage_bytes));
-        CubDebugExit(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, dev_count_output, maxAgents[i]));
-        CATCH(cudaMemcpy(h_count_output, dev_count_output, sizeof(int), D2H));
-        CATCH(cudaFree(dev_temp_storage));
+            // 2. count true (alive Agents) values in bool array
+            void *dev_temp_storage;
+            size_t temp_storage_bytes = 0;
+            int h_count_alive_total[1];
+            int *d_count_alive_total;
+            CATCH(cudaMalloc((void**) &d_count_alive_total, sizeof(int)));
+            CubDebug(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, d_count_alive_total, nAgentsDev[gpu_id]));
+            CubDebug(cudaMalloc(&dev_temp_storage, temp_storage_bytes));
+            CubDebug(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, d_count_alive_total, nAgentsDev[gpu_id]));
+            CATCH(cudaMemcpy(h_count_alive_total, d_count_alive_total, sizeof(int), D2H));
+            CATCH(cudaFree(d_count_alive_total));
+            CATCH(cudaFree(dev_temp_storage));
+            // Logger::debug("Dispatcher::terminateAgents(): CUB::DeviceReduce::Sum for total alive Agents completes = %d", *h_count_alive_total);
+            
+            if (*h_count_alive_total < nAgentsDev[gpu_id]) {
+                // 3. count alive Agents values in flag array up to count of total alive Agents
+                int h_count_alive_left[1];
+                *h_count_alive_left = 0;
+                int* d_count_alive_left;
+                temp_storage_bytes = 0;
+                void *dev_temp_storage2;
+                CATCH(cudaMalloc((void**) &d_count_alive_left, sizeof(int)));
+                CubDebug(cub::DeviceReduce::Sum(dev_temp_storage2, temp_storage_bytes, d_compact_flags, d_count_alive_left, *h_count_alive_total));
+                CubDebug(cudaMalloc(&dev_temp_storage2, temp_storage_bytes));
+                CubDebug(cub::DeviceReduce::Sum(dev_temp_storage2, temp_storage_bytes, d_compact_flags, d_count_alive_left, *h_count_alive_total));
+                CATCH(cudaMemcpy(h_count_alive_left, d_count_alive_left, sizeof(int), D2H));
+                CATCH(cudaFree(d_count_alive_left));
+                CATCH(cudaFree(dev_temp_storage2));
 
-        // 3. count false (dead Agents) values in bool array up to count of total alive Agents
-        unsigned* h_count_dead = NULL;
-        *h_count_dead = 0;
-        unsigned* dev_count_dead = NULL;
-        CubDebugExit(cub::DeviceReduce::Sum(dev_temp_storage, temp_storage_bytes, d_compact_flags, dev_count_dead, *dev_count_output));
-        CATCH(cudaMemcpy(h_count_dead, dev_count_dead, sizeof(unsigned), D2H));
+                // Logger::debug("Dispatcher::terminateAgents(): CUB::DeviceReduce::Sum for alive Agents left of pivot completes = %d", *h_count_alive_left);
 
-        // 4. new unsigned array of size false (dead Agents) count
-        unsigned* h_dead_locations[*h_count_dead];
+                // 4. new int array of size false (dead Agents) count
+                int arrSize = *h_count_alive_total - *h_count_alive_left;
+                Logger::debug("Value of arrSize = %d", arrSize);
+                if (arrSize != 0) {
+                    // 5. write alive Agent locations from count total alive Agents up to nAgentsDev to new array
+                    int* dev_loc_index;
+                    int* d_live_locations;
+                    int location_idx[1];
+                    *location_idx = 0;
+                    CATCH(cudaMalloc((void**) &dev_loc_index, sizeof(int)));
+                    CATCH(cudaMemcpy(dev_loc_index, location_idx, sizeof(int), H2D));
+                    CATCH(cudaMalloc((void**) &d_live_locations, sizeof(int) * arrSize));
+                    writeAliveAgentLocationsKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(agentDevPtrs.at(gpu_id), *h_count_alive_total, nAgentsDev[gpu_id], d_live_locations, dev_loc_index);
+                    CHECK();
+                    Logger::debug("Dispatcher::terminateAgents(): writeEmptyAgentLocationsKernel completes.");
+                    int h_liveLocations[arrSize];
+                    CATCH(cudaMemcpy(location_idx, dev_loc_index, sizeof(int), D2H));
+                    CATCH(cudaMemcpy(h_liveLocations, d_live_locations, sizeof(int) * arrSize, D2H));
+                    // Logger::debug("** arrSize = %d : dev_loc_idx = %d **", arrSize, *location_idx);
+                    // for (int j = 0; j < arrSize; ++j) {
+                    //     Logger::debug("***** Index = %d : Flag = %d", j, h_liveLocations[j]);
+                    // }
 
-        // 5. write alive Agent locations from count total alive Agents up to maxAgents to new array
-        unsigned* dev_dead_locations = NULL;
-        unsigned location_idx[1];
-        *location_idx = 0;
-        CATCH(cudaMalloc((void**) &dev_dead_locations, sizeof(unsigned) * (*h_count_dead)));
-        writeMovingAgentLocationsKernel<<<aDims.at(i).first, aDims.at(i).second>>>((AgentState*)agentStatePtrs.at(i), *h_count_output, maxAgents[i], dev_dead_locations, location_idx);
+                    // 6. swap memory objects of dead and alive Agents to compact alive Agents 
+                    int* dev_index;
+                    int h_index[1];
+                    *h_index = 0;
+                    CATCH(cudaMalloc((void**) &dev_index, sizeof(int)));
+                    CATCH(cudaMemcpy(dev_index, h_index, sizeof(int), H2D));
+                    compactAgentsKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(agentDevPtrs.at(gpu_id), *h_count_alive_total, agentStateSize, d_live_locations, dev_index);
+                    CATCH(cudaMemcpy(h_index, dev_index, sizeof(int), D2H));
+                    // Logger::debug("*** Alive Agents moved = %d : Dead Agents copied over = %d", *h_index, *location_idx);
+                    // Logger::debug("Dispatcher::terminateAgents(): compactAgentsKernel completes.");
+                    CATCH(cudaFree(dev_loc_index));
+                    CATCH(cudaFree(dev_index));
+                    CATCH(cudaFree(d_live_locations));
 
-        // 6. swap memory objects of dead and alive Agents to compact alive Agents 
-        unsigned* dev_index = NULL;
-        unsigned h_index[1];
-        *h_index = 0;
-        CATCH(cudaMalloc(&dev_index, sizeof(unsigned)));
-        CATCH(cudaMemcpy(dev_index, h_index, sizeof(unsigned), H2D));
-        compactAgentsKernel<<<aDims.at(i).first, aDims.at(i).second>>>((AgentState*)agentStatePtrs.at(i), *h_count_output, agentStateSize, dev_dead_locations, dev_index);
-
-        // update each Place's agent array
-        int ghostPlace_offset = 0;
-        if (i != 0) {
-            ghostPlace_offset = nDims[0];
-        } 
-
-        // 7. removes all Agents from Places because the pointers now point at the incorrect Agent
-        unattachPlaceAgentsKernel<<<pDims[0], pDims[1]>>>(placeDevPtrs.at(i), placesStride, ghostPlace_offset);
-        
-        // 8. adds Agents back to correct Place based on Place index stored in AgentState
-        reattachPlaceAgentsKernel<<<pDims[0], pDims[1]>>>(agentDevPtrs.at(i), placeDevPtrs.at(i), nAgentsDev[i]);
+                    deviceInfo->setnAgentsDev(agentHandle, gpu_id, *h_count_alive_total);
+                    // Logger::debug("Dispatcher::terminateAgents(): setnAgentsDev() -> %d", *h_count_alive_total);
+                }
+            }
+            CATCH(cudaFree(d_compact_flags));
+        }
+        cudaDeviceSynchronize();
     }       
+
+    Logger::debug("Exiting Dispatcher::terminateAgents()");
 }
 
 void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
@@ -722,48 +753,50 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
 
 	std::vector<std::pair<Place**, void*>> gh_ptrs = deviceInfo->getTopGhostPlaces(placeHandle);
     std::vector<int> devices = deviceInfo->getDevices();
-    int placeStride = deviceInfo->getPlacesStride(placeHandle);
+    int placesStride = deviceInfo->getPlacesStride(placeHandle);
     int* ghostPlaceMult = deviceInfo->getGhostPlaceMultiples(placeHandle);
     int ghostPlaces = deviceInfo->getDimSize()[0] * MAX_AGENT_TRAVEL;
     int* nAgentsDev = deviceInfo->getnAgentsDev(agentHandle);
 
-    Logger::debug("Dispatcher::MigrateAgents: number of places: %d", deviceInfo->getPlaceCount(placeHandle));
-    for (int i = 0; i < devices.size(); ++i) {
-        Logger::debug("Dispatcher::migrateAgents: Starting Long Distance Agent migration on device %d", i);
-        for (int j = 0; j < devices.size(); ++j) {
-            cudaSetDevice(devices.at(i)); 
-            Logger::debug("Dispatcher::migrateAgents: longDistanceMigrationKernel copying to device %d", j);
-            longDistanceMigrationKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), 
-                    a_ptrs.at(j), (AgentState*)a_ste_ptrs.at(i), (AgentState*)a_ste_ptrs.at(j), nAgentsDev[i], &nAgentsDev[j],
-                    j, placeStride, model->getAgentsModel(agentHandle)->getStateSize());
-        }
-    }
+    // Logger::debug("Dispatcher::MigrateAgents: number of places: %d", deviceInfo->getPlaceCount(placeHandle));
+    // for (int i = 0; i < devices.size(); ++i) {
+    //     Logger::debug("Dispatcher::migrateAgents: Starting Long Distance Agent migration on device %d", i);
+    //     for (int j = 0; j < devices.size(); ++j) {
+    //         cudaSetDevice(devices.at(i)); 
+    //         Logger::debug("Dispatcher::migrateAgents: longDistanceMigrationKernel copying to device %d", j);
+    //         longDistanceMigrationKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), 
+    //                 a_ptrs.at(j), (AgentState*)a_ste_ptrs.at(i), (AgentState*)a_ste_ptrs.at(j), nAgentsDev[i], &nAgentsDev[j],
+    //                 j, placeStride, model->getAgentsModel(agentHandle)->getStateSize());
+    //     }
+    // }
 
-    Logger::debug("Dispatcher::migrateAgents: Adding long distance migrated Agents to target Place.");
-    for (int i = 0; i < devices.size(); ++i) {
-        cudaSetDevice(devices.at(i));
-        longDistanceMigrationsSetPlaceKernel<<<aDims.at(i).first, aDims.at(i).second>>>(p_ptrs.at(i), a_ptrs.at(i), 
-                nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i], devices.at(i));
-    }
+    // Logger::debug("Dispatcher::migrateAgents: Adding long distance migrated Agents to target Place.");
+    // for (int i = 0; i < devices.size(); ++i) {
+    //     cudaSetDevice(devices.at(i));
+    //     longDistanceMigrationsSetPlaceKernel<<<aDims.at(i).first, aDims.at(i).second>>>(p_ptrs.at(i), a_ptrs.at(i), 
+    //             nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i], devices.at(i));
+    // }
     
     Logger::debug("Dispatcher::resolveMigrationConflictsKernel() dims = gridDim %d and blockDim = %d", pDims[0].x, pDims[1].x);
 
-    for (int i = 0; i < devices.size(); ++i) {
-        Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", devices.at(i));
-        cudaSetDevice(devices.at(i));
-        resolveMigrationConflictsKernel<<<pDims[0], pDims[1]>>>((gh_ptrs.at(i)).first, placeStride);
-        CHECK();
-        cudaDeviceSynchronize();		
+    #pragma omp parallel
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        Logger::debug("Launching Dispatcher:: resolveMigrationConflictsKernel() on device: %d", gpu_id);
+        resolveMigrationConflictsKernel<<<pDims[0], pDims[1]>>>((gh_ptrs.at(gpu_id)).first, placesStride);
+        CHECK();		
     }
 
     Logger::debug("Dispatcher::migrateAgents: Number of place arrays in devPlaceMap == %d", deviceInfo->devPlacesMap.size());
     Logger::debug("Dispatcher::MigrateAgents: number of agents: %d", getNumAgents(agentHandle));
-    for (int i = 0; i < devices.size(); ++i) {
-        Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel() on device: %d with number of agents = %d", devices.at(i), nAgentsDev[i]);
-        cudaSetDevice(devices.at(i));
-        updateAgentLocationsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), nAgentsDev[i]);
+    #pragma omp parallel
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        Logger::debug("Launching Dispatcher:: updateAgentLocationsKernel() on device: %d with number of agents = %d", gpu_id, nAgentsDev[gpu_id]);
+        updateAgentLocationsKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(a_ptrs.at(gpu_id), nAgentsDev[gpu_id]);
         CHECK();
-        cudaDeviceSynchronize();
     }
 
 	// TODO: Wait on even devices to finish moving Agent's locally
@@ -772,53 +805,52 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     //       a. Do we leave them after local migration and spawn? 
     //       b. Do we leave them at origination for spawn
     //       c. Do we spawn and then migrate? ** THIS ONE **
-    for (int i = 0; i < devices.size(); ++i) {
-		cudaSetDevice(devices.at(i));
-        if (i % 2 == 0) {
-            // check right ghost stripe for Agents needing to move
-            moveAgentsDownKernel<<<aDims.at(i).first, aDims.at(i).second>>>
-                    (a_ptrs.at(i), a_ptrs.at(i + 1), (AgentState*)(a_ste_ptrs.at(i)), 
-					(AgentState*)(a_ste_ptrs.at(i + 1)),
-                    p_ptrs.at(i), p_ptrs.at(i + 1), i, placeStride, 
-                    ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i + 1]), 
+    #pragma omp parallel
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        if (gpu_id % 2 == 0) {
+            // check bottom ghost stripe for Agents needing to move
+            moveAgentsDownKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>
+                    (a_ptrs.at(gpu_id), a_ptrs.at(gpu_id + 1), (AgentState*)(a_ste_ptrs.at(gpu_id)), 
+					(AgentState*)(a_ste_ptrs.at(gpu_id + 1)),
+                    p_ptrs.at(gpu_id), p_ptrs.at(gpu_id + 1), gpu_id, placesStride, 
+                    ghostPlaces, ghostPlaceMult[gpu_id], nAgentsDev[gpu_id], &(nAgentsDev[gpu_id + 1]), 
                     model->getAgentsModel(agentHandle)->getStateSize());
 			CHECK();
-            if (i != 0) {
-                // check left ghost stripe for Agents needing to move
-                moveAgentsUpKernel<<<aDims.at(i).first, aDims.at(i).second>>>
-                        (a_ptrs.at(i), a_ptrs.at(i - 1), (AgentState*)(a_ste_ptrs.at(i)), 
-						((AgentState*)a_ste_ptrs.at(i - 1)),
-                        p_ptrs.at(i), p_ptrs.at(i - 1), i, placeStride, 
-                        ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i - 1]), 
+            if (gpu_id != 0) {
+                // check top ghost stripe for Agents needing to move
+                moveAgentsUpKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>
+                        (a_ptrs.at(gpu_id), a_ptrs.at(gpu_id - 1), (AgentState*)(a_ste_ptrs.at(gpu_id)), 
+						((AgentState*)a_ste_ptrs.at(gpu_id - 1)),
+                        p_ptrs.at(gpu_id), p_ptrs.at(gpu_id - 1), gpu_id, placesStride, 
+                        ghostPlaces, ghostPlaceMult[gpu_id], nAgentsDev[gpu_id], &(nAgentsDev[gpu_id - 1]), 
                         model->getAgentsModel(agentHandle)->getStateSize());
 				CHECK();
             }
-			
-			cudaDeviceSynchronize();
         }
 
         else {
 			// TODO: Wait on EVEN devices to finish moving agents globally
-			if (i != devices.size() - 1) {
-                // check right ghost stripe for Agents needing to move
-                moveAgentsDownKernel<<<aDims.at(i).first, aDims.at(i).second>>>
-                        (a_ptrs.at(i), a_ptrs.at(i + 1), (AgentState*)(a_ste_ptrs.at(i)), 
-						(AgentState*)(a_ste_ptrs.at(i + 1)),
-                        p_ptrs.at(i), p_ptrs.at(i + 1), i, placeStride, 
-                        ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i + 1]),
+			if (gpu_id != devices.size() - 1) {
+                // check bottom ghost stripe for Agents needing to move
+                moveAgentsDownKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>
+                        (a_ptrs.at(gpu_id), a_ptrs.at(gpu_id + 1), (AgentState*)(a_ste_ptrs.at(gpu_id)), 
+						(AgentState*)(a_ste_ptrs.at(gpu_id + 1)),
+                        p_ptrs.at(gpu_id), p_ptrs.at(gpu_id + 1), gpu_id, placesStride, 
+                        ghostPlaces, ghostPlaceMult[gpu_id], nAgentsDev[gpu_id], &(nAgentsDev[gpu_id + 1]),
                         model->getAgentsModel(agentHandle)->getStateSize());
 				CHECK();
             }
 
-            // check left ghost stripe for Agents needing to move
-            moveAgentsUpKernel<<<aDims.at(i).first, aDims.at(i).second>>>
-                    (a_ptrs.at(i), a_ptrs.at(i - 1), (AgentState*)(a_ste_ptrs.at(i)), 
-					(AgentState*)(a_ste_ptrs.at(i - 1)),
-                    p_ptrs.at(i), p_ptrs.at(i - 1), i, placeStride, 
-                    ghostPlaces, ghostPlaceMult[i], nAgentsDev[i], &(nAgentsDev[i - 1]), 
+            // check top ghost stripe for Agents needing to move
+            moveAgentsUpKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>
+                    (a_ptrs.at(gpu_id), a_ptrs.at(gpu_id - 1), (AgentState*)(a_ste_ptrs.at(gpu_id)), 
+					(AgentState*)(a_ste_ptrs.at(gpu_id - 1)),
+                    p_ptrs.at(gpu_id), p_ptrs.at(gpu_id - 1), gpu_id, placesStride, 
+                    ghostPlaces, ghostPlaceMult[gpu_id], nAgentsDev[gpu_id], &(nAgentsDev[gpu_id - 1]), 
                     model->getAgentsModel(agentHandle)->getStateSize());
 			CHECK();
-			cudaDeviceSynchronize();
         }
     }
 
@@ -831,18 +863,21 @@ void Dispatcher::migrateAgents(int agentHandle, int placeHandle) {
     deviceInfo->devAgentsMap[agentHandle].nAgents = sumAgents;
 
 	// Check ghostPlaces for traveled Agents and update pointers
-	for (int i = 1; i < devices.size(); ++i) {
-		cudaSetDevice(devices.at(i));
-		updateAgentPointersMovingDown<<<aDims.at(i).first, aDims.at(i).second>>>(p_ptrs.at(i), a_ptrs.at(i), 
-				nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i - 1], i);
+	#pragma omp parallel
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+		updateAgentPointersMovingDown<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(p_ptrs.at(gpu_id), a_ptrs.at(gpu_id), 
+				nAgentsDev[gpu_id], placesStride, ghostPlaces, ghostPlaceMult[gpu_id - 1], gpu_id);
 		CHECK();
-		cudaDeviceSynchronize();
 	}
 
-	for (int i = 0; i < devices.size() - 1; ++i) {
-		cudaSetDevice(devices.at(i));
-		updateAgentPointersMovingUp<<<aDims.at(i).first, aDims.at(i).second>>>(p_ptrs.at(i), a_ptrs.at(i),
-				nAgentsDev[i], placeStride, ghostPlaces, ghostPlaceMult[i], i);
+	#pragma omp parallel 
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+		updateAgentPointersMovingUp<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(p_ptrs.at(gpu_id), a_ptrs.at(gpu_id),
+				nAgentsDev[gpu_id], placesStride, ghostPlaces, ghostPlaceMult[gpu_id], gpu_id);
 		CHECK();
 	}
 
@@ -854,32 +889,42 @@ void Dispatcher::spawnAgents(int handle) {
     
     Logger::debug("Inside Dispatcher::spawnAgents()");
     std::vector<Agent**> a_ptrs = deviceInfo->getDevAgents(handle);
-    // TODO: get collected Agents
     std::vector<std::pair<dim3, dim3>> aDims = deviceInfo->getAgentsThreadBlockDims(handle);
 
     std::vector<int> devices = deviceInfo->getDevices();
     int* nAgentsDevs = deviceInfo->getnAgentsDev(handle);
+    int maxAgents = deviceInfo->getMaxAgents(handle);
 
-    int* numAgentObjects[devices.size()];
-    for (int i = 0; i < devices.size(); ++i) { 
-        cudaSetDevice(devices.at(i));
-        CATCH(cudaMalloc(&numAgentObjects[i], sizeof(int)));
-        CATCH(cudaMemcpy(numAgentObjects[i], &nAgentsDevs[i], sizeof(int), H2D));
-    }
+    Logger::debug("Dispatcher::spawnAgents(): gets stuff from deviceInfo.");
 
-    for (int i = 0; i < devices.size(); ++i) {
-        cudaSetDevice(devices.at(i));
-        spawnAgentsKernel<<<aDims.at(i).first, aDims.at(i).second>>>(a_ptrs.at(i), numAgentObjects[i], deviceInfo->getMaxAgents(handle, i));
+    #pragma omp parallel 
+    {
+        int gpu_id = -1;
+        CATCH(cudaGetDevice(&gpu_id));
+        int h_numAgentObjects[1];
+        *h_numAgentObjects = 0;
+        int* d_numAgentObjects;
+        CATCH(cudaMalloc((void**) &d_numAgentObjects, sizeof(int)));
+        CATCH(cudaMemcpy(d_numAgentObjects, &nAgentsDevs[gpu_id], sizeof(int), H2D));
+        Logger::debug("Dispatcher::spawnAgents(): Completes H2D memCpy's.");
+
+        spawnAgentsKernel<<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(a_ptrs.at(gpu_id), d_numAgentObjects, maxAgents);
         CHECK();
+        CATCH(cudaMemcpy(h_numAgentObjects, d_numAgentObjects, sizeof(int), D2H));
+        CATCH(cudaFree(d_numAgentObjects));
 
         // Is this necessary? If so, may need to accumulate count of results above
-        if (*numAgentObjects[i] > deviceInfo->getMaxAgents(handle, i)) {
-            throw MassException("Trying to spawn more agents than the maximun set for the system");
+        if (*(h_numAgentObjects) > maxAgents) {
+            throw MassException("Trying to spawn more agents than the maximum set for the system");
         }
 
-        int nNewAgents = *numAgentObjects[i] - getNumAgentsInstantiated(handle)[i];
+        Logger::debug("Dispatcher::spawnAgents(): Completes kernel calls.");
+        int nNewAgents = *h_numAgentObjects - nAgentsDevs[gpu_id];
+        Logger::debug("Dispatcher::spawnAgents(): Completes nNewAgents init and sub.");
         deviceInfo->devAgentsMap[handle].nAgents += nNewAgents;
-        deviceInfo->devAgentsMap[handle].nAgentsDev[i] += nNewAgents;
+        Logger::debug("Dispatcher::spawnAgents(): Completes nNewAgents set.");
+        deviceInfo->devAgentsMap[handle].nAgentsDev[gpu_id] += nNewAgents;
+        Logger::debug("Dispatcher::spawnAgents(): Completes nAgentsDev increase.");
     }
 
     Logger::debug("Finished Dispatcher::spawnAgents");
@@ -889,7 +934,7 @@ int Dispatcher::getNumAgents(int agentHandle) {
     return deviceInfo->getNumAgents(agentHandle);
 }
 
-int* Dispatcher::getMaxAgents(int agentHandle) {
+int Dispatcher::getMaxAgents(int agentHandle) {
     return deviceInfo->getMaxAgents(agentHandle);
 }
 
@@ -913,13 +958,37 @@ int* Dispatcher::getGhostPlaceMultiples(int handle) {
     return deviceInfo->getGhostPlaceMultiples(handle);
 }
 
-int* Dispatcher::getNumAgentsInstantiated(int handle) {
+int Dispatcher::getNumAgentsInstantiated(int handle) {
     return deviceInfo->getMaxAgents(handle);
 }
 
-unsigned int* Dispatcher::calculateRandomNumbers(int size) {
+unsigned* Dispatcher::calculateRandomNumbers(int size) {
     return deviceInfo->calculateRandomNumbers(size);
 }
 
+unsigned Dispatcher::calculatePlaceArgumentArrayChunkSize(int placeHandle, int byteSize, int device) {
+    unsigned argSizePerDevice = byteSize / deviceInfo->activeDevices.size();
+    unsigned ghostPaddingArgSize = ((deviceInfo->getGhostPlaceMultiples(placeHandle)[0] * deviceInfo->getDimSize()[0] * MAX_AGENT_TRAVEL) * 
+            (byteSize / (deviceInfo->activeDevices.size() * deviceInfo->getPlacesStride(placeHandle))));
+    if (device == 0) {
+        return argSizePerDevice;
+    } else {
+        return argSizePerDevice + ghostPaddingArgSize;
+    }
+}
+
+void* Dispatcher::calculateArgumentPointer(int placeHandle, int device, void* arg, int argSize) {
+    int argIdx = 0;
+    int argsPerPlace = argSize / sizeof(int) / deviceInfo->getPlaceCount(placeHandle);
+    Logger::debug("Dispatcher::calculateArgumentPointer: argsPerPlace: %d", argsPerPlace);
+    if (device != 0) {
+        argIdx = (device * deviceInfo->getPlacesStride(placeHandle)) - 
+                (deviceInfo->getGhostPlaceMultiples(placeHandle)[0] * 
+                deviceInfo->getDimSize()[0] * argsPerPlace * MAX_AGENT_TRAVEL);
+    }
+
+    char* tmp = (char*)arg;
+    return ((void*)(&(tmp[argIdx * sizeof(int)])));
+}
 }// namespace mass
 

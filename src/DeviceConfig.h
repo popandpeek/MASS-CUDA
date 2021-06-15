@@ -3,16 +3,21 @@
 
 #pragma once
 
-#include <curand_kernel.h>
-#include <curand.h>
+// #include <curand_kernel.h>
+// #include <curand.h>
 #include <map>
 #include <cassert>
 #include <unordered_set>
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <omp.h>
+#include <random>     
+#include <iterator>   
+#include <functional> 
+#include <iostream>   
 
-#include "iostream"
+// #include "iostream"
 #include "cudaUtil.h"
 #include "Logger.h"
 #include "GlobalConsts.h"
@@ -50,7 +55,7 @@ struct AgentArray {
 	std::vector<void*> devStates;
 
 	int nAgents;  //number of live agents in system
-	int* maxAgents; //number of all agent objects on each device
+	int maxAgents; //number of all agent objects on each device
 	int* nAgentsDev; // tracking for alive agents on each device
 	std::vector<std::pair<dim3, dim3>> aDims; //block and thread dimensions
 	int stateSize;
@@ -82,11 +87,13 @@ public:
 	std::vector<void*> getAgentsState(int handle);
 
 	int getNumAgents(int handle);
-	int getMaxAgents(int handle, int device);
-	int* getMaxAgents(int handle);
+	// int getMaxAgents(int handle, int device);
+	int getMaxAgents(int handle);
 	void setAgentsThreadBlockDims(int handle);
 	std::vector<std::pair<dim3, dim3>> getAgentsThreadBlockDims(int handle);
 	int* getnAgentsDev(int handle);
+	void setnAgentsDev(int handle, int device, int nAgents);
+
 	std::vector<int*> getCollectedAgentPtrs(int agentHandle);
 	std::vector<int*> getCollectedAgentsCount(int agentHandle);
 
@@ -114,9 +121,6 @@ public:
 	std::vector<Agent**> instantiateAgents (int handle, void *argument, 
 		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs);
 
-	// template<typename AgentType, typename AgentStateType>
-	// void migrateAgents(int agentHandle, int placeHandle);
-
 private:
 	int *dimSize;
 	int dimensions;
@@ -128,8 +132,8 @@ private:
 	size_t allMem;
 	size_t limit;
 
-	curandState *randState;
-	int randStateSize;
+	// curandState** randStates;
+	// int* randStateSize;
 
 	void deletePlaces(int handle);
 	void deleteAgents(int handle);
@@ -184,15 +188,13 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		int dimensions, int size[], int qty) {
 
 	Logger::debug("Entering DeviceConfig::instantiatePlaces\n");
-	Logger::debug("DeviceConfig::instantiatePlaces: mem limit == %llu", limit);
 	Logger::debug("Places size == size[0] = %d : size[1] = %d", size[0], size[1]);
 	if (devPlacesMap.count(handle) > 0) {
 		Logger::debug("DeviceConfig::instantiatePlaces: Places already there.");
 		return {};
 	}
 
-	int numDevices = activeDevices.size();
-	Logger::debug("Number of active devices == %d", activeDevices.size());
+	Logger::debug("Number of active devices = %d", activeDevices.size());
 	
 	// create places tracking
 	PlaceArray p;
@@ -202,13 +204,18 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 
 	// set place ghost spacing for each device
 	p.ghostSpaceMultiple = new int[activeDevices.size()];
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		if (i == 0 || i == activeDevices.size() - 1) {
-			p.ghostSpaceMultiple[i] = 1 * MAX_AGENT_TRAVEL;
+	int travel = MAX_AGENT_TRAVEL;
+
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
+		if (gpu_id == 0 || gpu_id == activeDevices.size() - 1) {
+			p.ghostSpaceMultiple[gpu_id] = 1 * travel;
 		}	
 
 		else {
-			p.ghostSpaceMultiple[i] = 2 * MAX_AGENT_TRAVEL;
+			p.ghostSpaceMultiple[gpu_id] = 2 * travel;
 		}
 	}
 
@@ -219,65 +226,79 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 	}
 
 	// calculates the dimensional size of each devices places chunk
-	for (int i = 0; i < activeDevices.size(); i++) {
+	p.devDims = std::vector<int*>(activeDevices.size());
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
 		int* chunkSize = new int[dimensions];
 		for (int j = 0; j < dimensions - 1; j++) {
 			chunkSize[j] = size[j];
 		}
-
-		chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size() + p.ghostSpaceMultiple[i];
-		p.devDims.push_back(chunkSize);
-		Logger::debug("chunkSize for device: %d == %d X %d", i, chunkSize[0], chunkSize[1]);
+		Logger::debug("Active device = %d", gpu_id);
+		chunkSize[dimensions - 1] = size[dimensions - 1] / activeDevices.size() + p.ghostSpaceMultiple[gpu_id];
+		p.devDims.at(gpu_id) = chunkSize;
+		Logger::debug("chunkSize for device: %d == %d X %d", gpu_id, chunkSize[0], chunkSize[1]);
 	}
 	
+	Logger::debug("p.devDims.size() = %d", p.devDims.size());
+	Logger::debug("p.devDims.at(0) = %d, %d", p.devDims.at(0)[0],  p.devDims.at(0)[1]);
+	Logger::debug("p.devDims.at(1) = %d, %d", p.devDims.at(1)[0],  p.devDims.at(1)[1]);
 	Logger::debug("ghostRowSize = %d", ghostRowSize);
 
 	// set places dimensions
 	this->setDimensions(dimensions);
 	this->setDimSize(size);
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
-	Logger::debug("DeviceConfig: Constructor: allMem == %llu and freeMem == %llu", allMem, freeMem);
+
+	// initialize PlaceArray vectors size
+	p.devPtrs = std::vector<Place**>(activeDevices.size(), nullptr);
+	p.devStates = std::vector<void*>(activeDevices.size(), nullptr);
+	p.topNeighborGhosts = std::vector<std::pair<Place**, void*>>(activeDevices.size(), std::make_pair(nullptr, nullptr));
+	p.topGhosts = std::vector<std::pair<Place**, void*>>(activeDevices.size(), std::make_pair(nullptr, nullptr));
+	p.bottomGhosts = std::vector<std::pair<Place**, void*>>(activeDevices.size(), std::make_pair(nullptr, nullptr));
+	p.bottomNeighborGhosts = std::vector<std::pair<Place**, void*>>(activeDevices.size(), std::make_pair(nullptr, nullptr));
+
 	// create state vector of arrays to represent data on each device
 	int Sbytes = sizeof(S);
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		cudaSetDevice(activeDevices.at(i));
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
 		S* d_state = NULL;
-		CATCH(cudaMalloc(&d_state, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)) * Sbytes));
-		Logger::debug("DeviceConfig::instantiatePlaces: size of place = %d; size of place_state = %d; number of places = %d", sizeof(P), Sbytes, (p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize)));
-		p.devStates.push_back((d_state));
+		CATCH(cudaMalloc(&d_state, (p.placesStride + (p.ghostSpaceMultiple[gpu_id] * ghostRowSize)) * Sbytes));
+		Logger::debug("DeviceConfig::instantiatePlaces: size of place = %d; size of place_state = %d; number of places = %d", sizeof(P), Sbytes, (p.placesStride + (p.ghostSpaceMultiple[gpu_id] * ghostRowSize)));
+		p.devStates.at(gpu_id) = d_state;
 	}
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
-	Logger::debug("DeviceConfig: Constructor: allMem == %llu and freeMem == %llu", allMem, freeMem);
-	Logger::debug("DeviceConfig::InstantiatePlaces: Places State loaded into vector.");
 
 	// create place vector for device pointers on each device - includes ghost places
 	int ptrbytes = sizeof(Place*);
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		cudaSetDevice(activeDevices.at(i));
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
 		Place** tmpPlaces = NULL;
-		CATCH(cudaMalloc(&tmpPlaces, (p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[i])) * ptrbytes));
-		p.devPtrs.push_back(tmpPlaces);
+		CATCH(cudaMalloc(&tmpPlaces, (p.placesStride + (ghostRowSize * p.ghostSpaceMultiple[gpu_id])) * ptrbytes));
+		p.devPtrs.at(gpu_id) = tmpPlaces;
 	}
-
-	CATCH(cudaMemGetInfo(&freeMem, &allMem));
-	Logger::debug("DeviceConfig: Constructor: allMem == %llu and freeMem == %llu", allMem, freeMem);
 
 	int blockDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostRowSize) / BLOCK_SIZE + 1;
 	int threadDim = (p.placesStride + 2 * p.ghostSpaceMultiple[0] * ghostRowSize) / blockDim + 1;
 	Logger::debug("Kernel dims = gridDim %d, and blockDim = %d, ", blockDim, threadDim);
 	
-	// int to ensure we don't put ghost places[idx] < 0 when assigning indices in kernel function
-	int flip = 0;
-	
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		Logger::debug("Launching instantiation kernel on device: %d with params: placesStride = %d, ghostRowSize = %d, ghostMult = %d", activeDevices.at(i), p.placesStride, ghostRowSize, p.ghostSpaceMultiple[i]);
-		cudaSetDevice(activeDevices.at(i));
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
+		Logger::debug("Launching instantiation kernel on device: %d with params: placesStride = %d, ghostRowSize = %d, ghostMult = %d", activeDevices.at(gpu_id), p.placesStride, ghostRowSize, p.ghostSpaceMultiple[gpu_id]);
 		// handle arg 
 		void *d_arg = NULL;
 		if (NULL != argument) {
 			CATCH(cudaMalloc((void** )&d_arg, argSize));
 			CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 		}
+
+		// int to ensure we don't put ghost places[idx] < 0 when assigning indices in kernel function
+		int flip = gpu_id > 0 ? 1 : 0;
 
 		// load places dimensions 
 		int *d_dims = NULL;
@@ -286,65 +307,67 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 		CATCH(cudaMalloc((void** ) &d_dims, dimBytes));
 		CATCH(cudaMalloc((void** ) &d_devDims, dimBytes));
 		CATCH(cudaMemcpy(d_dims, this->getDimSize(), dimBytes, H2D));
-		CATCH(cudaMemcpy(d_devDims, p.devDims.at(i), dimBytes, H2D));
+		CATCH(cudaMemcpy(d_devDims, p.devDims.at(gpu_id), dimBytes, H2D));
 		Logger::debug("DeviceConfig::instantiatePlace: placesStride = %d, ghostPlaceMult = %d, ghostRowSize = %d, device = %d, flip = %d", p.placesStride, 
-				p.ghostSpaceMultiple[i], ghostRowSize, i, flip);
-		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtrs.at(i), 
-				(S*)(p.devStates.at(i)), d_arg, d_dims, d_devDims, dimensions, 
-				p.placesStride + (p.ghostSpaceMultiple[i] * ghostRowSize), p.placesStride, 
-				p.ghostSpaceMultiple[0], ghostRowSize, i, flip);
+				p.ghostSpaceMultiple[gpu_id], ghostRowSize, gpu_id, flip);
+		instantiatePlacesKernel<P, S> <<<blockDim, threadDim>>>(p.devPtrs.at(gpu_id), 
+				(S*)(p.devStates.at(gpu_id)), d_arg, d_dims, d_devDims, dimensions, 
+				p.placesStride + (p.ghostSpaceMultiple[gpu_id] * ghostRowSize), p.placesStride, 
+				p.ghostSpaceMultiple[0], ghostRowSize, gpu_id, flip);
 		CHECK();
 		cudaDeviceSynchronize();
 		if (NULL != argument) {
 			CATCH(cudaFree(d_arg));
 		}
 
-		if (flip == 0) {
-			flip = 1;
-		}
-
 		CATCH(cudaFree(d_dims));
+		CATCH(cudaFree(d_devDims));
 	}
 
 	// set pointers for each devices left and right sets of ghost place's and neighbors
-	for (int i = 0; i < activeDevices.size(); ++i) {
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		const int tid = omp_get_thread_num();
+		CATCH(cudaGetDevice(&gpu_id));
+		Logger::debug("DeviceConfig::instantiatePlace: Setting ghost pointers on device: %d with tid: %d.", gpu_id, tid);
 		Place** topNeighborGhostTmpPlace = NULL;
 		void* topNeighborGhostTmpState = NULL;
-		Place** topGhostTmpPlace = p.devPtrs.at(i); // allows us to use one function to get start of 'legal' places
-		void* topGhostTmpState = p.devStates.at(i); // allows us to use one function to get start of 'legal' places
+		Place** topGhostTmpPlace = p.devPtrs.at(gpu_id); 
+		void* topGhostTmpState = p.devStates.at(gpu_id); 
 		Place** bottomGhostTmpPlace = NULL;
 		void* bottomGhostTmpState = NULL;
 		Place** bottomNeighborGhostTmpPlace = NULL;
 		void* bottomNeighborGhostTmpState = NULL;
-		if (i != 0) {
-			topNeighborGhostTmpPlace = p.devPtrs.at(i);
-			topNeighborGhostTmpState = p.devStates.at(i);
-			topGhostTmpPlace = &(p.devPtrs.at(i)[size[0] * MAX_AGENT_TRAVEL]);
-			topGhostTmpState = &(((S*)(p.devStates.at(i)))[size[0] * MAX_AGENT_TRAVEL]);
+		if (gpu_id != 0) {
+			topNeighborGhostTmpPlace = p.devPtrs.at(gpu_id);
+			topNeighborGhostTmpState = p.devStates.at(gpu_id);
+			topGhostTmpPlace = &(p.devPtrs.at(gpu_id)[size[0] * MAX_AGENT_TRAVEL]);
+			topGhostTmpState = &(((S*)(p.devStates.at(gpu_id)))[size[0] * MAX_AGENT_TRAVEL]);
 		}
 
-		if (i != activeDevices.size() - 1) {
-			if (i == 0) {
-				bottomGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride - (size[0] * MAX_AGENT_TRAVEL)]);
-				bottomGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride - (size[0] * MAX_AGENT_TRAVEL)]));
-				bottomNeighborGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride]);
-				bottomNeighborGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride]));
+		if (gpu_id != (omp_get_num_threads() - 1)) {
+			if (gpu_id == 0) {
+				bottomGhostTmpPlace = &(p.devPtrs.at(gpu_id)[p.placesStride - (size[0] * MAX_AGENT_TRAVEL)]);
+				bottomGhostTmpState = (&(((S*)(p.devStates.at(gpu_id)))[p.placesStride - (size[0] * MAX_AGENT_TRAVEL)]));
+				bottomNeighborGhostTmpPlace = &(p.devPtrs.at(gpu_id)[p.placesStride]);
+				bottomNeighborGhostTmpState = (&(((S*)(p.devStates.at(gpu_id)))[p.placesStride]));
 			} else {
-				bottomGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride]);
-				bottomGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride]));
-				bottomNeighborGhostTmpPlace = &(p.devPtrs.at(i)[p.placesStride + (size[0] * MAX_AGENT_TRAVEL)]);
-				bottomNeighborGhostTmpState = (&(((S*)(p.devStates.at(i)))[p.placesStride + (size[0] * MAX_AGENT_TRAVEL)]));
+				bottomGhostTmpPlace = &(p.devPtrs.at(gpu_id)[p.placesStride]);
+				bottomGhostTmpState = (&(((S*)(p.devStates.at(gpu_id)))[p.placesStride]));
+				bottomNeighborGhostTmpPlace = &(p.devPtrs.at(gpu_id)[p.placesStride + (size[0] * MAX_AGENT_TRAVEL)]);
+				bottomNeighborGhostTmpState = (&(((S*)(p.devStates.at(gpu_id)))[p.placesStride + (size[0] * MAX_AGENT_TRAVEL)]));
 			}
 		}
 
-		p.topNeighborGhosts.push_back(std::make_pair(topNeighborGhostTmpPlace, topNeighborGhostTmpState));
-		p.topGhosts.push_back(std::make_pair(topGhostTmpPlace, topGhostTmpState));
-		p.bottomGhosts.push_back(std::make_pair(bottomGhostTmpPlace, bottomGhostTmpState));
-		p.bottomNeighborGhosts.push_back(std::make_pair(bottomNeighborGhostTmpPlace, bottomNeighborGhostTmpState));
+		p.topNeighborGhosts.at(gpu_id) = std::make_pair(topNeighborGhostTmpPlace, topNeighborGhostTmpState);
+		p.topGhosts.at(gpu_id) = std::make_pair(topGhostTmpPlace, topGhostTmpState);
+		p.bottomGhosts.at(gpu_id) = std::make_pair(bottomGhostTmpPlace, bottomGhostTmpState);
+		p.bottomNeighborGhosts.at(gpu_id) = std::make_pair(bottomNeighborGhostTmpPlace, bottomNeighborGhostTmpState);
+		cudaDeviceSynchronize();
 	}
 
 	Logger::debug("Finished instantiation kernel");
-	cudaDeviceSynchronize();
 	CATCH(cudaMemGetInfo(&freeMem, &allMem));
 	devPlacesMap[handle] = p;
 	setPlacesThreadBlockDims(handle);
@@ -353,16 +376,16 @@ std::vector<Place**> DeviceConfig::instantiatePlaces(int handle, void *argument,
 
 // TODO: Make else if clause a different kernel function?
 template<typename AgentType, typename AgentStateType>
-__global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state, void *arg, int nAgents, int maxAgents, int agentsPerDevSum) {
+__global__ void instantiateAgentsKernel(Agent** agents, AgentStateType *state, void *arg, int nAgents, int maxAgentsPerDev) {
 	unsigned idx = getGlobalIdx_1D_1D();
 
 	if ((idx < nAgents)) {
 		// set pointer to corresponding state object
 		agents[idx] = new AgentType(&(state[idx]), arg);
-		agents[idx]->setIndex(idx + agentsPerDevSum);
-		agents[idx]->setAlive();
+		agents[idx]->setIndex(idx);
+		agents[idx]->setAlive(true);
 		agents[idx]->setTraveled(false);
-	} else if (idx < maxAgents) {
+	} else if (idx < maxAgentsPerDev) {
 		//create placeholder objects for future agent spawning
 		agents[idx] = new AgentType(&(state[idx]), arg);
 	}
@@ -393,16 +416,13 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 	AgentArray a;
 	Logger::debug("DeviceConfig::instantiateAgents: number of agents: %d", nAgents);
 	a.nAgents = nAgents;
-	int nObjects = 0;
-	if (maxAgents == 0) {
-		nObjects = a.nAgents*2; //allocate more space to allow for agent spawning
-	} else {
-		nObjects = maxAgents;
-	}
-
 	a.nAgentsDev = new int[activeDevices.size()]{};
-	a.maxAgents = new int[activeDevices.size()]{};
 	a.stateSize = sizeof(AgentStateType);
+	if (maxAgents == 0) {
+		a.maxAgents = (a.nAgents * 2) / activeDevices.size();
+	} else {
+		a.maxAgents = maxAgents / activeDevices.size();
+	}
 
 	PlaceArray places = devPlacesMap.at(placesHandle);
 	Logger::debug("DeviceConfig::instantiateAgents() - Successfully loads (%d) places from memory.", places.qty);
@@ -415,7 +435,7 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 		Logger::debug("DeviceConfig::instantiateAgents() - Begin of placeIdxs = NULL init (evenly splits agents between devices and over their set of places).");
 		for (int i = 0; i < activeDevices.size(); ++i) {
 			a.nAgentsDev[i] = a.nAgents / activeDevices.size();
-			Logger::debug("DeviceConfig::instantiateAgents() - %d number of agents over %d number of places on device %d .", a.nAgentsDev[i], places.placesStride, activeDevices.at(i));	
+			Logger::debug("DeviceConfig::instantiateAgents() - %d number of agents over %d number of places on device %d AgentState size = %d.", a.nAgentsDev[i], places.placesStride, activeDevices.at(i), a.stateSize);	
 			int *tempPlaceIdxs = new int[a.nAgentsDev[i]];
 			getRandomPlaceIdxs(tempPlaceIdxs, places.placesStride, a.nAgentsDev[i]);
 			Logger::debug("DeviceConfig::instantiateAgents() - Completes call to getRandomPlaceIdxs().");
@@ -425,7 +445,6 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 			}
 
 			strideSum += places.placesStride;
-			a.maxAgents[i] = nObjects / activeDevices.size();
 		}
 		Logger::debug("DeviceConfig::instantiateAgents() - Successfully completes placeIdxs = NULL init (evenly splits agents between devices and over their set of places).");
 	}
@@ -448,32 +467,38 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 			count = 0;
 		}
 		
-		int maxAgentsToShare = maxAgents - a.nAgents;
-		int maxAgtAcc = 0;
-		for (int i = 0; i < activeDevices.size() - 1; ++i) {
-			int tempSum = a.nAgentsDev[i] + (maxAgentsToShare / activeDevices.size());
-			a.maxAgents[i] = tempSum;
-			maxAgtAcc += tempSum;
-		}
+		// int maxAgentsToShare = maxAgents - a.nAgents;
+		// int maxAgtAcc = 0;
+		// for (int i = 0; i < activeDevices.size() - 1; ++i) {
+		// 	int tempSum = a.nAgentsDev[i] + (maxAgentsToShare / activeDevices.size());
+		// 	a.maxAgents[i] = tempSum;
+		// 	maxAgtAcc += tempSum;
+		// }
 
-		a.maxAgents[activeDevices.size() - 1] = a.nAgentsDev[activeDevices.size() - 1] + (maxAgentsToShare - maxAgtAcc);
+		// a.maxAgents[activeDevices.size() - 1] = a.nAgentsDev[activeDevices.size() - 1] + (maxAgentsToShare - maxAgtAcc);
 
 		Logger::debug("DeviceConfig::instantiateAgents() - Successfully completes placeIdxs != NULL init (split amongst devices based on providedd init location).");
 	}
 	
 	// create state array on device
 	int Sbytes = sizeof(AgentStateType);
-	for (int i = 0; i < activeDevices.size(); ++i) {
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
 		AgentStateType* d_state = NULL;
-		CATCH(cudaMalloc((void** ) &d_state, a.maxAgents[i] * Sbytes));
+		CATCH(cudaMalloc((void** ) &d_state, (a.maxAgents / omp_get_num_threads()) * Sbytes));
 		a.devStates.push_back(d_state);
 	}
 
 	// allocate device pointers
 	int ptrbytes = sizeof(Agent*);
-	for (int i = 0; i < activeDevices.size(); ++i) {
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
 		Agent** tmpAgents = NULL;
-		CATCH(cudaMalloc((void** ) &tmpAgents, a.maxAgents[i] * ptrbytes));
+		CATCH(cudaMalloc((void** ) &tmpAgents, (a.maxAgents / omp_get_num_threads()) * ptrbytes));
 		a.devPtrs.push_back(tmpAgents);
 	}
 
@@ -489,11 +514,13 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 	setAgentsThreadBlockDims(handle);
 	std::vector<std::pair<dim3, dim3>> aDims = getAgentsThreadBlockDims(handle);
 	Logger::debug("DeviceConfig::instantiateAgents: nAgents = %d", a.nAgents);
-	int agentsPerDevSum = 0;
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		Logger::debug("Launching agent instantiation kernel on device: %d", activeDevices.at(i));
-		Logger::debug("DeviceConfig::instantiateAgents:  aDims[0] = %d, aDims[1] = %d", aDims.at(i).first.x, aDims.at(i).second.x);
-		CATCH(cudaSetDevice(activeDevices.at(i)));
+
+	#pragma omp parallel
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
+		Logger::debug("Launching agent instantiation kernel on device: %d", gpu_id);
+		Logger::debug("DeviceConfig::instantiateAgents:  aDims[0] = %d, aDims[1] = %d", aDims.at(gpu_id).first.x, aDims.at(gpu_id).second.x);
 
 		// handle arg on each device
 		void *d_arg = NULL;
@@ -501,38 +528,35 @@ std::vector<Agent**> DeviceConfig::instantiateAgents (int handle, void *argument
 			CATCH(cudaMalloc(&d_arg, argSize));
 			CATCH(cudaMemcpy(d_arg, argument, argSize, H2D));
 		}
-		instantiateAgentsKernel<AgentType, AgentStateType> <<<aDims.at(i).first, aDims.at(i).second>>>(a.devPtrs.at(i), 
-			(AgentStateType*)a.devStates.at(i), d_arg, a.nAgentsDev[i], a.maxAgents[i], agentsPerDevSum);
+		instantiateAgentsKernel<AgentType, AgentStateType> <<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(a.devPtrs.at(gpu_id), 
+			(AgentStateType*)a.devStates.at(gpu_id), d_arg, a.nAgentsDev[gpu_id], (a.maxAgents / omp_get_num_threads()));
 		CHECK();
 		cudaDeviceSynchronize();
 		if (NULL != argument) {
 			CATCH(cudaFree(d_arg));
 		}
-		agentsPerDevSum += a.nAgentsDev[i];
 	}
 
-	Logger::debug("Finished agent instantiation kernel");
+	Logger::debug("Finshed agent instantiation kernel");
 	// Loop over devices and map agents to places on each device
-	int ghostPlaceChunkSize = 0;
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		CATCH(cudaSetDevice(activeDevices.at(i)));
+	#pragma omp parallel 
+	{
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
 		int* placeIdxs_d;
-		CATCH(cudaMalloc((void** )&placeIdxs_d, a.nAgentsDev[i] * sizeof(int)));
-		CATCH(cudaMemcpy(placeIdxs_d, agtDevArr[i], a.nAgentsDev[i] * sizeof(int), H2D));
-		Logger::debug("Launching agent mapping kernel on device: %d", activeDevices.at(i));
+		CATCH(cudaMalloc((void** )&placeIdxs_d, a.nAgentsDev[gpu_id] * sizeof(int)));
+		CATCH(cudaMemcpy(placeIdxs_d, agtDevArr[gpu_id], a.nAgentsDev[gpu_id] * sizeof(int), H2D));
+		Logger::debug("Launching agent mapping kernel on device: %d", gpu_id);
 		Logger::debug("Size of p.devPtrs = %d; a.devPtrs = %d; a.devStates = %d", places.devPtrs.size(), a.devPtrs.size(), a.devStates.size());
-		Logger::debug("Size of a.nAgentsDev[%d] = %d", i, a.nAgentsDev[i]);
+		Logger::debug("Size of a.nAgentsDev[%d] = %d", gpu_id, a.nAgentsDev[gpu_id]);
+		int ghostPlaceChunkSize = gpu_id > 0 ? dimSize[0] * MAX_AGENT_TRAVEL : 0;
 		Logger::debug("ghostChunkPlaceSize = %d", ghostPlaceChunkSize);
-		mapAgentsKernel<AgentType, AgentStateType> <<<aDims.at(i).first, aDims.at(i).second>>>(places.devPtrs.at(i), 
-				a.devPtrs.at(i), (AgentStateType*)(a.devStates.at(i)), 
-				a.nAgentsDev[i], placeIdxs_d, ghostPlaceChunkSize);
+		mapAgentsKernel<AgentType, AgentStateType> <<<aDims.at(gpu_id).first, aDims.at(gpu_id).second>>>(places.devPtrs.at(gpu_id), 
+				a.devPtrs.at(gpu_id), (AgentStateType*)(a.devStates.at(gpu_id)), 
+				a.nAgentsDev[gpu_id], placeIdxs_d, ghostPlaceChunkSize);
 		cudaDeviceSynchronize();
 		CHECK();
 		CATCH(cudaFree(placeIdxs_d));
-		if (ghostPlaceChunkSize == 0) {
-			ghostPlaceChunkSize = dimSize[0] * MAX_AGENT_TRAVEL;
-		}
-
 		CATCH(cudaMemGetInfo(&freeMem, &allMem));
 		CATCH(cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize));
 		Logger::debug("DeviceConfig::instantiateAgents: mem limit == %llu", limit);

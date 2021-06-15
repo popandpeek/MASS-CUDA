@@ -13,7 +13,7 @@ using namespace mass;
 
 int main() {
 	// test logging
-    Logger::setLogFile("sugar_scape_results.txt");
+    Logger::setLogFile("braingrid_results.txt");
  
     // Set-up run params
     const int nRuns = 1; // number of times to run each test

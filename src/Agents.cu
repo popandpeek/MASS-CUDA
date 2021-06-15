@@ -11,11 +11,7 @@ namespace mass {
 Agents::Agents(int handle, Dispatcher *d, int placesHandle) {
     this->handle = handle;
     this->dispatcher = d;
-
     this->elemPtrs = {};
-    // BAD: No device Agents instantiated yet when this is called, causes Agent array in 
-    // DeviceConfig to get set to NULL
-    // this->numAgents = this->dispatcher->getNumAgentsInstantiated(handle);
     this->placesHandle = placesHandle;
 }
 
@@ -31,14 +27,18 @@ int Agents::getNumAgents() {
     return dispatcher->getNumAgents(handle);
 }
 
-int* Agents::getNumAgentsInstantiated() {
+int Agents::getMaxAgents() {
+    return dispatcher->getMaxAgents(handle);
+}
+
+int Agents::getNumAgentsInstantiated() {
     return dispatcher->getNumAgentsInstantiated(handle);
 }
 
 int Agents::getNumAgentObjects() {
     int totalAgents = 0;
     int* tmpAgentArr = dispatcher->getNAgentsDev(handle);
-    for (int i = 0; i < (sizeof(tmpAgentArr) / sizeof(tmpAgentArr[0])); ++i) {
+    for (int i = 0; i < elemPtrs.size(); ++i) {
         totalAgents += tmpAgentArr[i];
     }
 
@@ -63,13 +63,13 @@ void Agents::callAll(int functionId, void *argument, int argSize) {
 
 void Agents::manageAll() {
     // Step 1: kill all agents that need killing
-    // dispatcher->terminateAgents(handle);
+    dispatcher->terminateAgents(handle, placesHandle);
 
     // Step 2: migrate all agents that need migrating
     dispatcher->migrateAgents(handle, placesHandle);
 
     // Step 3: spawn all new agents that need spawning
-    // dispatcher->spawnAgents(handle);
+    dispatcher->spawnAgents(handle);
 }
 
 void Agents::manageAllSpawnFirst() {
@@ -89,6 +89,10 @@ void Agents::migrateAll() {
 
 void Agents::spawnAll() {
     dispatcher->spawnAgents(handle);
+}
+
+void Agents::terminateAll() {
+    dispatcher->terminateAgents(handle, placesHandle);
 }
 
 Agent** Agents::getElements() {

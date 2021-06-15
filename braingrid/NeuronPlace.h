@@ -61,7 +61,7 @@ private:
     NeuronPlaceState* myState;
 
     MASS_FUNCTION void setSimulationTime(int*);
-    MASS_FUNCTION void setNeuronPlaceType(bool*);
+    MASS_FUNCTION void setNeuronPlaceType(int*);
     MASS_FUNCTION void setNeuronSignalType(int*);
     MASS_FUNCTION void setActiveNeuronParams(int*);
     MASS_FUNCTION void setSpawnTimes(int*);

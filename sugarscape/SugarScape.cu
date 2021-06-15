@@ -76,7 +76,7 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 			int placeIdx = retVals[i] -> getPlaceIndex();
 			int agentSugar = ((AntState*)(retVals[i]->getState()))->agentSugar;
 			int agentMetabolism = ((AntState*)(retVals[i]->getState()))->agentMetabolism;
-			ss << "Agent[" << i << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
+			ss << "Agent[" << retVals[i]->getIndex() << "] at location " << placeIdx << ", agentSugar = " << agentSugar << ", agentMetabolism = " << agentMetabolism << endl;
 		}
 	}
 
@@ -154,7 +154,7 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 
 	int t = 0;
 	for (; t < max_time; t++) {
-
+		Logger::debug("\nSugarscap Main Loop, iteration: %d\n", t);
 		places->callAll(SugarPlace::INC_SUGAR_AND_POLLUTION);
 
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);
@@ -165,12 +165,10 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 		agents->callAll(Ant::MIGRATE);
 
 		agents->manageAll();
-		// Mass::manageAll<Ant, AntState>(1, 0);
 
 		agents->callAll(Ant::METABOLIZE);
 
 		agents->manageAll();
-		// Mass::manageAll<Ant, AntState>(1, 0);
 
 		// display intermediate results
 		if (interval != 0 && (t % interval == 0 || t == max_time - 1)) {

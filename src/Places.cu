@@ -79,10 +79,9 @@ Place** Places::getElements() {
 	int count = 0;
 
 	for (int i = 0; i < elemPtrsVec.size(); ++i) {
-		mass::Place** tmp_ptr = elemPtrsVec.at(i);
 		int j = 0;
 		for (; j < placesStride; ++j) {
-			retVals[count] = tmp_ptr[j];
+			retVals[count] = elemPtrsVec.at(i)[j];
 			// Logger::debug("retVals[count] location is %d; tmp_ptr[j] location is == %d", count, j);
 			count++;
 		}

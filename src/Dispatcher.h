@@ -111,9 +111,9 @@ public:
 
 	int getNumAgents(int agentHandle);
 
-	int* getMaxAgents(int agentHandle);
+	int getMaxAgents(int agentHandle);
 	
-	int* getNumAgentsInstantiated(int handle);
+	int getNumAgentsInstantiated(int handle);
 
 	int getAgentStateSize(int handle);
 
@@ -125,7 +125,7 @@ public:
 
 	int* getGhostPlaceMultiples(int handle);
 
-	unsigned int* calculateRandomNumbers(int);
+	unsigned* calculateRandomNumbers(int);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This
@@ -154,6 +154,9 @@ private:
 	bool deviceLoaded;
 
 	std::vector<int*> *neighborhood; /* The previous vector of neighbors.*/
+
+	unsigned calculatePlaceArgumentArrayChunkSize(int, int, int);
+	void* calculateArgumentPointer(int, int, void*, int);
 
 };
 // end class

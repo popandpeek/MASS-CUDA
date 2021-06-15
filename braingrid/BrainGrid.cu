@@ -98,40 +98,37 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
 	Places *neurons = Mass::createPlaces<NeuronPlace, NeuronPlaceState>(0 /*handle*/, NULL /*arguments*/,
 			sizeof(double), nDims, placesSize);
 
-    int* mx_time = new int[1] { max_time };
-    neurons->callAll(NeuronPlace::SET_TIME, mx_time, sizeof(int));
+    int* mx_time = new int[size * size];
+    for (int i = 0; i < size * size; ++i) {
+        mx_time[i] = max_time;
+    }
+    neurons->callAll(NeuronPlace::SET_TIME, mx_time, sizeof(int) * neurons->getNumPlaces());
 
     // Initializes neurons as empty space or conbtaining a neuron and the type of neuron - excitatory, inhibitory, or neutral
-    unsigned int* randos = Mass::getRandomNumbers(size*size);
-    bool emptyLocations[size*size] = { 0 };
+    unsigned int* randos = Mass::getRandomNumbers(neurons->getNumPlaces());
+    int emptyLocations[size*size] = { 0 };
     int numNeurons = size*size;
     
     for (int i = 0; i < size*size; ++i) {
         if (randos[i] % 100 >= BrainGridConstants::SPACE) {
-            emptyLocations[i] = true;
+            emptyLocations[i] = 1;
             --numNeurons;
         }
     }
 
-    // delete old randos 
-    delete[] randos;
-    randos = NULL;
-    randos = Mass::getRandomNumbers(size * size);
+    randos = Mass::getRandomNumbers(neurons->getNumPlaces());
 
     // Set neurons - SOMA or EMPTY
-    neurons->callAll(NeuronPlace::INIT_NEURONS, emptyLocations, sizeof(bool) * size * size);
+    neurons->callAll(NeuronPlace::INIT_NEURONS, emptyLocations, sizeof(int) * neurons->getNumPlaces());
     // set type of neuron signal
-    neurons->callAll(NeuronPlace::SET_NEURON_SIGNAL_TYPE, randos, sizeof(int) * size * size);
-    delete[] randos;
+    neurons->callAll(NeuronPlace::SET_NEURON_SIGNAL_TYPE, randos, sizeof(int) * neurons->getNumPlaces());
 
     // Sets spawn times for axon and all dendrites in each neuron with SOMA
-    randos = Mass::getRandomNumbers(size * size * MAX_NEIGHBORS);
-    neurons->callAll(NeuronPlace::SET_SPAWN_TIMES, randos, sizeof(int) * size * size * MAX_NEIGHBORS);
-    delete[] randos;
+    randos = Mass::getRandomNumbers(neurons->getNumPlaces() * MAX_NEIGHBORS);
+    neurons->callAll(NeuronPlace::SET_SPAWN_TIMES, randos, sizeof(int) * neurons->getNumPlaces() * MAX_NEIGHBORS);
 
-    randos = Mass::getRandomNumbers(size * size);
-    neurons->callAll(NeuronPlace::SET_GROWTH_DIRECTIONS, randos, sizeof(int) * size * size);
-    delete[] randos;
+    randos = Mass::getRandomNumbers(neurons->getNumPlaces());
+    neurons->callAll(NeuronPlace::SET_GROWTH_DIRECTIONS, randos, sizeof(int) * neurons->getNumPlaces());
 
     // Locations for Agent instantiation 
     int locations[numNeurons]{ 0 };
@@ -143,10 +140,10 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
     
     // One Agent for each AXON and DENDRITE for each Place with SOMA
 	Agents *axons = Mass::createAgents<GrowingEnd, GrowingEndState> (1 /*handle*/, locations /*arguments*/,
-        sizeof(int) * numNeurons, numNeurons, 0 /*placesHandle*/);
+        sizeof(int) * size*size, size*size, 0 /*placesHandle*/);
     
     Agents *dendrites = Mass::createAgents<GrowingEnd, GrowingEndState> (2 /*handle*/, locations /*arguments*/, 
-        sizeof(int) * numNeurons, numNeurons, 0 /*placesHandle*/);
+        sizeof(int) * size*size, size*size, 0 /*placesHandle*/);
     
     // initialize agents
     axons->callAll(GrowingEnd::INIT_AXONS);
@@ -171,9 +168,9 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
     int northWest[2] = { -1, 1 };
     neighbors.push_back(northWest);
 
-    randos = Mass::getRandomNumbers(size * size);
+    randos = Mass::getRandomNumbers(neurons->getNumPlaces());
     neurons->exchangeAll(&neighbors, NeuronPlace::FIND_AXON_GROWTH_DESTINATIONS_FROM_SOMA, 
-            randos, sizeof(int) * size * size);
+            randos, sizeof(int) * neurons->getNumPlaces());
 
     // start a timer
 	Timer timer;
@@ -181,6 +178,8 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
     
     int t = 0;
     for (; t < max_time; t++) {
+        Logger::debug(" ******* BrainGrid Main Loop, iteration: %d *******\n", t);
+
         // If time to spawn, spawn
         axons->callAll(GrowingEnd::SPAWN_AXONS);
         dendrites->callAll(GrowingEnd::SPAWN_DENDRITES);
@@ -203,34 +202,28 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
         neurons->callAll(NeuronPlace::SET_NEURON_PLACE_MIGRATIONS);
         
         // Check if Axons switch to synapses
-        randos = Mass::getRandomNumbers(numNeurons);
-        axons->callAll(GrowingEnd::AXON_TO_SYNAPSE, randos, sizeof(int) * numNeurons);
-        delete[] randos;
+        randos = Mass::getRandomNumbers(size*size);
+        axons->callAll(GrowingEnd::AXON_TO_SYNAPSE, randos, sizeof(int) * size*size);
 
         neurons->callAll(NeuronPlace::FIND_GROWTH_DESTINATIONS_OUTSIDE_SOMA);
 
-        randos = Mass::getRandomNumbers(numNeurons);
-        axons->callAll(GrowingEnd::GROW_AXONS_OUTSIDE_SOMA, randos, numNeurons * sizeof(int));
-        delete[] randos;
+        randos = Mass::getRandomNumbers(size*size);
+        axons->callAll(GrowingEnd::GROW_AXONS_OUTSIDE_SOMA, randos, size*size * sizeof(int));
                 
         // Grow Synapses not on SOMA's
-        randos = Mass::getRandomNumbers(axons->getNumAgents());
-        axons->callAll(GrowingEnd::GROW_SYNAPSE, randos, axons->getNumAgents() * sizeof(int));
-        delete[] randos;
+        randos = Mass::getRandomNumbers(axons->getMaxAgents());
+        axons->callAll(GrowingEnd::GROW_SYNAPSE, randos, axons->getMaxAgents() * sizeof(int));
 
         // Grow Dendrites not on SOMA's
-        randos = Mass::getRandomNumbers(dendrites->getNumAgents());
-        dendrites->callAll(GrowingEnd::GROW_DENDRITE, randos, dendrites->getNumAgents() * sizeof(int));
-        delete[] randos;
+        randos = Mass::getRandomNumbers(dendrites->getMaxAgents());
+        dendrites->callAll(GrowingEnd::GROW_DENDRITE, randos, dendrites->getMaxAgents() * sizeof(int));
         
         // TODO: Should these Agent callAll's not be Place call alls?
-        randos = Mass::getRandomNumbers(axons->getNumAgents());
-        axons->callAll(GrowingEnd::BRANCH_SYNAPSES, randos, axons->getNumAgents() * sizeof(int));
-        delete[] randos;
+        randos = Mass::getRandomNumbers(axons->getMaxAgents());
+        axons->callAll(GrowingEnd::BRANCH_SYNAPSES, randos, axons->getMaxAgents() * sizeof(int));
 
-        randos = Mass::getRandomNumbers(dendrites->getNumAgents());
-        dendrites->callAll(GrowingEnd::BRANCH_DENDRITES, randos, dendrites->getNumAgents() * sizeof(int));
-        delete[] randos;
+        randos = Mass::getRandomNumbers(dendrites->getMaxAgents());
+        dendrites->callAll(GrowingEnd::BRANCH_DENDRITES, randos, dendrites->getMaxAgents() * sizeof(int));
 
         axons->callAll(GrowingEnd::SET_BRANCHED_SYNAPSES);
         dendrites->callAll(GrowingEnd::SET_BRANCHED_DENDRITES);  
@@ -254,9 +247,9 @@ void BrainGrid::runMassSim(int size, int max_time, int interval) {
 
         // Collect and transmit signals
         // 2. SOMAs create signal
-        randos = Mass::getRandomNumbers(numNeurons);
-        neurons->callAll(NeuronPlace::CREATE_SIGNAL, randos, numNeurons * sizeof(int));
-        delete[] randos;
+        randos = Mass::getRandomNumbers(neurons->getNumPlaces());
+        neurons->callAll(NeuronPlace::CREATE_SIGNAL, randos, neurons->getNumPlaces() * sizeof(int));
+        //delete[] randos;
 
         // 3. synapses on SOMA's get signal
         axons->callAll(GrowingEnd::GET_SIGNAL);

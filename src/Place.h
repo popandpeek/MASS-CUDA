@@ -60,12 +60,12 @@ public:
 	*/
 	MASS_FUNCTION int getDevIndex();
 	/**
-	Sets the index of this place to the specif bn ied integer value.
+	Sets the index of this place to the specified integer value.
 	*/
 	MASS_FUNCTION void setIndex(int index);
 
 	/**
-	Sets the index of this place relative to the entire space of Place objects
+	Sets the index of this place relative to the device
 	*/
 	MASS_FUNCTION void setDevIndex(int devIndex);
 	/**

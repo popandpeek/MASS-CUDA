@@ -28,7 +28,7 @@ public:
 
 	template<typename AgentType, typename AgentStateType>
 	AgentsModel* instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int* maxAgents, int* nAgentsDev);
+		int argSize, int nAgents, int maxAgents, int* nAgentsDev);
 
 private:
 	void addPlacesModel(PlacesModel *places);
@@ -65,7 +65,7 @@ PlacesModel* DataModel::instantiatePlaces(int handle, void *argument,
 
 template<typename AgentType, typename AgentStateType>
 AgentsModel* DataModel::instantiateAgents (int handle, void *argument, 
-		int argSize, int nAgents, int* maxAgents, int* nAgentsDev) {
+		int argSize, int nAgents, int maxAgents, int* nAgentsDev) {
 	Logger::debug("Entering DataModel::instantiateAgents\n");
 
 	if (agentsMap.count(handle) > 0) {

@@ -48,8 +48,8 @@ MASS_FUNCTION bool Agent::isAlive() {
     return state -> isAlive;
 }
 
-MASS_FUNCTION void Agent::setAlive() {
-    this->state->isAlive = true;
+MASS_FUNCTION void Agent::setAlive(bool isAlive) {
+    this->state->isAlive = isAlive;
 }
 
 MASS_FUNCTION void Agent::setTraveled(bool isTraveled) {

@@ -73,6 +73,10 @@ public:
 	template<typename AgentType, typename AgentStateType>
 	static void manageAll(int agentHandle, int placeHandle);
 
+	// Use to generate and pass random numbers to callAll() functions
+	// Agents: Use Agents->getMaxAgents() as number of Agents may change over simulation 
+	// Places: Use Places->getNumPlaces() or other fixed number as Places do not change over
+	//	       simulation
 	static unsigned int* getRandomNumbers(int);
 
 private:

@@ -36,8 +36,9 @@ public:
      */
     int getNumAgents();
 
+    int getMaxAgents();
 
-    int* getNumAgentsInstantiated();
+    int getNumAgentsInstantiated();
     
     /*
     Returns the number of all agent objects present in this agents collection (some can be terminated).
@@ -76,6 +77,8 @@ public:
     void migrateAll();
     
     void spawnAll();
+
+    void terminateAll();
 
     /**
      *  Returns an array of pointers to the Agent elements contained in this

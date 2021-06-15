@@ -73,7 +73,7 @@ public:
     /**
     Sets the Agent’s status to active, thus including Agent into all callAll() calls.
     */
-    MASS_FUNCTION void setAlive();
+    MASS_FUNCTION void setAlive(bool);
 
     /**
     Sets the traveled status of Agent -> True for having traveled devices, false for not

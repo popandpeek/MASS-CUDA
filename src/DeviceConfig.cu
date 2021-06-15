@@ -8,7 +8,6 @@
 #include "string.h"
 #include "settings.h"
 
-
 using namespace std;
 
 namespace mass {
@@ -18,8 +17,10 @@ DeviceConfig::DeviceConfig() :
 	freeMem = 0;
 	allMem = 0;
 	limit = 0;
-	randState = NULL;
-	int randStateSize = 0;
+
+	// TODO: Change to have on each device and fix destructor to delete on all devices
+	// randStates = NULL;
+	// randStateSize = NULL;
 	Logger::warn("DeviceConfig::NoParam constructor");
 }
 
@@ -27,17 +28,23 @@ DeviceConfig::DeviceConfig(std::vector<int> devices) {
 	activeDevices = devices;
 	devPlacesMap = map<int, PlaceArray>{};
 	devAgentsMap = map<int, AgentArray>{};
-	for (int i = 0; i < activeDevices.size(); ++i) {
-		CATCH(cudaSetDevice(activeDevices.at(i)));
+	// randStates = new curandState*[activeDevices.size()];
+	// randStateSize = new int[activeDevices.size()];
+    #pragma omp parallel 
+    {
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
+		// randStates[gpu_id] = NULL;
+		// randStateSize[gpu_id] = 0;
 		CATCH(cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize));
 		CATCH(cudaMemGetInfo(&freeMem, &allMem));
-		Logger::debug("DeviceConfig: Constructor: mem limit == %llu", limit);
-		Logger::debug("DeviceConfig: Constructor: allMem == %llu", allMem);
+		Logger::debug("DeviceConfig: Constructor: device = %d and mem limit = %llu", gpu_id, limit);
+		Logger::debug("DeviceConfig: Constructor: device = %d and allMem = %llu", gpu_id, allMem);
 		size_t total =  size_t(2048) * size_t(2048) * size_t(1536);
 		CATCH(cudaDeviceSetLimit(cudaLimitMallocHeapSize, total));
 		CATCH(cudaDeviceGetLimit(&limit, cudaLimitMallocHeapSize));
-		Logger::debug("DeviceConfig: Constructor: mem limit == %llu", limit);
-	}
+		Logger::debug("DeviceConfig: Constructor: device = %d and increased mem limit = %llu", gpu_id, limit);
+    }
 }
 
 DeviceConfig::~DeviceConfig() {
@@ -64,6 +71,16 @@ void DeviceConfig::freeDevice() {
 		Logger::debug("DeviceConfig::freeDevice(): Returns from deletePlaces().");
 		devPlacesMap.erase(it_p++);
 	}
+
+	// delete[] randStateSize;
+	// for (int i = 0; i < activeDevices.size(); ++i) {
+	// 	CATCH(cudaSetDevice(i));
+	// 	if (randStates[i] != NULL) {
+	// 		cudaFree(randStates[i]);
+	// 	}
+	// }
+
+	/// delete[] randStates;
 
 	devPlacesMap.clear();
 	for (std::size_t i = 0; i < activeDevices.size(); ++i) {
@@ -145,11 +162,11 @@ int DeviceConfig::getNumAgents(int handle) {
 	return devAgentsMap[handle].nAgents;
 }
 
-int DeviceConfig::getMaxAgents(int handle, int device) {
-	return devAgentsMap[handle].maxAgents[device];
-}
+// int DeviceConfig::getMaxAgents(int handle, int device) {
+// 	return devAgentsMap[handle].maxAgents[device];
+// }
 
-int* DeviceConfig::getMaxAgents(int handle) {
+int DeviceConfig::getMaxAgents(int handle) {
 	return devAgentsMap[handle].maxAgents;
 }
 
@@ -158,9 +175,9 @@ void DeviceConfig::setAgentsThreadBlockDims(int handle) {
 	Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): numAgents == %d, numDevices == %d", devAgentsMap[handle].nAgents, activeDevices.size());
 	
 	for (int i = 0; i < activeDevices.size(); ++i) {
-		Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): maxAgents[%d] = %d", i, devAgentsMap[handle].maxAgents[i]);
-		int numBlocks = ((devAgentsMap[handle].maxAgents[i] - 1) / BLOCK_SIZE) + 1;
-		int nThr = ((devAgentsMap[handle].maxAgents[i] - 1) / numBlocks) + 1;
+		Logger::debug("DeviceConfig::setAgentsMapThreadBlockDims(): maxAgents[%d] = %d", i, devAgentsMap[handle].maxAgents);
+		int numBlocks = ((devAgentsMap[handle].maxAgents - 1) / BLOCK_SIZE) + 1;
+		int nThr = ((devAgentsMap[handle].maxAgents - 1) / numBlocks) + 1;
 		dim3 bDim = dim3(numBlocks, 1, 1);
 		dim3 tDim = dim3(nThr, 1, 1);
 		std::pair<dim3, dim3> temp = std::make_pair(bDim, tDim);
@@ -171,6 +188,10 @@ void DeviceConfig::setAgentsThreadBlockDims(int handle) {
 
 int* DeviceConfig::getnAgentsDev(int handle) {
 	return devAgentsMap[handle].nAgentsDev;
+}
+
+void DeviceConfig::setnAgentsDev(int handle, int device, int nAgents) {
+	devAgentsMap[handle].nAgentsDev[device] = nAgents;
 }
 
 std::vector<std::pair<dim3, dim3>> DeviceConfig::getAgentsThreadBlockDims(int handle) {
@@ -197,9 +218,9 @@ void DeviceConfig::deleteAgents(int handle) {
 	Logger::debug("DeviceConfig:: Entering deleteAgents.");
 	AgentArray a = devAgentsMap[handle];
 	for (int i = 0; i < a.devPtrs.size(); ++i) {
-		Logger::debug("DeviceConfig::deleteAgents: device: %d, Number to delete: %d.", i, a.maxAgents[i]);
+		Logger::debug("DeviceConfig::deleteAgents: device: %d, Number to delete: %d.", i, a.maxAgents / a.devPtrs.size());
 		cudaSetDevice(activeDevices.at(i));
-		destroyAgentsKernel<<<a.aDims.at(i).first, a.aDims.at(i).second>>>(a.devPtrs.at(i), a.maxAgents[i]);
+		destroyAgentsKernel<<<a.aDims.at(i).first, a.aDims.at(i).second>>>(a.devPtrs.at(i), a.maxAgents / a.devPtrs.size());
 		CHECK();
 		cudaDeviceSynchronize();
 		CATCH(cudaFree(a.devPtrs.at(i)));
@@ -208,7 +229,6 @@ void DeviceConfig::deleteAgents(int handle) {
 	}
 
 	delete a.nAgentsDev;
-	delete a.maxAgents;
 	Logger::debug("DeviceConfig::deleteAgents: SUCCESS!");
 }
 
@@ -289,13 +309,67 @@ __global__ void cleanGhostPointers(Place** p_ptrs, int qty) {
 }
 
 // copy PlaceState's to neighbor device
+// void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
+// 	dim3* pDims = getPlacesThreadBlockDims(handle);
+// 	Logger::debug("DeviceConfig::copyGhostPlaces - entering copyGhostPlaces");
+// 	Logger::debug("Handle: %d and stateSize = %d and num PlaceState top copy: %d", handle, stateSize, MAX_AGENT_TRAVEL * getDimSize()[0]);
+//     Logger::debug("Number of devices = %d", activeDevices.size());
+
+// 	#pragma omp parallel 
+// 	{
+// 		int gpu_id = -1;
+// 		CATCH(cudaGetDevice(&gpu_id));
+// 		if (gpu_id == 0) {
+// 			// copy from bottom
+// 			CATCH(cudaMemcpyAsync(devPlacesMap[handle].bottomNeighborGhosts.at(gpu_id).second, 
+// 				devPlacesMap[handle].topGhosts.at(gpu_id + 1).second, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
+// 			cleanGhostPointers<<<pDims[0], pDims[1]>>>
+// 				(devPlacesMap[handle].bottomNeighborGhosts.at(gpu_id).first, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0]);
+// 		}
+
+// 		else if (gpu_id == activeDevices.size() - 1) {
+// 			// copy from top
+// 			CATCH(cudaMemcpyAsync(devPlacesMap[handle].topNeighborGhosts.at(gpu_id).second, 
+// 				devPlacesMap[handle].bottomGhosts.at(gpu_id - 1).second, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
+// 			cleanGhostPointers<<<pDims[0], pDims[1]>>>
+// 				(devPlacesMap[handle].topNeighborGhosts.at(gpu_id).first, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0]);
+// 		}
+
+// 		else {
+// 			// copy from bottom
+// 			CATCH(cudaMemcpyAsync(devPlacesMap[handle].bottomNeighborGhosts.at(gpu_id).second, 
+// 				devPlacesMap[handle].topGhosts.at(gpu_id + 1).second, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
+// 			cleanGhostPointers<<<pDims[0], pDims[1]>>>
+// 				(devPlacesMap[handle].bottomNeighborGhosts.at(gpu_id).first, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0]);
+// 			// copy from top
+// 			CATCH(cudaMemcpyAsync(devPlacesMap[handle].topNeighborGhosts.at(gpu_id).second, 
+// 				devPlacesMap[handle].bottomGhosts.at(gpu_id - 1).second, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
+// 			cleanGhostPointers<<<pDims[0], pDims[1]>>>
+// 				(devPlacesMap[handle].topNeighborGhosts.at(gpu_id).first, 
+// 				MAX_AGENT_TRAVEL * getDimSize()[0]);
+// 		}
+// 	}
+// }
+
+// copy PlaceState's to neighbor device
 void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 	dim3* pDims = getPlacesThreadBlockDims(handle);
 	Logger::debug("DeviceConfig::copyGhostPlaces - entering copyGhostPlaces");
 	Logger::debug("Handle: %d and stateSize = %d and num PlaceState top copy: %d", handle, stateSize, MAX_AGENT_TRAVEL * getDimSize()[0]);
-    for (int i = 0; i < activeDevices.size(); i+=2) {
+    Logger::debug("Number of devices = %d", activeDevices.size());
+	for (int i = 0; i < activeDevices.size(); i+=2) {
         // copy right
-        cudaSetDevice(activeDevices.at(i + 1));
+        CATCH(cudaSetDevice(activeDevices.at(i + 1)));
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
+		Logger::debug("Active device = %d", gpu_id);
 		CATCH(cudaMemcpyAsync(devPlacesMap[handle].topNeighborGhosts.at(i + 1).second, 
 				devPlacesMap[handle].bottomGhosts.at(i).second, 
 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
@@ -308,11 +382,15 @@ void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 					MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
 			cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         }
+		cudaDeviceSynchronize();
     }
 
     for (int i = 1; i < activeDevices.size(); i+=2) {
         // copy left
         cudaSetDevice(activeDevices.at(i - 1));
+		int gpu_id = -1;
+		CATCH(cudaGetDevice(&gpu_id));
+		Logger::debug("Active device = %d", gpu_id);
 		CATCH(cudaMemcpyAsync(devPlacesMap[handle].bottomNeighborGhosts.at(i - 1).second, 
 				devPlacesMap[handle].topGhosts.at(i).second, 
 				MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
@@ -325,6 +403,7 @@ void DeviceConfig::copyGhostPlaces(int handle, int stateSize) {
 					MAX_AGENT_TRAVEL * getDimSize()[0] * stateSize, cudaMemcpyDefault));
 			cleanGhostPointers<<<pDims[0], pDims[1]>>>(devPlacesMap[handle].topNeighborGhosts.at(i + 1).first, MAX_AGENT_TRAVEL * getDimSize()[0]);
         }
+		cudaDeviceSynchronize();
     }
 }
 
@@ -342,33 +421,54 @@ __global__ void calculateRandomNumbersKernel(unsigned int* nums, curandState *st
 	}
 }
 
-// TODO: Refactor to return device pointer and check for whether the pointer is
-//		 on host or device with cudaDeviceGetAttributes()
-unsigned int* DeviceConfig::calculateRandomNumbers(int size) {
-	if (randStateSize != size) {
-		if (randState != NULL) {
-			CATCH(cudaFree(randState));
-			cudaDeviceSynchronize();
-			CHECK();
-			randState = NULL;
-		}
+unsigned* DeviceConfig::calculateRandomNumbers(int size) {
+	std::random_device r;
+  	std::seed_seq seed{r(), r(), r(), r(), r(), r(), r(), r()};
+  	std::mt19937 eng(seed); // a source of random data
 
-		randStateSize = size;
-		CATCH(cudaMalloc((void**)randState, size * sizeof(curandState)));
-		initCurand<<<(size+nTHB-1)/nTHB, nTHB>>>(randState, size);
-		cudaDeviceSynchronize();
-		CHECK();
-	}
+  	std::uniform_int_distribution<unsigned> dist;
+  	std::vector<unsigned> v(size);
 
-	unsigned int *dMem, *hMem;
-	hMem = new unsigned int[size*sizeof(unsigned int)];
-	CATCH(cudaMalloc(&dMem, size * sizeof(unsigned int)));
-	calculateRandomNumbersKernel<<<((size+nTHB-1)/nTHB), nTHB>>>(dMem, randState, size);
-	cudaDeviceSynchronize();
-	CHECK();
-	CATCH(cudaMemcpy(hMem, dMem, size * sizeof(unsigned int), cudaMemcpyDefault));
-	CATCH(cudaFree(dMem));
-	return hMem;
+  	generate(begin(v), end(v), bind(dist, eng));
+	unsigned* randNumArray = &v[0];
+	return randNumArray;
 }
+
+// unsigned** DeviceConfig::calculateRandomNumbers(int size) {
+
+// 	if (randStateSize[0] != size) {
+// 		#pragma omp parallel 
+// 		{
+// 			int gpu_id = -1;
+// 			CATCH(cudaGetDevice(&gpu_id));
+// 			if (randStates[gpu_id] != NULL) {
+// 				CATCH(cudaFree(randStates[gpu_id]));
+// 				CHECK();
+// 			}
+
+// 			randStateSize[gpu_id] = size;
+// 			CATCH(cudaMalloc((void**) &randStates[gpu_id], size * sizeof(curandState[gpu_id])));
+// 			initCurand<<<(size+nTHB-1)/nTHB, nTHB>>>(randStates[gpu_id], randStateSize[gpu_id]);
+// 			CHECK();
+
+// 		}
+// 	}
+
+// 	unsigned** hMem = new unsigned*[activeDevices.size()];
+// 	#pragma omp parallel 
+// 	{
+// 		int gpu_id = -1;
+// 		CATCH(cudaGetDevice(&gpu_id));
+// 		unsigned *dMem;
+// 		hMem[gpu_id] = new unsigned[randStateSize[gpu_id]*sizeof(unsigned)];
+// 		CATCH(cudaMalloc((void**) &dMem, randStateSize[gpu_id] * sizeof(unsigned)));
+// 		calculateRandomNumbersKernel<<<((randStateSize[gpu_id]+nTHB-1)/nTHB), nTHB>>>(dMem, randStates[gpu_id], randStateSize[gpu_id]);
+// 		CHECK();
+// 		CATCH(cudaMemcpy(hMem[gpu_id], dMem, randStateSize[gpu_id] * sizeof(unsigned int), cudaMemcpyDefault));
+// 		CATCH(cudaFree(dMem));
+// 	}
+
+// 	return hMem;
+// }
 
 } // end Mass namespace

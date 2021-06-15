@@ -22,10 +22,10 @@ int main() {
 	// int interval = 0;
 
 	const int nRuns = 1; // number of times to run each test
-	const int nSizes = 3;
-	int size[nSizes] = {100, 500, 1000};
-	int max_time = 100;
-	int interval = 0;
+	const int nSizes = 1;
+	int size[nSizes] = {50};
+	int max_time = 1000;
+	int interval = 100;
 
 	Logger::print("Size,CPU,GPU,MASS\n");
 	SugarScape sugarScape;
