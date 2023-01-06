@@ -2,6 +2,10 @@
 
 Copyright University of Washington
 
+The work in this repository is a continuation of research on Multi-Agent Spacial Simulation (MASS) from Dr Munehiro Fukuda's research group at University of Washington-Bothell
+
+The work of the owner of this repository is outlined in the thesis paper titled "final-paper.pdf".
+
 ### What is this repository for? ###
 
 * This repo is for MASS CUDA library use and development. It contains the MASS CUDA library and applications using it - Heat 2D, SugarScape, BrainGrid and test application.
