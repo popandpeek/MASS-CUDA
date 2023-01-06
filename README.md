@@ -1,4 +1,4 @@
-# MASS CUDA README #
+# MASS CUDA #
 
 Copyright University of Washington
 
