@@ -1,8 +1,10 @@
 # MASS CUDA README #
 
+Copyright University of Washington
+
 ### What is this repository for? ###
 
-* This repo is for MASS CUDA library use and development. It contains the MASS CUDA library and applications using it - Heat 2D, SugarScape and test application.
+* This repo is for MASS CUDA library use and development. It contains the MASS CUDA library and applications using it - Heat 2D, SugarScape, BrainGrid and test application.
 
 ### How do I get set up? ###
 
