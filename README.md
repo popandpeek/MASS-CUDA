@@ -25,16 +25,3 @@
 
     To run the test program tun the command`./bin/test`. The results will be saved in file `test_program_results.txt`.
     
-
-
-* Repo owner or admin
-
-    The most recent active developer of the library to contact:
-    Lisa Kosiachenko
-    ekosyachenko at gmail dot com
-
-    
-* Other community or team contact
-
-    Professor Munehiro Fukuda 
-    mfukuda at u dot washington dot education domain abbreviation
