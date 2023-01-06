@@ -34,8 +34,8 @@ int Mass::numPlacesInstances() {
 	return Mass::placesMap.size();
 }
 
-unsigned int* Mass::getRandomNumbers(int size) {
-	return dispatcher->calculateRandomNumbers(size);
+int* Mass::getRandomNumbers(int size, int max_num) {
+	return dispatcher->calculateRandomNumbers(size, max_num);
 }
 
 } /* namespace mass */

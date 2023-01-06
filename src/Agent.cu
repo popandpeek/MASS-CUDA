@@ -12,6 +12,13 @@ namespace mass {
 MASS_FUNCTION Agent::Agent(AgentState *state, void *args) {
     this->state = state;
     this->state->index = 0;
+    this->state->markForDelete = false;
+    this->state->childPlace = NULL;
+    this->state->nChildren = 0;
+    this->state->destPlace = NULL;
+    this->state->destPlaceIdx = -1;
+    this->state->placeAgentArrayIdx = -1;
+    this->state->traveledAgentIdx = -1;
 }
 
 MASS_FUNCTION AgentState* Agent::getState() {
@@ -36,12 +43,32 @@ MASS_FUNCTION int Agent::getPlaceDevIndex() {
     return state->placeDevIndex;
 }
 
+MASS_FUNCTION void Agent::setMyDevice(int device) {
+    state->myDevice = device;
+}
+
+MASS_FUNCTION int Agent::getMyDevice() {
+    return state->myDevice;
+}
+
 MASS_FUNCTION int Agent::getIndex() {
     return state->index;
 }
 
 MASS_FUNCTION void Agent::setIndex(int index) {
     state->index = index;
+}
+
+MASS_FUNCTION void Agent::setDestPlaceIndex(int idx) {
+    state -> destPlaceIdx = idx;
+}
+
+MASS_FUNCTION Place* Agent::getDestPlace() {
+    return state -> destPlace;
+}
+
+MASS_FUNCTION int Agent::getDestPlaceIndex() {
+    return state -> destPlaceIdx;
 }
 
 MASS_FUNCTION bool Agent::isAlive() {
@@ -60,12 +87,40 @@ MASS_FUNCTION bool Agent::isTraveled() {
     return this->state->agentTraveled;
 }
 
+MASS_FUNCTION void Agent::setAccepted(bool accepted) {
+    this->state->isAccepted = accepted;
+}
+
+MASS_FUNCTION bool Agent::isAccepted(){
+    return state->isAccepted;
+}
+
+MASS_FUNCTION void Agent::setTraveledAgentIdx(int idx) {
+    this->state->traveledAgentIdx = idx;
+}
+
+MASS_FUNCTION int Agent::getTraveledAgentIdx() {
+    return state->traveledAgentIdx;
+}
+
 MASS_FUNCTION bool Agent::longDistanceMigration() {
     return state->longDistanceMigration;
 }
 
 MASS_FUNCTION void Agent::setLongDistanceMigration(bool longDistanceMigration) {
     state->longDistanceMigration = longDistanceMigration;
+}
+
+MASS_FUNCTION void Agent::setPlaceAgentArrayIdx(int idx) {
+    this->state->placeAgentArrayIdx = idx;
+}
+
+MASS_FUNCTION int Agent::getPlaceAgentArrayIdx() {
+    return state->placeAgentArrayIdx;
+}
+
+MASS_FUNCTION void Agent::markForTermination(bool mark) {
+    this->state->markForDelete = mark;
 }
 
 MASS_FUNCTION void Agent::terminateAgent() {
@@ -82,8 +137,22 @@ MASS_FUNCTION void Agent::terminateGhostAgent() {
     state -> index = -1;
 }
 
+MASS_FUNCTION void Agent::markAgentForTermination() {
+    state -> isAlive = false;
+    state-> agentTraveled = false;
+    state->markForDelete = true;
+    state->place = NULL;
+    state -> index = -1;
+}
+
+MASS_FUNCTION bool Agent::isMarkedForTermination() {
+    return state->markForDelete;
+}
+
 MASS_FUNCTION void Agent::migrateAgent(Place* destination, int destinationRelativeIdx) {
     state -> destPlace = destination;
+    state -> destPlaceIdx = destination -> getDevIndex();
+    setPlaceAgentArrayIdx(destinationRelativeIdx);
     destination -> addMigratingAgent(this, destinationRelativeIdx);
 }
 

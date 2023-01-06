@@ -62,6 +62,7 @@ void SugarScape::displaySugar(Places *places, int time, int *placesSize) {
 	agents << "\n";
 	Logger::print(ss.str());
 	Logger::print(agents.str());
+	Logger::debug("Sugarscape: Display Places exits.");
 	delete[] retVals;
 }
 
@@ -81,6 +82,7 @@ void SugarScape::displayAgents(Agents* agents, int time) {
 	}
 
 	Logger::print(ss.str());
+	Logger::debug("Sugarscape: Display Agents exits.");
 }
 
 void SugarScape::runMassSim(int size, int max_time, int interval) {
@@ -153,8 +155,9 @@ void SugarScape::runMassSim(int size, int max_time, int interval) {
 	timer.start();
 
 	int t = 0;
+	displaySugar(places, t, placesSize);
 	for (; t < max_time; t++) {
-		Logger::debug("\nSugarscap Main Loop, iteration: %d\n", t);
+		Logger::debug("\nSugarscape Main Loop, iteration: %d\n", t);
 		places->callAll(SugarPlace::INC_SUGAR_AND_POLLUTION);
 
 		places->exchangeAll(&neighbors, SugarPlace::AVE_POLLUTIONS, NULL /*argument*/, 0 /*argSize*/);

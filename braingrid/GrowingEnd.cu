@@ -6,21 +6,39 @@
 
 
 using namespace mass;
-using namespace BrainGridConstants;
 
 MASS_FUNCTION GrowingEnd::GrowingEnd(mass::AgentState *state, void *argument) :
         Agent(state, argument) {
 
     myState = (GrowingEndState*) state;
+    myState->myAgentType = 0;
     myState->hasSpawned = false;
     myState->isGrowing = false;
     myState->justGrew = false;
-    myState->branchCountRemaining = R_REPETITIVE_BRANCHES;
-    myState->branchGrowthRemaining = K_BRANCH_GROWTH; 
+    myState->branchCountRemaining = BrainGridConstants::R_REPETITIVE_BRANCHES;
+    myState->branchGrowthRemaining = BrainGridConstants::K_BRANCH_GROWTH; 
+    myState->mySoma = NULL;
+    myState->mySomaIndex = 0;
+    myState->myConnectPlace = NULL;
+    myState->curIter = 0;
+    myState->spawnTime = -1;
 }
 
 MASS_FUNCTION GrowingEnd::~GrowingEnd() {
     // nothing to delete
+}
+
+MASS_FUNCTION void GrowingEnd::resetGrowingEnd() {
+    myState->longDistanceMigration = false;
+    myState->hasSpawned = false;
+    myState->isGrowing = false;
+    myState->justGrew = false;
+    myState->branchCountRemaining = BrainGridConstants::R_REPETITIVE_BRANCHES;
+    myState->branchGrowthRemaining = BrainGridConstants::K_BRANCH_GROWTH; 
+    myState->mySoma = NULL;
+    myState->myConnectPlace = NULL;
+    myState->curIter = 0;
+    myState->spawnTime = -1;
 }
 
 MASS_FUNCTION GrowingEndState* GrowingEnd::getState() {
@@ -35,8 +53,8 @@ MASS_FUNCTION void GrowingEnd::setGrowing(bool grow) {
     myState->isGrowing = grow;
 }
 
-MASS_FUNCTION int GrowingEnd::getType() {
-    return myState->myType;
+MASS_FUNCTION int GrowingEnd::getAgentType() {
+    return myState->myAgentType;
 }
 
 MASS_FUNCTION int GrowingEnd::getSomaIndex() {
@@ -83,8 +101,12 @@ MASS_FUNCTION bool GrowingEnd::justGrew() {
     return myState->justGrew;
 }
 
+MASS_FUNCTION int GrowingEnd::getGrowthDirection() {
+    return myState->growthDirection;
+}
+
 MASS_FUNCTION void GrowingEnd::setGrowthDirection(int direction) {
-    myState->growthDirection = (BrainGridConstants::Direction)direction;
+    myState->growthDirection = direction;
 }
 
 MASS_FUNCTION void GrowingEnd::callMethod(int functionId, void *argument) { 
@@ -95,9 +117,11 @@ MASS_FUNCTION void GrowingEnd::callMethod(int functionId, void *argument) {
         case INIT_DENDRITES:
             initDendrites();
             break;
-        case SET_SPAWN_TIME:
-            setDendriteSpawnTime();
+        case SET_AXON_SPAWN_TIME:
             setAxonSpawnTime();
+            break;
+        case SET_DENDRITE_SPAWN_TIME:
+            setDendriteSpawnTime();
             break;
         case SPAWN_AXONS:
             spawnAxon();
@@ -122,6 +146,12 @@ MASS_FUNCTION void GrowingEnd::callMethod(int functionId, void *argument) {
             break;
         case BRANCH_DENDRITES:
             branchDendrites((int*) argument);
+            break;
+        case SET_SYNAPSES:
+            setSynapses();
+            break;
+        case SET_DENDRITES:
+            setDendrites();
             break;
         case GROW_SYNAPSE:
             growSynapsesNotSoma((int*) argument);
@@ -155,41 +185,48 @@ MASS_FUNCTION void GrowingEnd::callMethod(int functionId, void *argument) {
 MASS_FUNCTION void GrowingEnd::initAxons() {
     myState->mySoma = (NeuronPlace*) getPlace();
     myState->mySomaIndex = getPlaceIndex();
-    myState->growthDirection = (BrainGridConstants::Direction)(myState->mySoma->getGrowthDirection());
-    myState->myType = AXON;
+    myState->growthDirection = myState->mySoma->getAxonGrowthDirection();
+    myState->myAgentType = BrainGridConstants::AXON;
+    setAxonSpawnTime();
 
 }
 
 MASS_FUNCTION void GrowingEnd::initDendrites() {
-    myState->mySoma = (NeuronPlace*) getPlace();
-    myState->mySomaIndex = getPlaceIndex();
-    myState->growthDirection = (BrainGridConstants::Direction)(myState->mySoma->getGrowthDirection());
-    myState->myType = DENDRITE;
+    if (!(myState->hasSpawned)) {
+        myState->mySoma = (NeuronPlace*)myState->place;
+        myState->mySomaIndex = getPlaceIndex();
+        myState->curIter = myState->mySoma->getCurIter();
+        myState->growthDirection = myState->mySoma->getGrowthDirection();
+        myState->myAgentType = BrainGridConstants::DENDRITE;
+        setDendriteSpawnTime();
+    }
 }
 
 MASS_FUNCTION void GrowingEnd::setDendriteSpawnTime() {
-    NeuronPlace* myPlace = (NeuronPlace*) getPlace();
-    myState->spawnTime = myPlace->getDendriteSpawnTime();
+    if (!(myState->hasSpawned)) {
+        myState->spawnTime = myState->mySoma->getDendriteSpawnTime();
+    }
 }
 
 MASS_FUNCTION void GrowingEnd::setAxonSpawnTime() {
-    NeuronPlace* myPlace = (NeuronPlace*) getPlace();
-    myState->spawnTime = myPlace->getAxonSpawnTime();
+    if (!(myState->hasSpawned)) {
+        myState->spawnTime = myState->mySoma->getAxonSpawnTime();
+    }
 }
 
 MASS_FUNCTION void GrowingEnd::spawnAxon() {
-    if (!(myState->hasSpawned) && myState->spawnTime == myState->mySoma->getCurIter()) {
+    if (!(myState->hasSpawned) && (myState->spawnTime == myState->curIter)) {
         myState->hasSpawned = true;
         myState->isGrowing = true;
     }
 }
 
 MASS_FUNCTION void GrowingEnd::spawnDendrite() {
-    if (!(myState->hasSpawned) && myState->spawnTime == myState->mySoma->getCurIter()) {
+    if (!(myState->hasSpawned) && (myState->spawnTime <= myState->curIter)) {
         myState->hasSpawned = true;
         myState->isGrowing = true;
         if (myState->mySoma->getDendritesToSpawn() > 0) {
-            spawn(1, myState->mySoma);
+            spawn(1, myState->place);
             myState->mySoma->reduceDendritesToSpawn(1);
         }
     }
@@ -197,65 +234,50 @@ MASS_FUNCTION void GrowingEnd::spawnDendrite() {
 
 MASS_FUNCTION void GrowingEnd::growFromSoma() {
     if (myState->hasSpawned && getPlaceIndex() == getSomaIndex()) {
-        myState->justGrew = true;
         NeuronPlace* myPlace = (NeuronPlace*) getPlace();
         if (myPlace->getMigrationDest() != NULL) {
+            myState->justGrew = true;
             migrateAgent(myPlace->getMigrationDest(), myPlace->getMigrationDestRelIdx());
         }
     }
 }
 
-// TODO: Refactor: To use travelingSynapse in earlier calls? 
 MASS_FUNCTION void GrowingEnd::axonToSynapse(int* randNums) {
-    if (myState->isGrowing && myState->myType == AXON && !(justGrew()) && myState->mySomaIndex != getIndex()) {
+    if (myState->isGrowing && myState->myAgentType == BrainGridConstants::AXON && 
+            myState->mySomaIndex != getPlaceIndex()) {
         int randNum = (randNums[getIndex()]) % 100;
-        if (randNum >= AXON_GROWING_MODE) {
-            myState->myType = SYNAPSE;
-            myState->branchCountRemaining = R_REPETITIVE_BRANCHES;
-            myState->branchGrowthRemaining = K_BRANCH_GROWTH;
-            if (((NeuronPlace*)myState->place)->getTravelingSynapse() == false) {
-                ((NeuronPlace*)myState->place)->setTravelingSynapse(true);
-                ((NeuronPlace*)myState->place)->addAgent(this);
-            } 
-            else {
-                terminateAgent();
-            }
+        if (randNum >= BrainGridConstants::AXON_GROWING_MODE) {
+            myState->myAgentType = BrainGridConstants::SYNAPSE;
+            myState->branchCountRemaining = BrainGridConstants::R_REPETITIVE_BRANCHES;
+            myState->branchGrowthRemaining = BrainGridConstants::K_BRANCH_GROWTH;
         }
     }
 }
 
-// TODO: Refactor to use place growthDirection?
 MASS_FUNCTION void GrowingEnd::growAxonsNotSoma(int* randNums) {
-    if (getIndex() != myState->mySomaIndex && myState->myType == AXON && 
+    if (getIndex() != myState->mySomaIndex && myState->myAgentType == BrainGridConstants::AXON && 
             myState->isGrowing && !(justGrew())) {
         int randNum = randNums[getIndex()] % 100;
-        if (randNum >= AXON_GROWING_MODE) {
-            terminateAgent();
+        if (randNum >= BrainGridConstants::AXON_GROWING_MODE) {
+            resetGrowingEnd();
+            markAgentForTermination();
             return;
         }
 
-        int potDests[R_REPETITIVE_BRANCHES];
-        potDests[0] = myState->growthDirection;
-        potDests[1] = (myState->growthDirection - 1) % MAX_NEIGHBORS;
-        potDests[2] = (myState->growthDirection + 1) % MAX_NEIGHBORS;
-        for (int i = 0; i < R_REPETITIVE_BRANCHES; ++i) {
-            myState->growthDirection = (Direction)potDests[i];
-            NeuronPlace* neighborPlace = ((NeuronPlace*)(myState->place->state->neighbors[myState->growthDirection]));
-            if (neighborPlace != NULL && !(neighborPlace->isOccupied())) {
-                myState->justGrew = true;
-                migrateAgent(myState->place->state->neighbors[myState->growthDirection], myState->growthDirection);
-                return;
-            }
-        }   
-        
-        terminateAgent();
+        if (((NeuronPlace*)myState->place)->getMigrationDest() != NULL) {
+            migrateAgent(((NeuronPlace*)myState->place)->getMigrationDest(), 
+                ((NeuronPlace*)myState->place)->getMigrationDestRelIdx());
+        } else {
+            resetGrowingEnd();
+            markAgentForTermination();
+        }
     }
 }
 
 MASS_FUNCTION void GrowingEnd::branchSynapses(int* randNums) {
-    if (myState->myType == SYNAPSE && isGrowing() && !(justGrew())) {
+    if (myState->myAgentType == BrainGridConstants::SYNAPSE && isGrowing()) {
         int randNum = randNums[getIndex()];
-        if (randNum % 100 < BRANCH_POSSIBILITY && myState->branchCountRemaining > 0) {
+        if (randNum % 100 < BrainGridConstants::BRANCH_POSSIBILITY && myState->branchCountRemaining > 0) {
             myState->branchCountRemaining--;
             ((NeuronPlace*)myState->place)->setBranchedSynapseSoma(myState->mySoma);
             ((NeuronPlace*)myState->place)->setBranchedSynapseSomaIdx(myState->mySomaIndex);
@@ -265,9 +287,9 @@ MASS_FUNCTION void GrowingEnd::branchSynapses(int* randNums) {
 }
 
 MASS_FUNCTION void GrowingEnd::branchDendrites(int* randNums) {
-    if (myState->myType == DENDRITE && isGrowing() && !(justGrew())) {
+    if (myState->myAgentType == BrainGridConstants::DENDRITE && isGrowing()) {
         int randNum = randNums[getIndex()];
-        if (randNum % 100 < BRANCH_POSSIBILITY && myState->branchCountRemaining > 0) {
+        if (randNum % 100 < BrainGridConstants::BRANCH_POSSIBILITY && myState->branchCountRemaining > 0) {
             myState->branchCountRemaining--;
             ((NeuronPlace*)myState->place)->setBranchedDendriteSoma(myState->mySoma);
             ((NeuronPlace*)myState->place)->setBranchedDendriteSomaIdx(myState->mySomaIndex);
@@ -277,37 +299,41 @@ MASS_FUNCTION void GrowingEnd::branchDendrites(int* randNums) {
 }
 
 // TODO: Where are we setting SOMA? Can we combine?
-MASS_FUNCTION void GrowingEnd::setBranchedSynapses() {
+MASS_FUNCTION void GrowingEnd::setSynapses() {
     if (!myState->hasSpawned && myState->mySoma == NULL) {
-        myState->myType = SYNAPSE;
+        myState->myAgentType = BrainGridConstants::SYNAPSE;
         myState->hasSpawned = true;
         myState->isGrowing = true;
         myState->mySoma = ((NeuronPlace*)myState->place)->getBranchedSynapseSoma();
         myState->mySomaIndex = ((NeuronPlace*)myState->place)->getBranchedSynapseSomaIdx();
+        myState->growthDirection = ((NeuronPlace*)myState->place)->getBranchMigrationDestRelIdx();
     }
 }
 
 // TODO: Where are we setting SOMA Can we combine?
-MASS_FUNCTION void GrowingEnd::setBranchedDendrites() {
+MASS_FUNCTION void GrowingEnd::setDendrites() {
     if (!myState->hasSpawned && myState->mySoma == NULL) {
-        myState->myType = DENDRITE;
+        myState->myAgentType = BrainGridConstants::DENDRITE;
         myState->hasSpawned = true;
         myState->isGrowing = true;
         myState->mySoma = ((NeuronPlace*)myState->place)->getBranchedDendriteSoma();
         myState->mySomaIndex = ((NeuronPlace*)myState->place)->getBranchedDendriteSomaIdx();
+        myState->growthDirection = ((NeuronPlace*)myState->place)->getBranchMigrationDestRelIdx();
     }
 }
 
 // TODO: Refacctor to get rid of check branchGrowthRemaining?
 MASS_FUNCTION void GrowingEnd::growSynapsesNotSoma(int* randNums) {
-    if (myState->myType == SYNAPSE && myState->isGrowing && !(justGrew())) { 
+    if (getAgentType() == BrainGridConstants::SYNAPSE && myState->isGrowing && justGrew()) { 
         NeuronPlace* growPlace = ((NeuronPlace*)myState->place)->getMigrationDest();
-        if (growPlace != NULL && myState->branchGrowthRemaining > 0 && (randNums[getIndex()] % 100) > STOP_BRANCH_GROWTH) {
+        if (growPlace != NULL && myState->branchGrowthRemaining > 0 && 
+                (randNums[getIndex()] % 100) > BrainGridConstants::STOP_BRANCH_GROWTH) {
             myState->branchGrowthRemaining--;
             migrateAgent(growPlace, ((NeuronPlace*)myState->place)->getMigrationDestRelIdx());
         }
         else {
-            terminateAgent();
+            resetGrowingEnd();
+            markAgentForTermination();
         }
     }
 }
@@ -316,60 +342,58 @@ MASS_FUNCTION void GrowingEnd::growSynapsesNotSoma(int* randNums) {
 MASS_FUNCTION void GrowingEnd::growDendritesNotSoma(int* randNums) {
     if (myState->isGrowing && !(justGrew())) { 
         NeuronPlace* growPlace = ((NeuronPlace*)myState->place)->getMigrationDest();
-        if (growPlace != NULL && myState->branchGrowthRemaining > 0 && (randNums[getIndex()] % 100) > STOP_BRANCH_GROWTH) {
+        if (growPlace != NULL && myState->branchGrowthRemaining > 0 && 
+                (randNums[getIndex()] % 100) > BrainGridConstants::STOP_BRANCH_GROWTH) {
             myState->branchGrowthRemaining--;
             migrateAgent(growPlace, ((NeuronPlace*)myState->place)->getMigrationDestRelIdx());
         }
         else {
-            terminateAgent();
+            resetGrowingEnd();
+            markAgentForTermination();
         }
     }
 }
 
 MASS_FUNCTION void GrowingEnd::growBranches() {
-    if (myState->isGrowing && !(myState->justGrew)) {
-        int dir1 = (((NeuronPlace*)myState->place)->getGrowthDirection() - 1) % MAX_NEIGHBORS;
-        int dir2 = (((NeuronPlace*)myState->place)->getGrowthDirection() + 1) % MAX_NEIGHBORS;
-        NeuronPlace* growPlace1 = (NeuronPlace*) myState->place->state->neighbors[dir1];
-        NeuronPlace* growPlace2 = (NeuronPlace*) myState->place->state->neighbors[dir2];
-        if (growPlace1 != NULL && !(growPlace1->isOccupied())) {
+    if (myState->isGrowing && !(myState->justGrew) && 
+            (getAgentType() == BrainGridConstants::DENDRITE || getAgentType() == BrainGridConstants::SYNAPSE)) {
+        NeuronPlace* branchGrowthPlace = ((NeuronPlace*)myState->place)->getBranchMigrationDest();
+        if (branchGrowthPlace != NULL) {
             myState->justGrew = true;
             myState->branchGrowthRemaining--;
-            migrateAgent(growPlace1, dir1);
-        } else if (growPlace2 != NULL && !(growPlace2->isOccupied())) {
-            myState->justGrew = true;
-            myState->branchGrowthRemaining--;
-            migrateAgent(growPlace2, dir2);
+            migrateAgent(branchGrowthPlace, ((NeuronPlace*)myState->place)->getBranchMigrationDestRelIdx());
         } else {
-            terminateAgent();
+            resetGrowingEnd();
+            markAgentForTermination();
         }
     }
 }
 
 MASS_FUNCTION void GrowingEnd::somaTravel() {
     // TODO: Is connected?
-    if (myState->isAlive && !(myState->isGrowing) && (myState->myType == SYNAPSE)) {
-        // TODO: Need to provide below method signature in Agent class
+    if (myState->isAlive && !(myState->isGrowing) && (myState->myAgentType == BrainGridConstants::SYNAPSE)) {
         migrateAgentLongDistance(myState->mySoma, myState->mySomaIndex);
     }
 }
 
 MASS_FUNCTION void GrowingEnd::neuronGetSignal() {
-    if (myState->myType == SYNAPSE && myState->isAlive && !(isGrowing()) && 
+    if (myState->myAgentType == BrainGridConstants::SYNAPSE && myState->isAlive && !(isGrowing()) && 
                 getPlaceIndex() == myState->mySomaIndex) {
         myState->signal = ((NeuronPlace*)myState->place)->getOutputSignal();
     }
 }
 
 MASS_FUNCTION void GrowingEnd::dendriteSomaTravel() {
-    if (myState->isAlive && !(myState->isGrowing) && (myState->myType == SYNAPSE)) {
+    if (myState->isAlive && !(myState->isGrowing) && (myState->myAgentType == BrainGridConstants::SYNAPSE)) {
         migrateAgentLongDistance(myState->myConnectPlace, myState->myConnectPlaceIndex);
     }
 }
 
+// TODO: Not sure this is this needed?
 MASS_FUNCTION void GrowingEnd::setSomaSignal() {
-    if (myState->myType == SYNAPSE && myState->isAlive && !myState->isGrowing && 
+    if (myState->myAgentType == BrainGridConstants::SYNAPSE && myState->isAlive && !myState->isGrowing && 
             getPlaceIndex() == myState->mySomaIndex) {
+        // TODO: Set signal
     }
 }
 
@@ -377,5 +401,6 @@ MASS_FUNCTION void GrowingEnd::updateIters() {
     if (myState->isGrowing) {
         myState->justGrew = false;
     }
+    myState->curIter++;
 }
 

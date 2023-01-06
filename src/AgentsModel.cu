@@ -2,16 +2,18 @@
 
 namespace mass {
 
-AgentsModel::AgentsModel(int handle, int qty) {
+AgentsModel::AgentsModel(int handle, int qty, int nDevices) {
     Logger::debug("Running AgentsModel constructor");
     this->handle = handle;
     this->numElements = qty;
+    this->nAgentsDev = new int[nDevices];
 }
 
 AgentsModel::~AgentsModel() {
     for (int i = 0; i < numElements; ++i) {
         delete agents[i];
         free(state[i]);
+        delete nAgentsDev;
     }
 }
 
@@ -46,5 +48,10 @@ unsigned AgentsModel::getNumElements() {
     return numElements;
 }
 
+void AgentsModel::setNAgentsDev(int* nAgents) {
+    for (int i = 0; i < agents.size(); ++i) {
+        this->nAgentsDev[i] = nAgents[i];
+    }
+}
 } // end namespace
 

@@ -18,9 +18,9 @@ int main() {
     // Set-up run params
     const int nRuns = 1; // number of times to run each test
 	const int nSizes = 1;
-	int size[nSizes] = { 100 }; // 200, 300, 400, 500, 600, 700, 800, 900, 1000};
-	int max_time = 100;
-    int interval = 0;
+	int size[nSizes] = { 50 };
+	int max_time = 25;
+    int interval = 1;
     
     Logger::print("Size,CPU,GPU,MASS\n");
 	BrainGrid brainGrid;
@@ -30,7 +30,7 @@ int main() {
 			size[i], max_time, interval);
 
 		for (int run = 0; run < nRuns; ++run) {
-			Logger::print("%d,",size[i]);
+			Logger::print("%d,\n",size[i]);
 			brainGrid.runMassSim(size[i], max_time, interval);
 		}
 	}

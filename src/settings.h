@@ -20,6 +20,6 @@
 
 // The percentage of assigned memory at which Agent memory compaction will run
 // 0 - 99 represents the percentage of Agent allocated memory to begin checking for fragmentation
-#define AGENT_MEM_CHECK 0
+#define AGENT_MEM_CHECK 100
 
-#define nTHB 256
+#define nTHB 32

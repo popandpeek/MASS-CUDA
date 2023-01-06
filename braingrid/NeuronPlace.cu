@@ -2,7 +2,6 @@
 #include <stdio.h> //remove after debugging
 #include <cuda_runtime.h>
 #include "NeuronPlace.h"
-#include "BrainGridConstants.h"
 #include "../src/settings.h"
 
 using namespace mass;
@@ -13,16 +12,302 @@ MASS_FUNCTION NeuronPlace::NeuronPlace(PlaceState *state, void *argument) :
 
 	myState = (NeuronPlaceState*) state;
     
-    myState->growthDirection = (BrainGridConstants::Direction)0;
+    myState->myPlaceType = BrainGridConstants::EMPTY;
+    myState->growthDirection = BrainGridConstants::NORTH;
     myState->migrationDest = NULL;
     myState->migrationDestRelativeIdx = -1;
-    myState->travelingDendrite = false;
-    myState->travelingSynapse = false;
+    myState->dendritesToSpawn = 0;
+    myState->branchMigrationDest = NULL;
+    myState->branchMigrationDestRelativeIdx = -1;
+    myState->branchedSynapseSoma = NULL;
+    myState->branchedDendriteSoma = NULL;
 }
 
+MASS_FUNCTION void NeuronPlace::setSimulationTime(int* maxTime) {
+    myState->totalIters = maxTime[getDevIndex()];
+    myState->curIter = 0;
+}
 
-MASS_FUNCTION NeuronPlaceState* NeuronPlace::getState() {
-    return myState;
+MASS_FUNCTION void NeuronPlace::setNeuronPlaceType(int* isLoc) {
+    if (isLoc[getDevIndex()] == BrainGridConstants::SOMA) {
+        myState->myPlaceType = BrainGridConstants::SOMA;
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::setNeuronSignalType(int* randNum) {
+    if (myState->myPlaceType == BrainGridConstants::SOMA) {
+        int score = randNum[getDevIndex()] % 30;
+        if (score < BrainGridConstants::EXCITATORY) {
+            myState->signalType = BrainGridConstants::E;
+        } else if (score < (BrainGridConstants::INHIBITORY + BrainGridConstants::EXCITATORY)) {
+            myState->signalType = BrainGridConstants::I;
+        } else {
+            myState->signalType = BrainGridConstants::N;
+        }
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::setGrowthDirections(int* randNums) {
+    if (myState->myPlaceType == BrainGridConstants::SOMA) {
+        myState->growthDirection = abs(randNums[getDevIndex()]) % MAX_NEIGHBORS;
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::setSpawnTimes(int* randNums) {
+    if (myState->myPlaceType == BrainGridConstants::SOMA) {
+        int numIdx = getDevIndex() * MAX_NEIGHBORS;
+        int numBranches = 0;
+        for (int i = 0; i < MAX_NEIGHBORS; ++i) {
+            if (myState->neighbors[i] != NULL && ((NeuronPlace*)myState->neighbors[i])->getPlaceType() == BrainGridConstants::EMPTY) {
+                numBranches++;
+            }
+        }
+
+        if (!(numBranches > 0)) {
+            return;
+        }
+
+        // reduce by one for Axon        
+        myState->axonSpawnTime = randNums[numIdx];
+        myState -> dendritesToSpawn = numBranches - 1;
+        numIdx += 1;
+        for (int i = 0; i < myState->dendritesToSpawn; ++i) {
+            myState->dendriteSpawnTime[i] = randNums[i + numIdx];
+        }
+
+        // Bubble Sort OK for small array; sort order descending
+        for (int i = 0; i < (myState->dendritesToSpawn - 1); ++i) {
+            bool swaps = false;
+            //when the current item is bigger than next
+            for(int j = 0; j < myState->dendritesToSpawn - i - 1; j++) {
+                if(myState->dendriteSpawnTime[j] > myState->dendriteSpawnTime[j+1]) {
+                    int temp = myState->dendriteSpawnTime[j];
+                    myState->dendriteSpawnTime[j] = myState->dendriteSpawnTime[j+1];
+                    myState->dendriteSpawnTime[j+1] = temp;
+                    swaps = true;
+                }
+            }     
+            
+            if(!swaps) {
+                break;       // No swap in this pass, so array is sorted
+            }    
+        }
+    }
+}
+
+// Executed once during simulation set-up
+MASS_FUNCTION void NeuronPlace::findAxonGrowthDestinationFromSoma() {
+    if (myState->myPlaceType == BrainGridConstants::SOMA) {
+        //initially assume we won't find a suitable place
+        myState -> migrationDest = NULL; 
+        myState -> migrationDestRelativeIdx = -1;
+
+        NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
+        int count = 0;
+        while (tmpPlace == NULL || tmpPlace->getPlaceType() == BrainGridConstants::SOMA) {
+            myState->growthDirection = (myState->growthDirection + 1) % MAX_NEIGHBORS;
+            tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
+            if (count == MAX_NEIGHBORS) {
+                return;
+            }
+            count++;
+        }
+
+        myState->axonGrowthDirection = myState->growthDirection;
+        myState -> migrationDest = (NeuronPlace*)(myState->neighbors[myState->growthDirection]);
+        myState -> migrationDestRelativeIdx = myState->growthDirection;
+    }
+}
+
+// TODO: Check for correctness
+MASS_FUNCTION void NeuronPlace::findDendriteGrowthDestinationFromSoma() {
+    if (myState -> myPlaceType == BrainGridConstants::SOMA && getAgentPopulation() > 0) {
+        myState -> migrationDest = NULL; //initially assume we won't find a suitable place
+        myState -> migrationDestRelativeIdx = -1;
+
+        int pos = myState->growthDirection;
+        int startPos = pos;
+        NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[pos];
+        while (tmpPlace == NULL || tmpPlace->getPlaceType() != BrainGridConstants::EMPTY || 
+                pos == myState->axonGrowthDirection) {
+            pos = (pos + 1) % N_DESTINATIONS;
+            myState->growthDirection = pos;
+            tmpPlace = (NeuronPlace*)myState->neighbors[pos];
+            if (startPos == pos) {
+                return;
+            }
+        }
+
+        // Set migration destination
+        myState->migrationDest = (NeuronPlace*)myState->neighbors[myState->growthDirection];
+        myState->migrationDestRelativeIdx = myState->growthDirection;
+    }
+}
+
+// TODO: Does this need to be updated for 2 growthDestinations, or for 1?
+MASS_FUNCTION void NeuronPlace::findGrowthDestinationOutsideSoma() {
+    if (myState->myPlaceType == BrainGridConstants::EMPTY && getAgentPopulation() > 0 && myState->occupied == false) {
+        myState -> migrationDest = NULL; //initially assume we won't find a suitable place
+        myState -> migrationDestRelativeIdx = -1;
+
+        GrowingEnd* tmpAgent = NULL;
+        for (int i = 0; i < MAX_AGENTS; ++i) {
+            if (myState->agents[i] != NULL) {
+                tmpAgent = (GrowingEnd*)myState->agents[i];
+                myState->growthDirection = tmpAgent->getGrowthDirection();
+                break;
+            }
+        }
+
+        if (tmpAgent == NULL) {
+            return;
+        }
+
+        NeuronPlace* tmpPlace = ((NeuronPlace*)myState->neighbors[myState->growthDirection]);
+        if (tmpPlace == NULL || tmpPlace->getPlaceType() != BrainGridConstants::EMPTY || tmpPlace->isOccupied()) {
+            // Axons may grow +/- 45 degrees
+            if (tmpAgent->getAgentType() == BrainGridConstants::AXON) {
+                int leftGrowthDir = (myState->growthDirection - 1) % MAX_NEIGHBORS;
+                int rightGrowthDir = (myState->growthDirection + 1) % MAX_NEIGHBORS;
+                NeuronPlace* tmpPlaceLeft = ((NeuronPlace*)myState->neighbors[leftGrowthDir]);
+                NeuronPlace* tmpPlaceRight = ((NeuronPlace*)myState->neighbors[rightGrowthDir]);
+                if (tmpPlaceLeft != NULL && tmpPlaceLeft->getPlaceType() == BrainGridConstants::EMPTY && 
+                        tmpPlaceLeft->isOccupied() == false) {
+                    tmpPlace = tmpPlaceLeft;
+                    myState->growthDirection = leftGrowthDir;
+                } else if (tmpPlaceRight != NULL && tmpPlaceRight->getPlaceType() == BrainGridConstants::EMPTY && 
+                        tmpPlaceRight->isOccupied() == false){
+                    tmpPlace = tmpPlaceRight;
+                    myState->growthDirection = rightGrowthDir;
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+
+        myState->migrationDest = tmpPlace;
+        myState->migrationDestRelativeIdx = myState->growthDirection;
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::findBranchDestinationsOutsideSoma() {
+    if (myState->myPlaceType == BrainGridConstants::EMPTY && myState->occupied == false && 
+            getAgentPopulation() > 0) {
+        myState->branchMigrationDest = NULL;
+        myState->branchMigrationDestRelativeIdx = -1;
+
+        int tempIdx1 = (myState->growthDirection - 1) % MAX_NEIGHBORS;
+        NeuronPlace* tmpPlace1 = (NeuronPlace*)myState->neighbors[tempIdx1];
+        int tempIdx2 = (myState->growthDirection + 1) % MAX_NEIGHBORS;
+        NeuronPlace* tmpPlace2 = (NeuronPlace*)myState->neighbors[tempIdx2];
+        if (tmpPlace1 != NULL && tmpPlace1->getPlaceType() == BrainGridConstants::EMPTY 
+                && tmpPlace1->isOccupied() == false) {
+            myState->branchMigrationDest = tmpPlace1;
+            myState->branchMigrationDestRelativeIdx = tempIdx1;
+        }
+        else if (tmpPlace2 != NULL && tmpPlace2->getPlaceType() == BrainGridConstants::EMPTY 
+                && tmpPlace2->isOccupied() == false) {
+            myState->branchMigrationDest = tmpPlace2;
+            myState->branchMigrationDestRelativeIdx = tempIdx2; 
+        }
+    }
+}
+
+// Chooses lowest ranked dendrites and synapses and makes connection if possible
+// Run after agents->manageAll()
+MASS_FUNCTION void NeuronPlace::makeGrowingEndConnections() {
+    if (myState->myPlaceType == BrainGridConstants::EMPTY && myState->occupied == false && getAgentPopulation() > 0) {
+        GrowingEnd* incomingDendrite = NULL;
+        GrowingEnd* incomingSynapse = NULL;
+        for (int i = 0; i < MAX_NEIGHBORS; ++i) {
+            if (myState->agents[i] != NULL) {
+                if (((GrowingEnd*)myState->agents[i])->getAgentType() == BrainGridConstants::SYNAPSE) {
+                    if (incomingSynapse == NULL) {
+                        incomingSynapse = (GrowingEnd*)(myState->agents[i]);
+                    } else if (((GrowingEnd*)myState->agents[i])->getIndex() < incomingSynapse->getIndex()) {
+                        incomingSynapse->resetGrowingEnd();
+                        incomingSynapse->markAgentForTermination();
+                        incomingSynapse = (GrowingEnd*)myState->agents[i];
+                    } else {
+                        ((GrowingEnd*)myState->agents[i])->resetGrowingEnd();
+                        ((GrowingEnd*)myState->agents[i])->markAgentForTermination();
+                    }
+                }
+                // Dendrite
+                else if (((GrowingEnd*)myState->agents[i])->getAgentType() == BrainGridConstants::DENDRITE) {
+                    if (incomingDendrite == NULL) {
+                        incomingDendrite = (GrowingEnd*)myState->agents[i];
+                    } else if (((GrowingEnd*)myState->agents[i])->getIndex() < incomingDendrite->getIndex()) {
+                        incomingDendrite->resetGrowingEnd();
+                        incomingDendrite->markAgentForTermination();
+                        incomingDendrite = (GrowingEnd*)myState->agents[i];
+                    } else {
+                        ((GrowingEnd*)myState->agents[i])->resetGrowingEnd();
+                        ((GrowingEnd*)myState->agents[i])->markAgentForTermination();;
+                    }
+                }
+            }
+        }
+
+
+        if (incomingSynapse != NULL && incomingDendrite != NULL) {
+            if (incomingSynapse->getSomaIndex() != incomingDendrite->getSomaIndex()) {
+                setOccupied(true);
+                incomingSynapse->setGrowing(false);
+                incomingSynapse->setConnectPlace(incomingDendrite->getSoma());
+                incomingSynapse->setConnectPlaceIndex(incomingDendrite->getSomaIndex());     
+            }
+            incomingDendrite->resetGrowingEnd();
+            incomingDendrite->markAgentForTermination();
+        }
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::createSignal(int* randNums) {
+    if (myState->myPlaceType == BrainGridConstants::SOMA) {
+        myState->outputSignal = 0.0;
+        switch(myState->signalType) {
+            case 0:
+                myState->outputSignal = (randNums[getDevIndex()] % 100 + 1 <= 
+                BrainGridConstants::ACTIVATING_SIGNAL ) ? (1.0) : (0.0);
+                myState->outputSignal += myState->inputSignal * (1 + BrainGridConstants::SIGNAL_MODULATION);
+                break;
+            case 1:
+                myState->outputSignal += myState->inputSignal * BrainGridConstants::SIGNAL_MODULATION;
+                break;
+            case 2:
+                myState->outputSignal = myState->inputSignal;
+                break;
+        }
+    }
+}
+
+// TODO: needs to use agents array to get signals from migrating Agents
+MASS_FUNCTION void NeuronPlace::processSignals() {
+    if (myState->myPlaceType == BrainGridConstants::SOMA) {
+        myState->inputSignal = 0.0;
+        for (int i = 0; i < N_DESTINATIONS; ++i) {
+            if (myState->agents[i] != NULL && ((GrowingEnd*)myState->agents[i])->getAgentType() == BrainGridConstants::SYNAPSE && 
+                    ((GrowingEnd*)myState->agents[i])->getConnectPlace() != NULL) {
+                // accumulate signal
+                myState->inputSignal += ((GrowingEnd*)myState->agents[i])->getSignal();
+            }
+        }
+    }
+}
+
+MASS_FUNCTION void NeuronPlace::updateIters() {
+    myState->curIter++;
+}
+
+MASS_FUNCTION void NeuronPlace::removeMarkedAgentsFromPlace() {
+    removeMarkedAgents();
+}
+
+MASS_FUNCTION NeuronPlace::~NeuronPlace() {
+	// nothing to delete
 }
 
 MASS_FUNCTION int NeuronPlace::getDendriteSpawnTime() {
@@ -41,12 +326,24 @@ MASS_FUNCTION int NeuronPlace::getMigrationDestRelIdx() {
     return myState->migrationDestRelativeIdx;
 }
 
+MASS_FUNCTION NeuronPlace* NeuronPlace::getBranchMigrationDest() {
+    return myState->branchMigrationDest;
+}
+
+MASS_FUNCTION int NeuronPlace::getBranchMigrationDestRelIdx() {
+    return myState->branchMigrationDestRelativeIdx;
+}
+
+MASS_FUNCTION int NeuronPlace::getAxonGrowthDirection() {
+    return myState->axonGrowthDirection;
+}
+
 MASS_FUNCTION int NeuronPlace::getGrowthDirection() {
     return myState->growthDirection;
 }
 
-MASS_FUNCTION int NeuronPlace::getType() {
-    return myState->myType;
+MASS_FUNCTION int NeuronPlace::getPlaceType() {
+    return myState->myPlaceType;
 }
 
 MASS_FUNCTION int NeuronPlace::getCurIter() {
@@ -59,22 +356,6 @@ MASS_FUNCTION int NeuronPlace::getAxonSpawnTime() {
 
 MASS_FUNCTION void NeuronPlace::reduceDendritesToSpawn(int amount) {
     myState->dendritesToSpawn -= amount;
-}
-
-MASS_FUNCTION bool NeuronPlace::getTravelingSynapse() {
-    return myState->travelingSynapse;
-}
-
-MASS_FUNCTION bool NeuronPlace::getTravelingDendrite() {
-    return myState->travelingDendrite;
-}
-
-MASS_FUNCTION void NeuronPlace::setTravelingSynapse(bool hasTraveler) {
-    myState->travelingSynapse = hasTraveler;
-}
-
-MASS_FUNCTION void NeuronPlace::setTravelingDendrite(bool hasTraveler) {
-    myState->travelingDendrite = hasTraveler;
 }
 
 MASS_FUNCTION bool NeuronPlace::isOccupied() {
@@ -121,250 +402,6 @@ MASS_FUNCTION double NeuronPlace::getOutputSignal() {
     return myState->outputSignal;
 }
 
-MASS_FUNCTION void NeuronPlace::setSimulationTime(int* maxTime) {
-    myState->totalIters = maxTime[getDevIndex()];
-    myState->curIter = 0;
-}
-
-MASS_FUNCTION void NeuronPlace::setNeuronPlaceType(int* isLoc) {
-    if (isLoc[getDevIndex() == 0]) {
-        myState->myType = BrainGridConstants::EMPTY;
-    } else {
-        myState->myType = BrainGridConstants::SOMA;
-    }
-}
-
-MASS_FUNCTION void NeuronPlace::setNeuronSignalType(int* randNum) {
-    if (myState->myType == BrainGridConstants::SOMA) {
-        int score = randNum[getDevIndex()] % 30;
-        if (score < BrainGridConstants::EXCITATORY) {
-            myState->signalType = 0;
-        } else if (score < (BrainGridConstants::INHIBITORY + BrainGridConstants::EXCITATORY)) {
-            myState->signalType = 1;
-        } else {
-            myState->signalType = 2;
-        }
-    }
-}
-
-MASS_FUNCTION void NeuronPlace::setGrowthDirections(int* randNums) {
-    if (myState->myType == BrainGridConstants::SOMA) {
-        myState->growthDirection = (BrainGridConstants::Direction) (randNums[getDevIndex()] % MAX_NEIGHBORS);
-    }
-}
-
-MASS_FUNCTION void NeuronPlace::setSpawnTimes(int* randNums) {
-    if (myState->myType == BrainGridConstants::SOMA) {
-        int numIdx = getDevIndex() * MAX_NEIGHBORS;
-        int numBranches = 0;
-        for (int i = 0; i < MAX_NEIGHBORS; ++i) {
-            if (myState->neighbors[i] != NULL && ((NeuronPlace*)myState->neighbors[i])->getType() == BrainGridConstants::EMPTY) {
-                numBranches += 1;
-            }
-        }
-
-        // reduce by one for Axon
-        if (numBranches != 0) {
-            myState->axonSpawnTime = randNums[numIdx] % myState->totalIters;
-            myState -> dendritesToSpawn = numBranches - 1;
-        }
-        
-        numIdx += 1;
-        for (int i = 0; i < myState->dendritesToSpawn; ++i) {
-            myState->dendriteSpawnTime[i] = randNums[i + numIdx] % myState->totalIters;
-        }
-
-        // Bubble Sort fastest for small array; sort order ascending
-        for (int i = 0; i < numBranches; ++i) {
-            bool swaps = false;
-            //when the current item is bigger than next
-            for(int j = 0; j < numBranches - i - 1; j++) {
-                if(myState->dendriteSpawnTime[j] < myState->dendriteSpawnTime[j+1]) {
-                    int temp;
-                    temp = myState->dendriteSpawnTime[j];
-                    myState->dendriteSpawnTime[j] = myState->dendriteSpawnTime[j+1];
-                    myState->dendriteSpawnTime[j+1] = temp;
-                    swaps = true;
-                }
-            }     
-            
-            if(!swaps) {
-                break;       // No swap in this pass, so array is sorted
-            }    
-        }
-    }
-}
-
-// Executed once during simulation set-up
-MASS_FUNCTION void NeuronPlace::findAxonGrowthDestinationFromSoma() {
-    if (myState->myType == BrainGridConstants::SOMA) {
-        myState -> migrationDest = NULL; //initially assume we won't find a suitable place
-        myState ->  migrationDestRelativeIdx = -1;
-
-        NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
-        while (tmpPlace == NULL || tmpPlace->myState->myType != BrainGridConstants::EMPTY || tmpPlace->getTravelingDendrite()) {
-            myState->growthDirection = (BrainGridConstants::Direction) (myState->growthDirection + 1 % N_DESTINATIONS);
-            tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
-        }
-
-        myState->dendritesToSpawn = 0;
-        for (int i = 0; i < MAX_NEIGHBORS; ++i) {
-            if (myState->neighbors[i] != NULL) {
-                if (((NeuronPlace*)myState->neighbors[i])->getType() != BrainGridConstants::SOMA && myState->growthDirection != i) {
-                    myState->dendritesToSpawn++;
-                }
-            }
-        }
-
-        myState -> migrationDest = (NeuronPlace*)myState -> neighbors[myState -> growthDirection];
-        myState -> migrationDestRelativeIdx = myState -> growthDirection;
-    }
-}
-
-// TODO: Check for correctness
-MASS_FUNCTION void NeuronPlace::findDendriteGrowthDestinationFromSoma() {
-    if (myState -> myType == BrainGridConstants::SOMA && getAgentPopulation() > 0 && myState -> migrationDest == NULL) {
-        myState -> migrationDest = NULL; //initially assume we won't find a suitable place
-        myState ->  migrationDestRelativeIdx = -1;
-        myState -> dendritesToSpawn--;
-
-        int pos = myState->growthDirection;
-        int startPos = pos;
-        NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[pos];
-        // TODO: Need to protect from having Dendrite go to same place as Axon 
-        while (tmpPlace == NULL || tmpPlace->myState->myType != BrainGridConstants::EMPTY || tmpPlace->getTravelingDendrite()) {
-            pos = (pos + 1) % N_DESTINATIONS;
-            myState->growthDirection = (BrainGridConstants::Direction)pos;
-            tmpPlace = (NeuronPlace*)myState->neighbors[pos];
-            if (startPos == pos) {
-                return;
-            }
-        }
-
-        // Set migration destination
-        myState->migrationDest = (NeuronPlace*)myState->neighbors[myState->growthDirection];
-        myState->migrationDestRelativeIdx = myState->growthDirection;
-    }
-}
-
-MASS_FUNCTION void NeuronPlace::setNeuronPlaceGrowths() {
-    if (myState->myType == BrainGridConstants::EMPTY && !(myState->occupied)) {
-        for (int i = 0; i < MAX_AGENTS; ++i) {
-            GrowingEnd* tmpEnd = (GrowingEnd*)myState->agents[i];
-            if (tmpEnd != NULL) {
-                if (tmpEnd->getType() == BrainGridConstants::SYNAPSE) {
-                    if (!getTravelingSynapse()) {
-                        setTravelingSynapse(true);
-                    } 
-                } 
-                
-                if (tmpEnd->getType() == BrainGridConstants::DENDRITE){
-                    if (!getTravelingDendrite()) {
-                        setTravelingDendrite(true);
-                    }
-                }
-            }
-        }
-    }
-}
-
-// TODO: Does this need to be updated for 2 growthDestinations, or for 1?
-MASS_FUNCTION void NeuronPlace::findGrowthDestinationOutsideSoma() {
-    if (myState->myType == BrainGridConstants::EMPTY && !(myState->occupied)) {
-        myState -> migrationDest = NULL; //initially assume we won't find a suitable place
-        myState ->  migrationDestRelativeIdx = -1;
-
-        NeuronPlace* tmpPlace = (NeuronPlace*)myState->neighbors[myState->growthDirection];
-        if (tmpPlace != NULL) {
-            myState->migrationDest = tmpPlace;
-            myState->migrationDestRelativeIdx = myState->growthDirection;
-        }
-    }
-}
-
-// TODO: Need to handle Axons differently
-// Chooses lowest ranked dendrites and synapses and makes connection if possible
-// Run after agents->manageAll()
-MASS_FUNCTION void NeuronPlace::makeGrowingEndConnections() {
-    if (myState->myType != BrainGridConstants::SOMA && !(myState->occupied)) {
-        GrowingEnd* incomingDendrite = NULL;
-        GrowingEnd* incomingSynapse = NULL;
-        for (int i = 0; i < MAX_NEIGHBORS; ++i) {
-            if (myState->agents[i] != NULL) {
-                if (((GrowingEnd*)myState->agents[i])->getType() == BrainGridConstants::SYNAPSE) {
-                    if (incomingSynapse == NULL) {
-                        incomingSynapse = (GrowingEnd*)(myState->agents[i]);
-                    } else if (((GrowingEnd*)myState->agents[i])->getIndex() < incomingSynapse->getIndex()) {
-                        incomingSynapse->terminateAgent();
-                        incomingSynapse = (GrowingEnd*)myState->agents[i];
-                    } else {
-                        myState->agents[i]->terminateAgent();
-                    }
-                }
-                // Dendrite
-                else if (((GrowingEnd*)myState->agents[i])->getType() == BrainGridConstants::DENDRITE) {
-                    if (incomingDendrite == NULL) {
-                        incomingDendrite = (GrowingEnd*)myState->agents[i];
-                    } else if (((GrowingEnd*)myState->agents[i])->getIndex() < incomingDendrite->getIndex()) {
-                        incomingDendrite->terminateAgent();
-                        incomingDendrite = (GrowingEnd*)myState->agents[i];
-                    } else {
-                        myState->agents[i]->terminateAgent();
-                    }
-                }
-            }
-        }
-
-
-        if (getTravelingDendrite() && getTravelingSynapse() && 
-                incomingSynapse->getSomaIndex() != incomingDendrite->getSomaIndex()) {
-            myState->occupied = true;
-            incomingSynapse->setGrowing(false);
-            incomingDendrite->setGrowing(false);
-            incomingSynapse->setConnectPlace(incomingDendrite->getSoma());
-            incomingSynapse->setConnectPlaceIndex(incomingDendrite->getSomaIndex());     
-            incomingDendrite->terminateAgent();
-        }
-    }
-}
-
-MASS_FUNCTION void NeuronPlace::createSignal(int* randNums) {
-    if (myState->myType == BrainGridConstants::SOMA) {
-        myState->outputSignal = 0.0;
-        switch(myState->signalType) {
-            case 0:
-                myState->outputSignal = (randNums[getDevIndex()] % 100 + 1 <= 
-                BrainGridConstants::ACTIVATING_SIGNAL ) ? (1.0) : (0.0);
-                myState->outputSignal += myState->inputSignal * (1 + BrainGridConstants::SIGNAL_MODULATION);
-                break;
-            case 1:
-                myState->outputSignal += myState->inputSignal * BrainGridConstants::SIGNAL_MODULATION;
-                break;
-            case 2:
-                myState->outputSignal = myState->inputSignal;
-                break;
-        }
-    }
-}
-
-// TODO: needs to use agents array to get signals from migrating Agents
-MASS_FUNCTION void NeuronPlace::processSignals() {
-    if (myState->myType == BrainGridConstants::SOMA) {
-        myState->inputSignal = 0.0;
-        for (int i = 0; i < N_DESTINATIONS; ++i) {
-            if (((GrowingEnd*)myState->agents[i])->getType() == BrainGridConstants::SYNAPSE && 
-                    ((GrowingEnd*)myState->agents[i])->getConnectPlace() != NULL) {
-                // accumulate signal
-                myState->inputSignal += ((GrowingEnd*)myState->agents[i])->getSignal();
-            }
-        }
-    }
-}
-
-MASS_FUNCTION void NeuronPlace::updateIters() {
-    
-}
-
 MASS_FUNCTION void NeuronPlace::callMethod(int functionId, void *argument) {
 	switch (functionId) {
         case SET_TIME:
@@ -387,12 +424,12 @@ MASS_FUNCTION void NeuronPlace::callMethod(int functionId, void *argument) {
         case FIND_DENDRITE_GROWTH_DESTINATIONS_FROM_SOMA:
             findDendriteGrowthDestinationFromSoma();
             break;
-        case SET_NEURON_PLACE_MIGRATIONS:
-            setNeuronPlaceGrowths();
-            break;
         case FIND_GROWTH_DESTINATIONS_OUTSIDE_SOMA:
             findGrowthDestinationOutsideSoma();
-            break;    
+            break;   
+        case FIND_BRANCH_DESTINATIONS_OUTSIDE_SOMA:
+            findBranchDestinationsOutsideSoma();
+            break; 
         case MAKE_CONNECTIONS:
             makeGrowingEndConnections();
             break;
@@ -404,6 +441,9 @@ MASS_FUNCTION void NeuronPlace::callMethod(int functionId, void *argument) {
             break;
         case UPDATE_ITERS:
             updateIters();
+            break;
+        case REMOVE_MARKED_AGENTS_FROM_PLACE:
+            removeMarkedAgentsFromPlace();
             break;
         default:
 			break;

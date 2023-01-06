@@ -12,6 +12,7 @@ class BrainGrid {
 
         void runMassSim(int size, int max_time, int interval);
         void displaySoma(mass::Places *places, int time, int *placesSize);
+        void displayConnectedSomas(mass::Places *places, int time, int *placesSize);
         void displayAgents(mass::Agents* agents, int time);
 
 };

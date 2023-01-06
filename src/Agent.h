@@ -52,6 +52,10 @@ public:
 
     MASS_FUNCTION int getPlaceDevIndex();
 
+    MASS_FUNCTION void setMyDevice(int);
+
+    MASS_FUNCTION int getMyDevice();
+
     /**
     Returns the unique index of this Agent
     */
@@ -62,6 +66,13 @@ public:
     */
     MASS_FUNCTION void setIndex(int);
 
+    MASS_FUNCTION void setDestPlace(Place*);
+
+    MASS_FUNCTION void setDestPlaceIndex(int);
+
+    MASS_FUNCTION Place* getDestPlace();
+    
+    MASS_FUNCTION int getDestPlaceIndex();
     /**
     Returns true if the Agent is in an active state. Returns false if the 
     agent hasn’t been activated yet (extra inactive agents are allocated 
@@ -82,10 +93,23 @@ public:
 
     MASS_FUNCTION bool isTraveled();  
 
+    MASS_FUNCTION void setTraveledAgentIdx(int);
+
+    MASS_FUNCTION int getTraveledAgentIdx();
+
+    MASS_FUNCTION void setAccepted(bool);
+
+    MASS_FUNCTION bool isAccepted();
+
     MASS_FUNCTION bool longDistanceMigration();
     
     MASS_FUNCTION void setLongDistanceMigration(bool);
 
+    MASS_FUNCTION void setPlaceAgentArrayIdx(int);
+
+    MASS_FUNCTION int getPlaceAgentArrayIdx();
+
+    MASS_FUNCTION void markForTermination(bool);
     /**
     Sets the agent status to inactive. Agents place is set to vacant and 
     he agent is excluded from all the subsequent callAll() function calls.
@@ -94,6 +118,9 @@ public:
 
     MASS_FUNCTION void terminateGhostAgent();
 
+    MASS_FUNCTION void markAgentForTermination();
+
+    MASS_FUNCTION bool isMarkedForTermination();
     /**
     Moves the agent from the current place to the destination place. 
     The actual migration is performed during the subsequent Agents::manageAll() call. 

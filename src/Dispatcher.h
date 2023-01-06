@@ -125,7 +125,7 @@ public:
 
 	int* getGhostPlaceMultiples(int handle);
 
-	unsigned* calculateRandomNumbers(int);
+	int* calculateRandomNumbers(int, int);
 
 	/**
 	 * Called when the user wants to look at the data model on the host. This
@@ -142,9 +142,6 @@ public:
 	template<typename AgentType, typename AgentStateType>
 	void instantiateAgents (int handle, void *argument, 
 		int argSize, int nAgents, int placesHandle, int maxAgents, int* placeIdxs);
-
-	template<typename AgentType, typename AgentStateType>
-	void manageAll(int agentHandle, int placeHandle);
 
 private:
 	bool updateNeighborhood(int handle, std::vector<int*> *vec);
@@ -195,19 +192,5 @@ void Dispatcher::instantiateAgents (int handle, void *argument,
 	
 	Logger::debug("Exiting Dispatcher::instantiateAgents\n");
 }
-
-template<typename AgentType, typename AgentStateType>
-void Dispatcher::manageAll(int agentHandle, int placeHandle) {
-    // Step 1: kill all agents that need killing
-    // terminateAgents(handle);
-
-    // Step 2: migrate all agents that need migrating
-    // deviceInfo->migrateAgents<AgentType, AgentStateType>(agentHandle, placeHandle);
-	migrateAgents(agentHandle, placeHandle);
-
-    // Step 3: spawn all new agents that need spawning
-    // spawnAgents(handle);
-}
-
 } // namespace mass
 #endif

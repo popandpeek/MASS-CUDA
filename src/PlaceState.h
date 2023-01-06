@@ -18,7 +18,7 @@ public:
 	int size[MAX_DIMS];   // the size of the Places matrix
 	int devSize[MAX_DIMS]; // the size of the chunk of the Places matrix of the device that this Place resides
     Agent *agents[MAX_AGENTS]; //agents residing on this place
-    unsigned agentPop; // the population of agents on this place
+    int agentPop; // the population of agents on this place
 
     Agent* potentialNextAgents[N_DESTINATIONS]; //agents that expressed an intention to migrate into this place
 };

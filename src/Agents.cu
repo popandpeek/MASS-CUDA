@@ -39,6 +39,7 @@ int Agents::getNumAgentObjects() {
     int totalAgents = 0;
     int* tmpAgentArr = dispatcher->getNAgentsDev(handle);
     for (int i = 0; i < elemPtrs.size(); ++i) {
+        Logger::debug("*** Agents: getNumAgentObjects: device = %d, numAgents = %d", i, tmpAgentArr[i]);
         totalAgents += tmpAgentArr[i];
     }
 

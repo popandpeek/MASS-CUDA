@@ -17,16 +17,16 @@ public:
     NeuronPlace* myConnectPlace;
     int mySomaIndex;
     int myConnectPlaceIndex;
-    BrainGridConstants::NPartType myType;
+    int myAgentType;
     double signal;
     int spawnTime;
-    BrainGridConstants::Direction growthDirection;
+    int curIter;
+    int growthDirection;
     bool hasSpawned;
     bool isGrowing;
     bool justGrew;
     int branchCountRemaining;
     int branchGrowthRemaining;
-    int destinationIdx;
 };
 
 #endif 

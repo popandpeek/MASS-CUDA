@@ -7,7 +7,7 @@
 #include <string>
 #include "string.h"
 
-// #define DEBUG
+#define DEBUG
 // #undef DEBUG
 // #define TEST
 

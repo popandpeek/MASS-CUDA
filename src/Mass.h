@@ -77,7 +77,7 @@ public:
 	// Agents: Use Agents->getMaxAgents() as number of Agents may change over simulation 
 	// Places: Use Places->getNumPlaces() or other fixed number as Places do not change over
 	//	       simulation
-	static unsigned int* getRandomNumbers(int);
+	static int* getRandomNumbers(int, int);
 
 private:
 

@@ -30,6 +30,7 @@ public:
 	AgentsModel* instantiateAgents (int handle, void *argument, 
 		int argSize, int nAgents, int maxAgents, int* nAgentsDev);
 
+
 private:
 	void addPlacesModel(PlacesModel *places);
 	void addAgentsModel(AgentsModel *agents);

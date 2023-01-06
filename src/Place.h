@@ -74,6 +74,13 @@ public:
 	*/
 	MASS_FUNCTION bool addAgent(Agent* agent);
 
+	MASS_FUNCTION void addAgentDirect(Agent* agent, int loc);
+	
+	MASS_FUNCTION bool addPotentialAgentDirect(Agent* agent, int loc)
+;
+	MASS_FUNCTION void removePotentialAgent(int loc);
+
+	MASS_FUNCTION Agent* getPotentialNextAgent(int loc);
 	/**
 	Adds a resident Agent to this place. Returns true if the adding was successful. 
 	Adding can fail if the place has reached its maximum occupancy.
@@ -85,6 +92,12 @@ public:
 	Removes the specified Agent from the array of resident Agents in this place.
 	*/
 	MASS_FUNCTION void removeAgent(Agent* agent);
+
+	MASS_FUNCTION void removeAgentFromPlace(Agent* agent);
+	/**
+	Used when many Agents may be deleted from Place; Removes all marked Agents from agent array 
+	*/
+	MASS_FUNCTION void removeMarkedAgents();
 
 	/**
 	Returns the number of Agents currently residing in this place.

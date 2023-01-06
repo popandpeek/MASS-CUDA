@@ -13,12 +13,12 @@ namespace mass {
  MASS_FUNCTION Place::Place(PlaceState *state, void *args) {
 	this->state = state;
 	this->state->index = 0;
+	this->state->agentPop = 0;
 	memset(this->state->neighbors, 0, MAX_NEIGHBORS);
 	memset(this->state->size, 0, MAX_DIMS);
-
-	for (int i=0; i< N_DESTINATIONS; i++) {
-		state->potentialNextAgents[i] = NULL;
-	}
+	memset(this->state->devSize, 0, MAX_DIMS);
+	memset(this->state->potentialNextAgents, 0, N_DESTINATIONS);
+	memset(this->state->agents, 0, MAX_AGENTS);
 }
 
 MASS_FUNCTION PlaceState* Place::getState() {
@@ -41,15 +41,18 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 
 		if (acceptedAgent != NULL) {
 			state->agents[0] = acceptedAgent;
+			state->agents[0]->setAccepted(true);
 			state->agentPop++;
 		}
 	} 
 
 	else { // more than 1 agent can reside in a place
-		Agent* potentialResidents[N_DESTINATIONS];
+		Agent* potentialResidents[N_DESTINATIONS]{ NULL };
 
 		for (int i=0; i< N_DESTINATIONS; i++) {
-			if (state->potentialNextAgents[i] == NULL) continue;
+			if (state->potentialNextAgents[i] == NULL) {
+				continue;
+			}
 			
 			//Insert agent into proper place:
 			for (int j=0; j< N_DESTINATIONS; j++) {
@@ -76,6 +79,7 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 			for (int i=0; i< MAX_AGENTS; i++) {
 				if (state->agents[i] == NULL) {
 					state->agents[i] = potentialResidents[curAgent];
+					state->agents[i]->setAccepted(true);
 					curAgent ++;
 					state->agentPop ++;
 					break;
@@ -88,7 +92,6 @@ MASS_FUNCTION void Place::resolveMigrationConflicts() {
 	for (int i=0; i< N_DESTINATIONS; i++) {
 		state->potentialNextAgents[i] = NULL;
 	}
-
 }
 
 MASS_FUNCTION int Place::getIndex() {
@@ -119,16 +122,40 @@ MASS_FUNCTION void Place::setSize(int *placesDimensions, int *devDimensions, int
 MASS_FUNCTION bool Place::addAgent(Agent* agent) {
 	if (state->agentPop < MAX_AGENTS) {
 		state->agents[state->agentPop] = agent;
-		state->agentPop ++;
+		agent->setPlaceAgentArrayIdx(state->agentPop);
+		state->agentPop++;
 		return true;
 	}
 	return false;
+}
+
+MASS_FUNCTION void Place::addAgentDirect(Agent* agent, int loc) {
+	state->agents[loc] = agent;
+}
+
+MASS_FUNCTION bool Place::addPotentialAgentDirect(Agent* agent, int loc) {
+	if (state->potentialNextAgents[loc] != NULL) return false;
+	state->potentialNextAgents[loc] = agent;
+	return true;
+}
+
+MASS_FUNCTION void Place::removePotentialAgent(int loc) {
+	if (loc < N_DESTINATIONS) {
+		state->potentialNextAgents[loc] = NULL;
+	}
+}
+
+MASS_FUNCTION Agent* Place::getPotentialNextAgent(int loc) {
+	if (loc < N_DESTINATIONS) {
+		return state->potentialNextAgents[loc];
+	}
 }
 
 __device__ bool Place::reattachAgent(Agent* agent) {
 	if (state->agentPop < MAX_AGENTS) {
 		int idx = atomicAdd(&(state->agentPop), 1);
 		state->agents[idx] = agent;
+		agent->setPlaceAgentArrayIdx(idx);
 		return true;
 	}
 	return false;
@@ -141,10 +168,38 @@ MASS_FUNCTION void Place::removeAgent(Agent* agent) {
 			//shift all agents left:
 			for (int j=i; j < state->agentPop - 1; j++) {
 				state->agents[j] = state->agents[j+1];
+				state->agents[j]->setPlaceAgentArrayIdx(j);
 			}
 			state->agents[state->agentPop-1] = NULL;
 			state->agentPop--;
 			return;
+		}
+	}
+}
+
+MASS_FUNCTION void Place::removeAgentFromPlace(Agent* agent) {
+	int arrIdx = agent->getPlaceAgentArrayIdx();
+	if (arrIdx >= 0 && arrIdx < MAX_AGENTS) {
+		if (state->agents[arrIdx] == agent) {
+			state->agents[arrIdx] = NULL;
+			state->agentPop--;
+		}
+	}
+}
+
+MASS_FUNCTION void Place::removeMarkedAgents() {
+	for (int i = 0; i < MAX_AGENTS; ++i) {
+		if (state->agents[i] == NULL) continue;
+		if (state->agents[i]->isMarkedForTermination()) {
+			// shift all agents left:
+			state->agents[i]->markForTermination(false);
+			if (state->agents[i]->getPlace() != this) {
+				for (int j = 0; j < MAX_AGENTS - 1; ++j) {
+					state->agents[j] = state->agents[j+1]; 
+				}
+				state->agents[MAX_AGENTS - 1] = NULL;
+				state->agentPop--;
+			}
 		}
 	}
 }
