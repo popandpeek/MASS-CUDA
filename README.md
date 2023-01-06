@@ -2,7 +2,7 @@
 
 Copyright University of Washington
 
-The work in this repository is a continuation of research on Multi-Agent Spacial Simulation (MASS) from Dr Munehiro Fukuda's research group at University of Washington-Bothell
+The work in this repository is a continuation of research on Multi-Agent Spacial Simulation (MASS) from Dr Munehiro Fukuda's research group at University of Washington-Bothell - https://depts.washington.edu/dslab/MASS/
 
 The work of the owner of this repository is outlined in the thesis paper titled "final-paper.pdf".
 
